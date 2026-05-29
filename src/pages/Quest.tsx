@@ -155,25 +155,25 @@ export default function Quest() {
               <h1 className="mt-2 text-4xl font-black">{quest.title}</h1>
             </div>
             <div className="p-7 sm:p-9">
-              <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-900/60">Auswertung</div>
-              <h2 className="mt-2 text-3xl font-black text-emerald-950">
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Auswertung</div>
+              <h2 className="mt-2 text-3xl font-black text-slate-950">
                 {finalPercent >= 80 ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Uebungssaal.'}
               </h2>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-white/60 p-4">
-                  <div className="text-3xl font-black text-emerald-950">{correctCount}</div>
+                  <div className="text-3xl font-black text-slate-950">{correctCount}</div>
                   <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Richtig</div>
                 </div>
                 <div className="rounded-2xl bg-white/60 p-4">
-                  <div className="text-3xl font-black text-emerald-950">{challenges.length}</div>
+                  <div className="text-3xl font-black text-slate-950">{challenges.length}</div>
                   <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
                 </div>
                 <div className="rounded-2xl bg-white/60 p-4">
-                  <div className="text-3xl font-black text-emerald-950">{coinsEarned}</div>
+                  <div className="text-3xl font-black text-slate-950">{coinsEarned}</div>
                   <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Funken</div>
                 </div>
               </div>
-              <div className="mt-6 rounded-2xl border border-amber-900/10 bg-amber-100/70 p-4 text-sm font-bold leading-6 text-emerald-950">
+              <div className="mt-6 rounded-2xl border border-amber-900/10 bg-amber-100/70 p-4 text-sm font-bold leading-6 text-slate-950">
                 Freigeschaltet: {quest.reward}. Spaeter kann daraus eine echte Eltern-Belohnung werden.
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -194,7 +194,7 @@ export default function Quest() {
           <ArrowLeft className="h-4 w-4" />
           Karte
         </button>
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-200 text-emerald-950">
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-200 text-slate-950">
           <Wand2 className="h-10 w-10" />
         </div>
         <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">{quest.chapter}</div>
@@ -214,7 +214,7 @@ export default function Quest() {
       <section className="parchment flex min-h-[520px] flex-col justify-between rounded-[32px] border border-amber-100/70 p-6 sm:p-8">
         <div>
           <div className="flex items-center justify-between gap-3">
-            <div className="rounded-full bg-emerald-900 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
+            <div className="rounded-full bg-blue-950 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
               {current.eyebrow}
             </div>
             <div className="flex items-center gap-1 text-amber-600">
@@ -224,8 +224,8 @@ export default function Quest() {
           </div>
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
-            <div className="text-sm font-black uppercase tracking-[0.18em] text-emerald-900/60">Aufgabe</div>
-            <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-emerald-950 sm:text-5xl">
+            <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">Aufgabe</div>
+            <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-slate-950 sm:text-5xl">
               {current.prompt}
             </h2>
             <p className="mt-5 text-sm font-bold text-stone-500">{current.helper}</p>
@@ -238,12 +238,12 @@ export default function Quest() {
             onChange={event => setAnswer(event.target.value)}
             disabled={Boolean(result)}
             autoFocus
-            className="w-full rounded-2xl border border-amber-900/15 bg-white/80 px-5 py-5 text-center text-2xl font-black text-emerald-950 outline-none ring-emerald-800/25 transition placeholder:text-stone-300 focus:ring-4 disabled:opacity-70"
+            className="w-full rounded-2xl border border-amber-900/15 bg-white/80 px-5 py-5 text-center text-2xl font-black text-slate-950 outline-none ring-blue-800/25 transition placeholder:text-stone-300 focus:ring-4 disabled:opacity-70"
             placeholder="Antwort eintippen"
           />
 
           {result && (
-            <div className={`mt-4 flex items-start gap-3 rounded-2xl p-4 text-sm font-bold ${result.correct ? 'bg-emerald-100 text-emerald-900' : 'bg-red-100 text-red-800'}`}>
+            <div className={`mt-4 flex items-start gap-3 rounded-2xl p-4 text-sm font-bold ${result.correct ? 'bg-blue-100 text-blue-950' : 'bg-red-100 text-red-800'}`}>
               {result.correct ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /> : <XCircle className="mt-0.5 h-5 w-5 shrink-0" />}
               <div>
                 <div>{result.correct ? 'Richtig.' : 'Fast. Die gesuchte Antwort war:'}</div>

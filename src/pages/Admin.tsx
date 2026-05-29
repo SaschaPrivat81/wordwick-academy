@@ -42,7 +42,7 @@ gehen,go,irregular,verben,went,gone`}
         <button onClick={importWords} className="mt-2 w-full py-2 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-400">
           Importieren
         </button>
-        {result && <p className="mt-2 text-emerald-600 font-bold text-sm">{result}</p>}
+        {result && <p className="mt-2 text-blue-600 font-bold text-sm">{result}</p>}
       </div>
 
       {/* Statistik */}

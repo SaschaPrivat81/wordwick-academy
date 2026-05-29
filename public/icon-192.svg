@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
-  <rect width="192" height="192" rx="40" fill="#314d41"/>
-  <text x="96" y="118" font-size="72" text-anchor="middle" fill="#f8e7b0" font-family="Arial" font-weight="700">WA</text>
-  <path d="M54 136h84" stroke="#f8e7b0" stroke-width="10" stroke-linecap="round"/>
+  <rect width="192" height="192" rx="40" fill="#172554"/>
+  <circle cx="145" cy="42" r="18" fill="#bfdbfe" opacity="0.85"/>
+  <path d="M47 137h98l-14-62H61z" fill="#1e40af"/>
+  <path d="M65 75 96 35l31 40z" fill="#d9b85f"/>
+  <text x="96" y="122" font-size="58" text-anchor="middle" fill="#f8e7b0" font-family="Arial" font-weight="700">WA</text>
 </svg>

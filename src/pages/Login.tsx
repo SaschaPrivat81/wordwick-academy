@@ -26,20 +26,34 @@ export default function Login() {
         <svg viewBox="0 0 900 900" className="h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
           <defs>
             <linearGradient id="towerGlow" x1="0" x2="1">
-              <stop offset="0" stopColor="#17392f" />
-              <stop offset="1" stopColor="#4f704f" />
+              <stop offset="0" stopColor="#172554" />
+              <stop offset="1" stopColor="#312e81" />
             </linearGradient>
+            <radialGradient id="moonHalo" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stopColor="#eff6ff" />
+              <stop offset="1" stopColor="#bfdbfe" stopOpacity="0" />
+            </radialGradient>
           </defs>
-          <circle cx="708" cy="138" r="74" fill="#f8e7b0" opacity="0.55" />
-          <path d="M0 720 C150 642 248 724 378 660 C530 584 618 650 900 586 L900 900 L0 900 Z" fill="#10251f" />
+          <rect width="900" height="900" fill="#07111f" />
+          <circle cx="708" cy="138" r="118" fill="url(#moonHalo)" opacity="0.72" />
+          <circle cx="708" cy="138" r="58" fill="#dbeafe" opacity="0.88" />
+          <g fill="#f8e7b0" opacity="0.86">
+            <circle cx="132" cy="118" r="3" />
+            <circle cx="218" cy="204" r="2.5" />
+            <circle cx="556" cy="82" r="3" />
+            <circle cx="782" cy="290" r="2.5" />
+            <path d="M318 112 l5 10 10 5 -10 5 -5 10 -5 -10 -10 -5 10 -5z" />
+            <path d="M642 236 l4 8 8 4 -8 4 -4 8 -4 -8 -8 -4 8 -4z" />
+          </g>
+          <path d="M0 720 C150 642 248 724 378 660 C530 584 618 650 900 586 L900 900 L0 900 Z" fill="#0f172a" />
           <path d="M182 604 L244 346 L306 604 Z" fill="url(#towerGlow)" />
           <path d="M214 348 L244 278 L274 348 Z" fill="#e4b95f" />
-          <path d="M336 612 L414 246 L492 612 Z" fill="#16382f" />
+          <path d="M336 612 L414 246 L492 612 Z" fill="#1e3a8a" />
           <path d="M376 248 L414 158 L452 248 Z" fill="#d9a441" />
-          <path d="M502 620 L568 392 L634 620 Z" fill="#244f40" />
+          <path d="M502 620 L568 392 L634 620 Z" fill="#1d4ed8" opacity="0.72" />
           <path d="M536 392 L568 318 L600 392 Z" fill="#f0ce75" />
-          <rect x="244" y="506" width="340" height="166" rx="18" fill="#244f40" />
-          <rect x="378" y="576" width="76" height="96" rx="38" fill="#0b1d19" />
+          <rect x="244" y="506" width="340" height="166" rx="18" fill="#1e40af" />
+          <rect x="378" y="576" width="76" height="96" rx="38" fill="#020617" />
           <g fill="#f8e7b0" opacity="0.72">
             <rect x="392" y="328" width="44" height="62" rx="22" />
             <rect x="224" y="430" width="38" height="52" rx="19" />
@@ -79,31 +93,31 @@ export default function Login() {
 
           <form onSubmit={handle} className="parchment w-full rounded-[28px] border border-amber-100/70 p-6 text-stone-900 sm:p-8">
             <div className="mb-6 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-900 text-amber-100 shadow-lg">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-950 text-amber-100 shadow-lg">
                 <Wand2 className="h-8 w-8" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-emerald-950">{mode === 'login' ? 'Zurueck in die Halle' : 'Neue Schuelerkarte'}</h2>
+                <h2 className="text-2xl font-black text-slate-950">{mode === 'login' ? 'Zurueck in die Halle' : 'Neue Schuelerkarte'}</h2>
                 <p className="text-sm font-semibold text-stone-500">Name und vierstelliger Zaubercode</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <label className="block">
-                <span className="mb-2 flex items-center gap-2 text-sm font-black text-emerald-950">
+                <span className="mb-2 flex items-center gap-2 text-sm font-black text-slate-950">
                   <UserRound className="h-4 w-4" />
                   Name
                 </span>
                 <input
                   value={name}
                   onChange={event => setName(event.target.value)}
-                  className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-4 py-3 text-lg font-bold outline-none ring-emerald-800/25 transition focus:ring-4"
+                  className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-4 py-3 text-lg font-bold outline-none ring-blue-800/25 transition focus:ring-4"
                   placeholder="Dein Name"
                   autoComplete="username"
                 />
               </label>
               <label className="block">
-                <span className="mb-2 flex items-center gap-2 text-sm font-black text-emerald-950">
+                <span className="mb-2 flex items-center gap-2 text-sm font-black text-slate-950">
                   <KeyRound className="h-4 w-4" />
                   PIN
                 </span>
@@ -113,7 +127,7 @@ export default function Login() {
                   maxLength={4}
                   value={pin}
                   onChange={event => setPin(event.target.value.replace(/\D/g, '').slice(0, 4))}
-                  className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-4 py-3 text-center text-2xl font-black tracking-[0.35em] outline-none ring-emerald-800/25 transition focus:ring-4"
+                  className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-4 py-3 text-center text-2xl font-black tracking-[0.35em] outline-none ring-blue-800/25 transition focus:ring-4"
                   placeholder="0000"
                   autoComplete="current-password"
                 />
@@ -130,7 +144,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-black text-emerald-900 transition hover:bg-emerald-900/10"
+              className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-black text-blue-950 transition hover:bg-blue-950/10"
             >
               {mode === 'login' ? 'Neue Schuelerkarte erstellen' : 'Ich habe schon eine Schuelerkarte'}
             </button>
