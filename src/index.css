@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-slate-50 text-slate-900 antialiased;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.quest-node {
+  @apply relative flex items-center justify-center w-16 h-16 rounded-full shadow-lg transition-all duration-200 active:scale-95;
+}
+
+.quest-node.unlocked {
+  @apply bg-emerald-500 text-white cursor-pointer hover:bg-emerald-400;
+}
+
+.quest-node.locked {
+  @apply bg-slate-300 text-slate-500 cursor-not-allowed;
+}
+
+.quest-node.completed {
+  @apply bg-amber-400 text-amber-900;
+}
+
+.card-flip {
+  perspective: 1000px;
+}
+
+.card-inner {
+  @apply relative w-full h-full transition-transform duration-500;
+  transform-style: preserve-3d;
+}
+
+.card-flip.flipped .card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+  @apply absolute inset-0 backface-hidden rounded-2xl flex items-center justify-center p-6;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
