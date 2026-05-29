@@ -1,5 +1,7 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, CheckCircle2, Sparkles, Trophy, Wand2, XCircle } from 'lucide-react';
+import { academyQuests, normalizeAnswer } from '../data/academy';
 
 interface Word {
   id: number;
@@ -10,161 +12,259 @@ interface Word {
   participle?: string;
 }
 
-const QUEST_DATA: Record<number, { title: string; words: number[] }> = {
-  1: { title: 'Tier-Welt', words: [1, 2] },
-  2: { title: 'Zu Hause', words: [3] },
-  3: { title: 'Wilde Verben', words: [4, 5, 6] },
-  4: { title: 'Sehen & trinken', words: [7, 8] },
-  5: { title: 'Schlafen & schreiben', words: [9, 10] },
-};
+interface Challenge {
+  wordId: number;
+  eyebrow: string;
+  prompt: string;
+  helper: string;
+  expected: string;
+  acceptable: string[];
+}
+
+interface ResultState {
+  correct: boolean;
+  expected: string;
+}
 
 export default function Quest() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const questId = Number(id);
-  const quest = QUEST_DATA[questId];
+  const quest = academyQuests.find(item => item.id === questId);
 
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [showResult, setShowResult] = useState(false);
-  const [correct, setCorrect] = useState(0);
+  const [answer, setAnswer] = useState('');
+  const [result, setResult] = useState<ResultState | null>(null);
+  const [correctCount, setCorrectCount] = useState(0);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
     fetch('/api/words', { credentials: 'include' })
-      .then(r => r.json())
-      .then((all: Word[]) => {
-        const filtered = all.filter(w => quest?.words.includes(w.id));
-        setWords(filtered);
+      .then(response => response.json())
+      .then((allWords: Word[]) => {
+        const selectedIds = new Set(quest?.words ?? []);
+        setWords(allWords.filter(word => selectedIds.has(word.id)));
       });
-  }, [questId]);
+  }, [quest?.words]);
 
-  const current = words[currentIndex];
+  const challenges = useMemo<Challenge[]>(() => {
+    if (!quest) return [];
+    return words.flatMap(word => {
+      if (word.type === 'irregular' && (quest.kind === 'verb' || quest.kind === 'mixed')) {
+        return [
+          {
+            wordId: word.id,
+            eyebrow: 'Grundform',
+            prompt: `Wie heisst "${word.german}" auf Englisch?`,
+            helper: 'Schreibe die Grundform.',
+            expected: word.english,
+            acceptable: [word.english],
+          },
+          {
+            wordId: word.id,
+            eyebrow: 'Past Simple',
+            prompt: `${word.english} - ? - ${word.participle ?? ''}`,
+            helper: 'Welche zweite Form fehlt?',
+            expected: word.past ?? '',
+            acceptable: [word.past ?? ''],
+          },
+          {
+            wordId: word.id,
+            eyebrow: 'Past Participle',
+            prompt: `${word.english} - ${word.past ?? ''} - ?`,
+            helper: 'Welche dritte Form fehlt?',
+            expected: word.participle ?? '',
+            acceptable: [word.participle ?? ''],
+          },
+        ];
+      }
 
-  const report = async (isCorrect: boolean) => {
-    if (!current) return;
+      return [
+        {
+          wordId: word.id,
+          eyebrow: 'Vokabel',
+          prompt: `Wie heisst "${word.german}" auf Englisch?`,
+          helper: 'Schreibe das englische Wort.',
+          expected: word.english,
+          acceptable: [word.english],
+        },
+      ];
+    });
+  }, [quest, words]);
+
+  const current = challenges[currentIndex];
+  const percent = challenges.length > 0 ? Math.round((currentIndex / challenges.length) * 100) : 0;
+
+  const report = async (wordId: number, isCorrect: boolean) => {
     await fetch('/api/progress', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ wordId: current.id, correct: isCorrect }),
+      body: JSON.stringify({ wordId, correct: isCorrect }),
     });
   };
 
-  const handleCorrect = async () => {
-    setCorrect(c => c + 1);
-    setCoinsEarned(c => c + 1);
-    await report(true);
-    nextCard();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!current || result) return;
+
+    const normalized = normalizeAnswer(answer);
+    const acceptable = current.acceptable.map(normalizeAnswer).filter(Boolean);
+    const isCorrect = acceptable.includes(normalized);
+    setResult({ correct: isCorrect, expected: current.expected });
+
+    if (isCorrect) {
+      setCorrectCount(value => value + 1);
+      setCoinsEarned(value => value + 1);
+    }
+
+    await report(current.wordId, isCorrect);
   };
 
-  const handleWrong = async () => {
-    await report(false);
-    nextCard();
-  };
-
-  const nextCard = () => {
-    setFlipped(false);
-    setShowResult(false);
-    if (currentIndex + 1 >= words.length) {
+  const next = () => {
+    setAnswer('');
+    setResult(null);
+    if (currentIndex + 1 >= challenges.length) {
       setFinished(true);
     } else {
-      setCurrentIndex(i => i + 1);
+      setCurrentIndex(value => value + 1);
     }
   };
 
-  if (!quest) return <div className="p-8 text-center">Quest nicht gefunden</div>;
-  if (words.length === 0) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" /></div>;
+  if (!quest) return <div className="p-8 text-center text-amber-50">Quest nicht gefunden</div>;
 
-  if (finished) {
-    const percent = Math.round((correct / words.length) * 100);
+  if (challenges.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-xl p-8 text-center max-w-sm w-full">
-          <div className="text-6xl mb-4">{percent >= 80 ? '🏆' : percent >= 50 ? '⭐' : '💪'}</div>
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Quest geschafft!</h2>
-          <p className="text-slate-500 mb-4">{correct} von {words.length} richtig</p>
-          <div className="bg-amber-50 rounded-xl p-3 mb-6">
-            <p className="text-amber-700 font-bold">+{coinsEarned} Münzen gesammelt! 🪙</p>
-          </div>
-          <button onClick={() => navigate('/')} className="w-full py-3 bg-indigo-500 text-white font-bold rounded-xl hover:bg-indigo-400">
-            Zurück zur Karte 🗺️
-          </button>
-        </div>
-      </div>
+      <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="animate-spin rounded-full border-4 border-amber-200 border-t-transparent p-5" />
+      </main>
     );
   }
 
-  if (!current) return null;
+  if (finished) {
+    const finalPercent = Math.round((correctCount / challenges.length) * 100);
+    return (
+      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl items-center px-4 py-6">
+        <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
+          <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="ink-panel flex min-h-[320px] flex-col items-center justify-center p-8 text-center text-amber-50">
+              <Trophy className="h-20 w-20 text-amber-200" />
+              <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Quest abgeschlossen</div>
+              <h1 className="mt-2 text-4xl font-black">{quest.title}</h1>
+            </div>
+            <div className="p-7 sm:p-9">
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-emerald-900/60">Auswertung</div>
+              <h2 className="mt-2 text-3xl font-black text-emerald-950">
+                {finalPercent >= 80 ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Uebungssaal.'}
+              </h2>
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-white/60 p-4">
+                  <div className="text-3xl font-black text-emerald-950">{correctCount}</div>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Richtig</div>
+                </div>
+                <div className="rounded-2xl bg-white/60 p-4">
+                  <div className="text-3xl font-black text-emerald-950">{challenges.length}</div>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
+                </div>
+                <div className="rounded-2xl bg-white/60 p-4">
+                  <div className="text-3xl font-black text-emerald-950">{coinsEarned}</div>
+                  <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Funken</div>
+                </div>
+              </div>
+              <div className="mt-6 rounded-2xl border border-amber-900/10 bg-amber-100/70 p-4 text-sm font-bold leading-6 text-emerald-950">
+                Freigeschaltet: {quest.reward}. Spaeter kann daraus eine echte Eltern-Belohnung werden.
+              </div>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button onClick={() => navigate('/')} className="magic-button flex-1">Zur Karte</button>
+                <button onClick={() => window.location.reload()} className="gold-button flex-1">Nochmal spielen</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col p-4 max-w-lg mx-auto">
-      {/* Fortschritt */}
-      <div className="flex items-center gap-2 mb-4">
-        <button onClick={() => navigate('/')} className="text-slate-400 hover:text-slate-600">←</button>
-        <span className="font-bold text-slate-700">{quest.title}</span>
-        <div className="flex-1 flex gap-1">
-          {words.map((_, i) => (
-            <div key={i} className={`h-2 flex-1 rounded-full ${i < currentIndex ? 'bg-emerald-400' : i === currentIndex ? 'bg-indigo-500' : 'bg-slate-200'}`} />
-          ))}
+    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl gap-5 px-4 py-5 lg:grid-cols-[330px_1fr]">
+      <aside className="ink-panel rounded-[28px] border border-amber-100/20 p-5 text-amber-50">
+        <button onClick={() => navigate('/')} className="mb-5 inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-black text-amber-100/80 transition hover:bg-white/10">
+          <ArrowLeft className="h-4 w-4" />
+          Karte
+        </button>
+        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-200 text-emerald-950">
+          <Wand2 className="h-10 w-10" />
         </div>
-        <span className="text-sm text-slate-400">{currentIndex + 1}/{words.length}</span>
-      </div>
-
-      {/* Karteikarte */}
-      <div className="flex-1 flex items-center justify-center">
-        <div className={`w-full max-w-sm aspect-[3/4] card-flip ${flipped ? 'flipped' : ''}`} onClick={() => !showResult && setFlipped(!flipped)}>
-          <div className="card-inner">
-            {/* Vorderseite: Deutsch */}
-            <div className="card-front bg-white shadow-xl border-2 border-indigo-100">
-              <div className="text-center">
-                <div className="text-sm text-slate-400 mb-2 uppercase tracking-wider">Deutsch</div>
-                <h3 className="text-3xl font-extrabold text-slate-800">{current.german}</h3>
-                {current.type === 'irregular' && (
-                  <div className="mt-4 text-sm text-slate-500">
-                    <p>Unregelmäßiges Verb</p>
-                  </div>
-                )}
-                <p className="mt-8 text-slate-400 text-sm">Tippe zum Umdrehen 👆</p>
-              </div>
-            </div>
-
-            {/* Rückseite: Englisch */}
-            <div className="card-back bg-indigo-500 shadow-xl">
-              <div className="text-center text-white">
-                <div className="text-sm text-indigo-200 mb-2 uppercase tracking-wider">English</div>
-                <h3 className="text-3xl font-extrabold">{current.english}</h3>
-                {current.type === 'irregular' && (
-                  <div className="mt-4 space-y-1 text-indigo-100">
-                    <p>go – <strong>{current.past}</strong> – {current.participle}</p>
-                  </div>
-                )}
-              </div>
-            </div>
+        <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">{quest.chapter}</div>
+        <h1 className="mt-2 text-3xl font-black leading-tight">{quest.title}</h1>
+        <p className="mt-3 text-sm font-semibold leading-6 text-amber-50/75">{quest.subtitle}</p>
+        <div className="mt-7">
+          <div className="mb-2 flex justify-between text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">
+            <span>Runde</span>
+            <span>{currentIndex + 1}/{challenges.length}</span>
+          </div>
+          <div className="h-3 overflow-hidden rounded-full bg-white/12">
+            <div className="h-full rounded-full bg-amber-200" style={{ width: `${percent}%` }} />
           </div>
         </div>
-      </div>
+      </aside>
 
-      {/* Buttons */}
-      {flipped && !showResult && (
-        <div className="mt-4 space-y-3">
-          <p className="text-center text-sm text-slate-500">Kanntest du das Wort?</p>
-          <div className="flex gap-3">
-            <button onClick={handleWrong} className="flex-1 py-4 bg-red-100 text-red-600 font-bold rounded-xl hover:bg-red-200 active:scale-95 transition text-lg">
-              ❌ Noch lernen
-            </button>
-            <button onClick={handleCorrect} className="flex-1 py-4 bg-emerald-100 text-emerald-600 font-bold rounded-xl hover:bg-emerald-200 active:scale-95 transition text-lg">
-              ✅ Gewusst!
-            </button>
+      <section className="parchment flex min-h-[520px] flex-col justify-between rounded-[32px] border border-amber-100/70 p-6 sm:p-8">
+        <div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="rounded-full bg-emerald-900 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
+              {current.eyebrow}
+            </div>
+            <div className="flex items-center gap-1 text-amber-600">
+              <Sparkles className="h-4 w-4" />
+              <span className="text-sm font-black">{correctCount}</span>
+            </div>
+          </div>
+
+          <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
+            <div className="text-sm font-black uppercase tracking-[0.18em] text-emerald-900/60">Aufgabe</div>
+            <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-emerald-950 sm:text-5xl">
+              {current.prompt}
+            </h2>
+            <p className="mt-5 text-sm font-bold text-stone-500">{current.helper}</p>
           </div>
         </div>
-      )}
 
-      {!flipped && (
-        <p className="text-center text-slate-400 text-sm mt-4">Karte antippen zum Umdrehen</p>
-      )}
-    </div>
+        <form onSubmit={handleSubmit} className="mt-7">
+          <input
+            value={answer}
+            onChange={event => setAnswer(event.target.value)}
+            disabled={Boolean(result)}
+            autoFocus
+            className="w-full rounded-2xl border border-amber-900/15 bg-white/80 px-5 py-5 text-center text-2xl font-black text-emerald-950 outline-none ring-emerald-800/25 transition placeholder:text-stone-300 focus:ring-4 disabled:opacity-70"
+            placeholder="Antwort eintippen"
+          />
+
+          {result && (
+            <div className={`mt-4 flex items-start gap-3 rounded-2xl p-4 text-sm font-bold ${result.correct ? 'bg-emerald-100 text-emerald-900' : 'bg-red-100 text-red-800'}`}>
+              {result.correct ? <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /> : <XCircle className="mt-0.5 h-5 w-5 shrink-0" />}
+              <div>
+                <div>{result.correct ? 'Richtig.' : 'Fast. Die gesuchte Antwort war:'}</div>
+                {!result.correct && <div className="mt-1 text-lg font-black">{result.expected}</div>}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-5 flex gap-3">
+            {!result ? (
+              <button type="submit" disabled={!answer.trim()} className="magic-button w-full">
+                Antwort pruefen
+              </button>
+            ) : (
+              <button type="button" onClick={next} className="gold-button w-full">
+                Weiter
+              </button>
+            )}
+          </div>
+        </form>
+      </section>
+    </main>
   );
 }

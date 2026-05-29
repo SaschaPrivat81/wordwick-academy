@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { LogOut, Shield, Sparkles, UserRound } from 'lucide-react';
 import Login from './pages/Login';
 import WorldMap from './pages/WorldMap';
 import Quest from './pages/Quest';
@@ -69,27 +70,41 @@ function App() {
     navigate('/login');
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full" /></div>;
+  if (loading) return <div className="min-h-screen academy-shell flex items-center justify-center"><div className="animate-spin w-10 h-10 border-4 border-amber-200 border-t-transparent rounded-full" /></div>;
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout }}>
-      <div className="min-h-screen bg-gradient-to-b from-sky-100 to-emerald-50">
+      <div className="min-h-screen academy-shell text-stone-950">
         {user && (
-          <header className="flex items-center justify-between px-4 py-2 bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
+          <header className="sticky top-0 z-50 border-b border-amber-100/20 bg-[#10251f]/90 px-4 py-3 text-amber-50 shadow-lg shadow-emerald-950/20 backdrop-blur-md">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-emerald-800 rounded-lg flex items-center justify-center text-amber-100 font-bold text-sm">WA</div>
-              <span className="font-bold text-slate-700">{user.name}</span>
+              <Link to="/" className="flex items-center gap-2">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200/50 bg-emerald-950 text-sm font-black text-amber-100 shadow-inner">WA</div>
+                <div className="leading-tight">
+                  <div className="text-sm font-black">Wordwick</div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-amber-200/70">Academy</div>
+                </div>
+              </Link>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 text-amber-500">
-                <span className="text-lg">🪙</span>
-                <span className="font-bold">{user.coins}</span>
+            <div className="flex items-center gap-2">
+              <div className="hidden items-center gap-1 rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:flex">
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>{user.coins}</span>
               </div>
-              <div className="flex items-center gap-1 text-orange-500">
-                <span className="text-lg">🔥</span>
-                <span className="font-bold">{user.streak}</span>
+              <div className="hidden rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:block">
+                {user.streak} Tage
               </div>
-              <button onClick={logout} className="text-xs text-slate-400 hover:text-slate-600">Logout</button>
+              <Link to="/profile" className="icon-button" aria-label="Profil">
+                <UserRound className="h-4 w-4" />
+              </Link>
+              {(user.role === 'parent' || user.role === 'admin') && (
+                <Link to="/admin" className="icon-button" aria-label="Akademieleitung">
+                  <Shield className="h-4 w-4" />
+                </Link>
+              )}
+              <button onClick={logout} className="icon-button" aria-label="Logout">
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           </header>
         )}
@@ -98,7 +113,7 @@ function App() {
           <Route path="/" element={user ? <WorldMap /> : <Navigate to="/login" />} />
           <Route path="/quest/:id" element={user ? <Quest /> : <Navigate to="/login" />} />
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
-          <Route path="/admin" element={user ? <Admin /> : <Navigate to="/login" />} />
+          <Route path="/admin" element={user && (user.role === 'parent' || user.role === 'admin') ? <Admin /> : <Navigate to="/" />} />
         </Routes>
       </div>
     </AuthContext.Provider>
