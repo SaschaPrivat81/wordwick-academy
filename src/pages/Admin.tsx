@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Database, FileText, LineChart, LockKeyhole, PlusCircle, Save, Trash2, Wand2 } from 'lucide-react';
+import { BookOpen, Database, FileText, LineChart, LockKeyhole, PlusCircle, Save, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
 
 interface AdminWord {
   id: number;
@@ -24,6 +24,37 @@ interface AdminQuest {
   wordItems: AdminWord[];
 }
 
+type UserRole = 'child' | 'parent' | 'admin';
+
+interface AdminUser {
+  id: number;
+  name: string;
+  pin: string;
+  role: UserRole;
+  coins: number;
+  streak: number;
+  lastPlayed?: string;
+  avatar?: string;
+  createdAt: string;
+  progressCount: number;
+  masteredCount: number;
+}
+
+interface UserForm {
+  name: string;
+  pin: string;
+  role: UserRole;
+}
+
+interface UserDraft {
+  name: string;
+  pin: string;
+  role: UserRole;
+  coins: string;
+  streak: string;
+  avatar: string;
+}
+
 interface WordForm {
   german: string;
   english: string;
@@ -42,8 +73,26 @@ const emptyWordForm: WordForm = {
   participle: '',
 };
 
+const emptyUserForm: UserForm = {
+  name: '',
+  pin: '',
+  role: 'child',
+};
+
 const inputClass = 'w-full rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 text-sm font-bold outline-none ring-blue-800/25 focus:ring-4';
 const labelClass = 'mb-1 block text-[10px] font-black uppercase tracking-[0.16em] text-blue-950/55';
+
+const roleOptions: [UserRole, string][] = [
+  ['child', 'Kind'],
+  ['parent', 'Elternteil'],
+  ['admin', 'Admin'],
+];
+
+const roleLabels: Record<UserRole, string> = {
+  child: 'Kind',
+  parent: 'Elternteil',
+  admin: 'Admin',
+};
 
 const gameTypes = [
   ['spark-catcher', 'Wortfunken fangen'],
@@ -59,6 +108,10 @@ export default function Admin() {
   const [stats, setStats] = useState<any>(null);
   const [content, setContent] = useState<{ quests: AdminQuest[]; words: AdminWord[] } | null>(null);
   const [contentError, setContentError] = useState('');
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [userForm, setUserForm] = useState<UserForm>(emptyUserForm);
+  const [userDrafts, setUserDrafts] = useState<Record<number, UserDraft>>({});
+  const [userResult, setUserResult] = useState('');
   const [wordForm, setWordForm] = useState<WordForm>(emptyWordForm);
   const [wordResult, setWordResult] = useState('');
   const [questDrafts, setQuestDrafts] = useState<Record<number, Partial<AdminQuest>>>({});
@@ -84,11 +137,77 @@ export default function Admin() {
     setContentError('');
   };
 
+  const loadUsers = async () => {
+    const response = await fetch('/api/admin/users', { credentials: 'include' });
+    if (!response.ok) {
+      setContentError('Der Admin-Bereich ist für Eltern/Admins vorgesehen.');
+      return;
+    }
+    const data = await response.json();
+    setUsers(data);
+    setUserDrafts(Object.fromEntries(data.map((user: AdminUser) => [user.id, {
+      name: user.name,
+      pin: user.pin,
+      role: user.role,
+      coins: String(user.coins),
+      streak: String(user.streak),
+      avatar: user.avatar ?? 'blocky',
+    }])));
+    setContentError('');
+  };
+
   useEffect(() => {
     loadContent();
+    loadUsers();
   }, []);
 
-  const updateWordForm = (field: keyof WordForm, value: string) => {
+  const updateUserForm = <K extends keyof UserForm>(field: K, value: UserForm[K]) => {
+    setUserForm(current => ({ ...current, [field]: value }));
+  };
+
+  const createUser = async () => {
+    setUserResult('');
+    const response = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(userForm),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setUserResult(data.error ?? 'Nutzer konnte nicht angelegt werden.');
+      return;
+    }
+    setUserResult(`${data.name} wurde angelegt.`);
+    setUserForm(emptyUserForm);
+    await loadUsers();
+  };
+
+  const updateUserDraft = <K extends keyof UserDraft>(userId: number, field: K, value: UserDraft[K]) => {
+    setUserDrafts(current => ({
+      ...current,
+      [userId]: { ...current[userId], [field]: value },
+    }));
+  };
+
+  const saveUser = async (userId: number) => {
+    setUserResult('');
+    const response = await fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(userDrafts[userId]),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setUserResult(data.error ?? 'Nutzer konnte nicht gespeichert werden.');
+      return;
+    }
+    setUserResult(`${data.name} wurde gespeichert.`);
+    await loadUsers();
+  };
+
+  const updateWordForm = <K extends keyof WordForm>(field: K, value: WordForm[K]) => {
     setWordForm(current => ({ ...current, [field]: value }));
   };
 
@@ -161,6 +280,10 @@ export default function Admin() {
   };
 
   const loadStats = async () => {
+    if (!userId) {
+      setStats(null);
+      return;
+    }
     const res = await fetch(`/api/admin/stats/${userId}`, { credentials: 'include' });
     if (res.ok) setStats(await res.json());
   };
@@ -185,6 +308,122 @@ export default function Admin() {
           </div>
         </section>
       )}
+
+      <section className="parchment mb-5 rounded-[28px] border border-amber-100/70 p-5">
+        <div className="mb-4 flex items-center gap-3">
+          <Users className="h-6 w-6 text-blue-950" />
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Familienzugänge</div>
+            <h2 className="text-2xl font-black text-slate-950">Benutzer & Rollen</h2>
+          </div>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
+          <div className="grid gap-3 md:grid-cols-2">
+            {users.map(user => {
+              const draft = userDrafts[user.id] ?? {
+                name: user.name,
+                pin: user.pin,
+                role: user.role,
+                coins: String(user.coins),
+                streak: String(user.streak),
+                avatar: user.avatar ?? 'blocky',
+              };
+              return (
+                <div key={user.id} className="rounded-2xl border border-amber-900/10 bg-white/60 p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-black uppercase tracking-[0.16em] text-blue-950/50">ID {user.id}</div>
+                      <div className="text-lg font-black text-slate-950">{user.name}</div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-950">
+                      <ShieldCheck className="h-3 w-3" />
+                      {roleLabels[user.role]}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label>
+                      <span className={labelClass}>Name</span>
+                      <input className={inputClass} value={draft.name} onChange={event => updateUserDraft(user.id, 'name', event.target.value)} />
+                    </label>
+                    <label>
+                      <span className={labelClass}>PIN</span>
+                      <input
+                        className={inputClass}
+                        value={draft.pin}
+                        inputMode="numeric"
+                        maxLength={4}
+                        onChange={event => updateUserDraft(user.id, 'pin', event.target.value.replace(/\D/g, '').slice(0, 4))}
+                      />
+                    </label>
+                    <label>
+                      <span className={labelClass}>Rolle</span>
+                      <select className={inputClass} value={draft.role} onChange={event => updateUserDraft(user.id, 'role', event.target.value as UserRole)}>
+                        {roleOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </label>
+                    <label>
+                      <span className={labelClass}>Avatar</span>
+                      <input className={inputClass} value={draft.avatar} onChange={event => updateUserDraft(user.id, 'avatar', event.target.value)} />
+                    </label>
+                    <label>
+                      <span className={labelClass}>Münzen</span>
+                      <input className={inputClass} type="number" min={0} value={draft.coins} onChange={event => updateUserDraft(user.id, 'coins', event.target.value)} />
+                    </label>
+                    <label>
+                      <span className={labelClass}>Serie</span>
+                      <input className={inputClass} type="number" min={0} value={draft.streak} onChange={event => updateUserDraft(user.id, 'streak', event.target.value)} />
+                    </label>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-stone-600">
+                    <span>{user.progressCount} Wörter gesehen · {user.masteredCount} beherrscht</span>
+                    <button onClick={() => saveUser(user.id)} className="gold-button px-4 py-2">
+                      <Save className="h-4 w-4" />
+                      Speichern
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="rounded-2xl border border-amber-900/10 bg-white/60 p-4">
+            <div className="mb-4 flex items-center gap-3">
+              <UserPlus className="h-6 w-6 text-blue-950" />
+              <h3 className="text-xl font-black text-slate-950">Zugang anlegen</h3>
+            </div>
+            <div className="grid gap-3">
+              <label>
+                <span className={labelClass}>Name</span>
+                <input className={inputClass} value={userForm.name} onChange={event => updateUserForm('name', event.target.value)} />
+              </label>
+              <label>
+                <span className={labelClass}>4-stelliger Code</span>
+                <input
+                  className={inputClass}
+                  value={userForm.pin}
+                  inputMode="numeric"
+                  maxLength={4}
+                  onChange={event => updateUserForm('pin', event.target.value.replace(/\D/g, '').slice(0, 4))}
+                />
+              </label>
+              <label>
+                <span className={labelClass}>Rolle</span>
+                <select className={inputClass} value={userForm.role} onChange={event => updateUserForm('role', event.target.value as UserRole)}>
+                  {roleOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+              </label>
+            </div>
+            <button onClick={createUser} className="magic-button mt-3 w-full">
+              <UserPlus className="h-4 w-4" />
+              Zugang speichern
+            </button>
+            {userResult && <p className="mt-2 text-sm font-black text-blue-800">{userResult}</p>}
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-5 lg:grid-cols-[1fr_400px]">
         <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
@@ -305,7 +544,7 @@ export default function Admin() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <label>
                   <span className={labelClass}>Typ</span>
-                  <select className={inputClass} value={wordForm.type} onChange={event => updateWordForm('type', event.target.value)}>
+                  <select className={inputClass} value={wordForm.type} onChange={event => updateWordForm('type', event.target.value as WordForm['type'])}>
                     <option value="vocab">Vokabel</option>
                     <option value="irregular">Unregelmäßiges Verb</option>
                   </select>
@@ -373,13 +612,14 @@ gehen,go,irregular,verben,went,gone`}
               <h2 className="text-xl font-black text-slate-950">Fortschritt</h2>
             </div>
             <div className="flex gap-2">
-              <input
-                type="number"
+              <select
                 value={userId}
                 onChange={event => setUserId(event.target.value)}
-                placeholder="User-ID"
                 className="min-w-0 flex-1 rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 outline-none ring-blue-800/25 focus:ring-4"
-              />
+              >
+                <option value="">Nutzer wählen</option>
+                {users.map(user => <option key={user.id} value={user.id}>{user.name}</option>)}
+              </select>
               <button onClick={loadStats} className="magic-button px-4 py-2">Laden</button>
             </div>
             {stats && (

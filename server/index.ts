@@ -28,6 +28,10 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
   next();
 }
 
+const allowedRoles = new Set(['child', 'parent', 'admin']);
+const canManageAcademy = (role: string) => role === 'parent' || role === 'admin';
+const isValidPin = (pin: unknown) => typeof pin === 'string' && /^\d{4}$/.test(pin);
+
 // ─── Auth ───
 app.post('/api/login', (req, res) => {
   const { name, pin } = req.body;
@@ -211,6 +215,7 @@ app.post('/api/admin/words/import', requireAdmin, (req, res) => {
 app.get('/api/admin/stats/:userId', requireAdmin, (req, res) => {
   const userId = Number(req.params.userId);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
+  if (!user) return res.status(404).json({ error: 'Nutzer nicht gefunden' });
   const progress = db.prepare(`
     SELECT p.*, w.german, w.english
     FROM progress p
@@ -220,6 +225,88 @@ app.get('/api/admin/stats/:userId', requireAdmin, (req, res) => {
   `).all(userId) as any[];
   const weakWords = progress.filter(p => p.wrongCount > p.correctCount).slice(0, 10);
   res.json({ user, progressCount: progress.length, masteredCount: progress.filter(p => p.mastered).length, weakWords });
+});
+
+app.get('/api/admin/users', requireAdmin, (_req, res) => {
+  const users = db.prepare(`
+    SELECT
+      u.id,
+      u.name,
+      u.pin,
+      u.role,
+      u.coins,
+      u.streak,
+      u.lastPlayed,
+      u.avatar,
+      u.createdAt,
+      COUNT(p.id) as progressCount,
+      COALESCE(SUM(p.mastered), 0) as masteredCount
+    FROM users u
+    LEFT JOIN progress p ON p.userId = u.id
+    GROUP BY u.id
+    ORDER BY
+      CASE u.role WHEN 'admin' THEN 0 WHEN 'parent' THEN 1 ELSE 2 END,
+      lower(u.name)
+  `).all() as any[];
+  res.json(users);
+});
+
+app.post('/api/admin/users', requireAdmin, (req, res) => {
+  const name = req.body.name?.trim();
+  const pin = req.body.pin;
+  const role = allowedRoles.has(req.body.role) ? req.body.role : 'child';
+  if (!name || !isValidPin(pin)) {
+    return res.status(400).json({ error: 'Name und 4-stelliger Zahlencode sind Pflichtfelder' });
+  }
+
+  const exists = db.prepare('SELECT id FROM users WHERE lower(name) = lower(?)').get(name);
+  if (exists) return res.status(400).json({ error: 'Name bereits vergeben' });
+
+  const now = new Date().toISOString();
+  const result = db.prepare('INSERT INTO users (name, pin, role, createdAt) VALUES (?, ?, ?, ?)')
+    .run(name, pin, role, now);
+  const user = db.prepare('SELECT id, name, pin, role, coins, streak, lastPlayed, avatar, createdAt FROM users WHERE id = ?')
+    .get(Number(result.lastInsertRowid));
+  res.status(201).json(user);
+});
+
+app.patch('/api/admin/users/:id', requireAdmin, (req, res) => {
+  const userId = Number(req.params.id);
+  const existing = db.prepare('SELECT id, name, pin, role, coins, streak, avatar FROM users WHERE id = ?').get(userId) as any;
+  if (!existing) return res.status(404).json({ error: 'Nutzer nicht gefunden' });
+
+  const name = typeof req.body.name === 'string' ? req.body.name.trim() : existing.name;
+  const pin = req.body.pin === undefined || req.body.pin === '' ? existing.pin : req.body.pin;
+  const role = allowedRoles.has(req.body.role) ? req.body.role : existing.role;
+  const coins = req.body.coins === undefined ? existing.coins : Math.max(0, Number(req.body.coins));
+  const streak = req.body.streak === undefined ? existing.streak : Math.max(0, Number(req.body.streak));
+  const avatar = typeof req.body.avatar === 'string' && req.body.avatar.trim() ? req.body.avatar.trim() : existing.avatar;
+
+  if (!name || !isValidPin(pin) || Number.isNaN(coins) || Number.isNaN(streak)) {
+    return res.status(400).json({ error: 'Bitte Name, PIN, Münzen und Serie prüfen' });
+  }
+
+  const duplicate = db.prepare('SELECT id FROM users WHERE lower(name) = lower(?) AND id != ?').get(name, userId);
+  if (duplicate) return res.status(400).json({ error: 'Name bereits vergeben' });
+
+  if (canManageAcademy(existing.role) && !canManageAcademy(role)) {
+    const academyManagers = db.prepare("SELECT COUNT(*) as c FROM users WHERE role IN ('parent', 'admin') AND id != ?")
+      .get(userId) as { c: number };
+    if (academyManagers.c === 0) {
+      return res.status(400).json({ error: 'Mindestens ein Eltern/Admin-Zugang muss erhalten bleiben' });
+    }
+  }
+
+  db.prepare('UPDATE users SET name = ?, pin = ?, role = ?, coins = ?, streak = ?, avatar = ? WHERE id = ?')
+    .run(name, pin, role, Math.floor(coins), Math.floor(streak), avatar, userId);
+
+  if (req.session.userId === userId) {
+    req.session.role = role;
+  }
+
+  const user = db.prepare('SELECT id, name, pin, role, coins, streak, lastPlayed, avatar, createdAt FROM users WHERE id = ?')
+    .get(userId);
+  res.json(user);
 });
 
 app.post('/api/admin/words', requireAdmin, (req, res) => {
