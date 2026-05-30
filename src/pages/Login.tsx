@@ -22,59 +22,26 @@ export default function Login() {
 
   return (
     <main className="relative min-h-screen overflow-hidden px-4 py-6 text-amber-50">
-      <div className="absolute inset-0 opacity-60">
-        <svg viewBox="0 0 900 900" className="h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-          <defs>
-            <linearGradient id="towerGlow" x1="0" x2="1">
-              <stop offset="0" stopColor="#172554" />
-              <stop offset="1" stopColor="#312e81" />
-            </linearGradient>
-            <radialGradient id="moonHalo" cx="50%" cy="50%" r="50%">
-              <stop offset="0" stopColor="#eff6ff" />
-              <stop offset="1" stopColor="#bfdbfe" stopOpacity="0" />
-            </radialGradient>
-          </defs>
-          <rect width="900" height="900" fill="#07111f" />
-          <circle cx="708" cy="138" r="118" fill="url(#moonHalo)" opacity="0.72" />
-          <circle cx="708" cy="138" r="58" fill="#dbeafe" opacity="0.88" />
-          <g fill="#f8e7b0" opacity="0.86">
-            <circle cx="132" cy="118" r="3" />
-            <circle cx="218" cy="204" r="2.5" />
-            <circle cx="556" cy="82" r="3" />
-            <circle cx="782" cy="290" r="2.5" />
-            <path d="M318 112 l5 10 10 5 -10 5 -5 10 -5 -10 -10 -5 10 -5z" />
-            <path d="M642 236 l4 8 8 4 -8 4 -4 8 -4 -8 -8 -4 8 -4z" />
-          </g>
-          <path d="M0 720 C150 642 248 724 378 660 C530 584 618 650 900 586 L900 900 L0 900 Z" fill="#0f172a" />
-          <path d="M182 604 L244 346 L306 604 Z" fill="url(#towerGlow)" />
-          <path d="M214 348 L244 278 L274 348 Z" fill="#e4b95f" />
-          <path d="M336 612 L414 246 L492 612 Z" fill="#1e3a8a" />
-          <path d="M376 248 L414 158 L452 248 Z" fill="#d9a441" />
-          <path d="M502 620 L568 392 L634 620 Z" fill="#1d4ed8" opacity="0.72" />
-          <path d="M536 392 L568 318 L600 392 Z" fill="#f0ce75" />
-          <rect x="244" y="506" width="340" height="166" rx="18" fill="#1e40af" />
-          <rect x="378" y="576" width="76" height="96" rx="38" fill="#020617" />
-          <g fill="#f8e7b0" opacity="0.72">
-            <rect x="392" y="328" width="44" height="62" rx="22" />
-            <rect x="224" y="430" width="38" height="52" rx="19" />
-            <rect x="548" y="454" width="38" height="52" rx="19" />
-            <rect x="300" y="552" width="40" height="44" rx="20" />
-            <rect x="492" y="552" width="40" height="44" rx="20" />
-          </g>
-        </svg>
-      </div>
+      <img
+        src="/assets/wordwick-login-v1.jpg"
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover"
+        aria-hidden="true"
+      />
+      <div className="absolute inset-0 bg-gradient-to-r from-slate-950/45 via-slate-950/18 to-slate-950/8" />
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-transparent" />
 
-      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-5xl items-center">
+      <section className="relative z-10 mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl items-center">
         <div className="grid w-full items-center gap-6 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="max-w-xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-100/25 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-amber-100 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5" />
               Aufnahmepruefung beginnt
             </div>
-            <h1 className="text-5xl font-black leading-none tracking-normal text-amber-50 sm:text-6xl">
+            <h1 className="text-5xl font-black leading-none tracking-normal text-amber-50 drop-shadow-2xl sm:text-6xl">
               Wordwick Academy
             </h1>
-            <p className="mt-5 max-w-lg text-lg font-semibold leading-8 text-amber-100/80">
+            <p className="mt-5 max-w-lg text-lg font-semibold leading-8 text-amber-100 drop-shadow">
               Eine magische Lernschule fuer englische Woerter, wilde Verben und kleine Siege nach jeder bestandenen Quest.
             </p>
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
