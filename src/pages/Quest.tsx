@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Sparkles, Trophy, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Sparkles, XCircle } from 'lucide-react';
 import { AcademyQuest, academyQuests as fallbackQuests, normalizeAnswer } from '../data/academy';
 
 interface Word {
@@ -106,6 +106,7 @@ export default function Quest() {
 
   const current = challenges[currentIndex];
   const percent = challenges.length > 0 ? Math.round((currentIndex / challenges.length) * 100) : 0;
+  const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
 
   const report = async (wordId: number, isCorrect: boolean) => {
     await fetch('/api/progress', {
@@ -160,7 +161,11 @@ export default function Quest() {
         <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
           <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="ink-panel flex min-h-[320px] flex-col items-center justify-center p-8 text-center text-amber-50">
-              <Trophy className="h-20 w-20 text-amber-200" />
+              <img
+                src="/assets/pip-cheer.webp"
+                alt="Pip jubelt"
+                className="h-40 w-40 object-contain drop-shadow-2xl"
+              />
               <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Quest abgeschlossen</div>
               <h1 className="mt-2 text-4xl font-black">{quest.title}</h1>
             </div>
@@ -206,7 +211,7 @@ export default function Quest() {
         </button>
         <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10">
           <img
-            src="/assets/pip-paper-dragon-v1.png"
+            src={pipMissionImage}
             alt="Pip"
             className="h-28 w-28 object-contain drop-shadow-2xl"
           />

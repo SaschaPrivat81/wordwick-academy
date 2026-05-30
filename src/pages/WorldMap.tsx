@@ -136,7 +136,7 @@ export default function WorldMap() {
           <div className="flex items-start gap-4">
             <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-amber-100/10">
               <img
-                src="/assets/pip-paper-dragon-v1.png"
+                src="/assets/pip-neutral.webp"
                 alt="Pip, der Papierdrache"
                 className="h-28 w-28 object-contain drop-shadow-2xl"
               />

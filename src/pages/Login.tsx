@@ -62,7 +62,7 @@ export default function Login() {
             <div className="mb-6 flex items-center gap-4">
               <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-blue-950/90 shadow-lg">
                 <img
-                  src="/assets/pip-paper-dragon-v1.png"
+                  src="/assets/pip-guide.webp"
                   alt="Pip"
                   className="h-24 w-24 object-contain drop-shadow-xl"
                 />
