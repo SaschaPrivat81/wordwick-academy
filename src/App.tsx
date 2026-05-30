@@ -76,7 +76,7 @@ function App() {
     <AuthContext.Provider value={{ user, login, register, logout }}>
       <div className="min-h-screen academy-shell text-stone-950">
         {user && (
-          <header className="sticky top-0 z-50 border-b border-amber-100/20 bg-[#10251f]/90 px-4 py-3 text-amber-50 shadow-lg shadow-slate-950/20 backdrop-blur-md">
+          <header className="sticky top-0 z-50 border-b border-blue-100/20 bg-blue-950/95 px-4 py-3 text-amber-50 shadow-lg shadow-slate-950/20 backdrop-blur-md">
             <div className="flex items-center gap-2">
               <Link to="/" className="flex items-center gap-2">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200/50 bg-slate-950 text-sm font-black text-amber-100 shadow-inner">WA</div>
