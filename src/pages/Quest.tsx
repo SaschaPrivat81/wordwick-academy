@@ -64,6 +64,8 @@ export default function Quest() {
   const [missionStarted, setMissionStarted] = useState(false);
   const [selectedGermanId, setSelectedGermanId] = useState<number | null>(null);
   const [matchedWordIds, setMatchedWordIds] = useState<number[]>([]);
+  const [verbIndex, setVerbIndex] = useState(0);
+  const [verbSlots, setVerbSlots] = useState<string[]>([]);
 
   useEffect(() => {
     setQuest(fallbackQuests.find(item => item.id === questId) ?? null);
@@ -78,6 +80,8 @@ export default function Quest() {
     setMissionStarted(false);
     setSelectedGermanId(null);
     setMatchedWordIds([]);
+    setVerbIndex(0);
+    setVerbSlots([]);
 
     Promise.all([
       fetch(`/api/quests/${questId}`, { credentials: 'include' }).then(response => response.ok ? response.json() : null),
@@ -137,6 +141,17 @@ export default function Quest() {
 
   const current = challenges[currentIndex];
   const isLibrarySorter = quest?.id === 2;
+  const isVerbAssembler = quest?.id === 3;
+  const verbWords = useMemo(
+    () => words.filter(word => word.type === 'irregular' && word.past && word.participle),
+    [words],
+  );
+  const currentVerb = verbWords[verbIndex];
+  const verbForms = currentVerb ? [currentVerb.english, currentVerb.past ?? '', currentVerb.participle ?? ''] : [];
+  const verbStoneOptions = useMemo(
+    () => [...verbForms].sort((a, b) => ((a.charCodeAt(0) + a.length * 3) % 11) - ((b.charCodeAt(0) + b.length * 3) % 11)),
+    [verbForms],
+  );
   const libraryWords = useMemo(() => {
     if (!isLibrarySorter) return [];
     const combined = [...words, ...allWords.filter(word => word.type === 'vocab')];
@@ -148,8 +163,10 @@ export default function Quest() {
     () => [...libraryWords].sort((a, b) => ((a.id * 7) % 11) - ((b.id * 7) % 11)),
     [libraryWords],
   );
-  const totalTasks = isLibrarySorter ? libraryWords.length : challenges.length;
-  const percent = isLibrarySorter
+  const totalTasks = isVerbAssembler ? verbWords.length : isLibrarySorter ? libraryWords.length : challenges.length;
+  const percent = isVerbAssembler
+    ? (totalTasks > 0 ? Math.round((verbIndex / totalTasks) * 100) : 0)
+    : isLibrarySorter
     ? (totalTasks > 0 ? Math.round((matchedWordIds.length / totalTasks) * 100) : 0)
     : (challenges.length > 0 ? Math.round((currentIndex / challenges.length) * 100) : 0);
   const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
@@ -238,6 +255,44 @@ export default function Quest() {
     }, 900);
   };
 
+  const chooseVerbStone = async (form: string) => {
+    if (!currentVerb || result || verbSlots.length >= 3) return;
+    const availableCount = verbForms.filter(item => item === form).length;
+    const usedCount = verbSlots.filter(item => item === form).length;
+    if (usedCount >= availableCount) return;
+
+    const nextSlots = [...verbSlots, form];
+    setVerbSlots(nextSlots);
+
+    if (nextSlots.length < 3) return;
+
+    const isCorrect = nextSlots.every((slot, index) => normalizeAnswer(slot) === normalizeAnswer(verbForms[index]));
+    setResult({ correct: isCorrect, expected: verbForms.join(' - ') });
+
+    if (isCorrect) {
+      setCorrectCount(value => value + 1);
+      setCoinsEarned(value => value + 1);
+      await report(currentVerb.id, true);
+    } else {
+      await report(currentVerb.id, false);
+    }
+  };
+
+  const clearVerbSlots = () => {
+    setVerbSlots([]);
+    setResult(null);
+  };
+
+  const nextVerb = () => {
+    setVerbSlots([]);
+    setResult(null);
+    if (verbIndex + 1 >= verbWords.length) {
+      setFinished(true);
+    } else {
+      setVerbIndex(value => value + 1);
+    }
+  };
+
   const next = () => {
     setAnswer('');
     setResult(null);
@@ -253,7 +308,7 @@ export default function Quest() {
   const story = getQuestStory(quest.id);
   const pipLine = result ? (result.correct ? story.correct : story.wrong) : story.missionIntro;
 
-  if (challenges.length === 0 || (isLibrarySorter && libraryWords.length === 0)) {
+  if (challenges.length === 0 || (isLibrarySorter && libraryWords.length === 0) || (isVerbAssembler && verbWords.length === 0)) {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
         <div className="animate-spin rounded-full border-4 border-amber-200 border-t-transparent p-5" />
@@ -396,7 +451,7 @@ export default function Quest() {
         <div className="mt-7">
           <div className="mb-2 flex justify-between text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">
             <span>Runde</span>
-            <span>{isLibrarySorter ? `${matchedWordIds.length}/${totalTasks}` : `${currentIndex + 1}/${challenges.length}`}</span>
+            <span>{isVerbAssembler ? `${verbIndex + 1}/${totalTasks}` : isLibrarySorter ? `${matchedWordIds.length}/${totalTasks}` : `${currentIndex + 1}/${challenges.length}`}</span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-white/12">
             <div className="h-full rounded-full bg-amber-200" style={{ width: `${percent}%` }} />
@@ -408,7 +463,7 @@ export default function Quest() {
         <div>
           <div className="flex items-center justify-between gap-3">
             <div className="rounded-full bg-blue-950 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
-              {isLibrarySorter ? 'Bücherregal sortieren' : current.eyebrow}
+              {isVerbAssembler ? 'Verbsteine ordnen' : isLibrarySorter ? 'Bücherregal sortieren' : current.eyebrow}
             </div>
             <div className="flex items-center gap-1 text-amber-600">
               <Sparkles className="h-4 w-4" />
@@ -418,19 +473,50 @@ export default function Quest() {
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
             <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
-              {isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : 'Aufgabe'}
+              {isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
             </div>
             <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-slate-950 sm:text-5xl">
-              {isLibrarySorter ? 'Welche Buchseiten gehören zusammen?' : current.prompt}
+              {isLibrarySorter ? 'Welche Buchseiten gehören zusammen?' : isVerbAssembler ? `Ordne die Formen von "${currentVerb?.german}"` : current.prompt}
             </h2>
             <p className="mt-5 text-sm font-bold text-stone-500">
-              {isLibrarySorter ? 'Wähle erst ein deutsches Wort und dann den passenden englischen Buchrücken.' : current.helper}
+              {isLibrarySorter ? 'Wähle erst ein deutsches Wort und dann den passenden englischen Buchrücken.' : isVerbAssembler ? 'Lege Grundform, Past Simple und Past Participle in die drei Kesselplätze.' : current.helper}
             </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-7">
-          {isLibrarySorter ? (
+          {isVerbAssembler ? (
+            <div className="space-y-5">
+              <div className="grid gap-3 sm:grid-cols-3">
+                {['Grundform', 'Past Simple', 'Past Participle'].map((label, index) => (
+                  <div key={label} className={`verb-slot ${verbSlots[index] ? 'verb-slot-filled' : ''}`}>
+                    <span className="text-[10px] font-black uppercase tracking-[0.16em] text-blue-950/55">{label}</span>
+                    <span className="mt-2 text-2xl font-black text-slate-950">{verbSlots[index] ?? '?'}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                {verbStoneOptions.map((form, optionIndex) => {
+                  const occurrenceIndex = verbStoneOptions.slice(0, optionIndex + 1).filter(item => item === form).length;
+                  const usedCount = verbSlots.filter(item => item === form).length;
+                  const used = usedCount >= occurrenceIndex;
+                  return (
+                    <button
+                      key={`${form}-${optionIndex}`}
+                      type="button"
+                      onClick={() => chooseVerbStone(form)}
+                      disabled={used || Boolean(result)}
+                      className={`verb-stone ${used ? 'verb-stone-used' : ''}`}
+                    >
+                      <span className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-200/80">Stone</span>
+                      <span className="mt-1 text-2xl font-black text-amber-50">{form}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : isLibrarySorter ? (
             <div className="grid gap-4 lg:grid-cols-2">
               <div className="rounded-[28px] border border-amber-900/10 bg-white/55 p-4">
                 <div className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-blue-950/55">Deutsche Buchseiten</div>
@@ -520,7 +606,23 @@ export default function Quest() {
           )}
 
           <div className="mt-5 flex gap-3">
-            {isLibrarySorter ? (
+            {isVerbAssembler ? (
+              result ? (
+                result.correct ? (
+                  <button type="button" onClick={nextVerb} className="gold-button w-full">
+                    Nächstes Verb
+                  </button>
+                ) : (
+                  <button type="button" onClick={clearVerbSlots} className="gold-button w-full">
+                    Steine neu legen
+                  </button>
+                )
+              ) : (
+                <div className="w-full rounded-2xl bg-white/45 px-4 py-3 text-center text-sm font-black text-blue-950/70">
+                  {verbSlots.length < 3 ? 'Wähle die Verbsteine in der richtigen Reihenfolge.' : 'Pip prüft den Kessel.'}
+                </div>
+              )
+            ) : isLibrarySorter ? (
               <div className="w-full rounded-2xl bg-white/45 px-4 py-3 text-center text-sm font-black text-blue-950/70">
                 {matchedWordIds.length >= totalTasks ? 'Alle Bücher sortiert.' : selectedGermanId ? 'Wähle jetzt den passenden englischen Buchrücken.' : 'Wähle eine deutsche Buchseite.'}
               </div>
