@@ -65,6 +65,18 @@ input {
   @apply pointer-events-none absolute left-1/2 top-[calc(100%+0.25rem)] min-w-max -translate-x-1/2 rounded-md border border-amber-900/35 bg-amber-100/90 px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-amber-950 shadow-md backdrop-blur-sm;
 }
 
+.map-ribbon-above {
+  @apply bottom-[calc(100%+0.25rem)] top-auto;
+}
+
+.map-ribbon-left {
+  @apply left-auto right-[calc(100%+0.35rem)] top-1/2 translate-x-0 -translate-y-1/2;
+}
+
+.map-ribbon-right {
+  @apply left-[calc(100%+0.35rem)] top-1/2 translate-x-0 -translate-y-1/2;
+}
+
 .card-flip {
   perspective: 1000px;
 }

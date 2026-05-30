@@ -25,6 +25,13 @@ const futureStops = [
   { id: 10, title: 'Mastery Grounds', x: 55, y: 83, Icon: GraduationCap },
 ];
 
+function ribbonClass(x: number, y: number) {
+  if (y >= 70) return 'map-ribbon map-ribbon-above hidden sm:block';
+  if (x <= 24) return 'map-ribbon map-ribbon-right hidden sm:block';
+  if (x >= 76) return 'map-ribbon map-ribbon-left hidden sm:block';
+  return 'map-ribbon hidden sm:block';
+}
+
 export default function WorldMap() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -57,8 +64,8 @@ export default function WorldMap() {
   const selectedPercent = Math.round((mastered / selectedQuest.words.length) * 100);
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-5 px-4 py-5 lg:grid-cols-[1fr_360px]">
-      <section className="relative aspect-[16/9] min-h-[420px] overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30">
+    <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-[1500px] flex-col gap-5 px-3 py-4 sm:px-5 sm:py-5">
+      <section className="relative aspect-[16/9] min-h-[500px] w-full overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30 lg:min-h-[640px] 2xl:min-h-[760px]">
         <img
           src="/assets/wordwick-map-v1.jpg"
           alt="Illustrated parchment map of Wordwick Academy"
@@ -91,7 +98,7 @@ export default function WorldMap() {
               <Icon className="h-6 w-6" />
               {questState === 'completed' && <Check className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-blue-950 p-1 text-amber-100" />}
               {questState === 'locked' && <LockKeyhole className="absolute h-7 w-7 text-stone-200" />}
-              <span className="map-ribbon hidden sm:block">{quest.title}</span>
+              <span className={ribbonClass(quest.x, quest.y)}>{quest.title}</span>
             </button>
           );
         })}
@@ -106,12 +113,12 @@ export default function WorldMap() {
             <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-stone-600 text-[11px] font-black text-stone-100 shadow-md">{stop.id}</span>
             <stop.Icon className="h-6 w-6" />
             <LockKeyhole className="absolute h-7 w-7 text-stone-200" />
-            <span className="map-ribbon hidden sm:block">{stop.title}</span>
+            <span className={ribbonClass(stop.x, stop.y)}>{stop.title}</span>
           </div>
         ))}
       </section>
 
-      <aside className="grid content-start gap-4">
+      <aside className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(380px,0.65fr)]">
         <section className="ink-panel rounded-[28px] border border-amber-100/20 p-5 text-amber-50">
           <div className="flex items-start gap-4">
             <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-200 text-slate-950 shadow-lg">
