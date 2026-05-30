@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Sparkles, XCircle } from 'lucide-react';
-import { AcademyQuest, academyQuests as fallbackQuests, normalizeAnswer } from '../data/academy';
+import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, normalizeAnswer } from '../data/academy';
 
 interface Word {
   id: number;
@@ -146,6 +146,9 @@ export default function Quest() {
 
   if (!quest) return <div className="p-8 text-center text-amber-50">Quest nicht gefunden</div>;
 
+  const story = getQuestStory(quest.id);
+  const pipLine = result ? (result.correct ? story.correct : story.wrong) : story.missionIntro;
+
   if (challenges.length === 0) {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
@@ -170,10 +173,11 @@ export default function Quest() {
               <h1 className="mt-2 text-4xl font-black">{quest.title}</h1>
             </div>
             <div className="p-7 sm:p-9">
-              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Auswertung</div>
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{story.arc}</div>
               <h2 className="mt-2 text-3xl font-black text-slate-950">
                 {finalPercent >= 80 ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Übungssaal.'}
               </h2>
+              <p className="mt-3 text-sm font-bold leading-6 text-stone-600">{story.completed}</p>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-white/60 p-4">
                   <div className="text-3xl font-black text-slate-950">{correctCount}</div>
@@ -189,7 +193,7 @@ export default function Quest() {
                 </div>
               </div>
               <div className="mt-6 rounded-2xl border border-amber-900/10 bg-amber-100/70 p-4 text-sm font-bold leading-6 text-slate-950">
-                Freigeschaltet: {quest.reward}. Später kann daraus eine echte Eltern-Belohnung werden.
+                Freigeschaltet: {quest.reward}. {story.rewardReveal}
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button onClick={() => navigate('/')} className="magic-button flex-1">Zur Karte</button>
@@ -219,8 +223,11 @@ export default function Quest() {
         <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Mission · {quest.chapter}</div>
         <h1 className="mt-2 text-3xl font-black leading-tight">{quest.title}</h1>
         <p className="mt-3 text-sm font-semibold leading-6 text-amber-50/75">
-          {quest.subtitle} Sammle Wortfunken, damit Pip den nächsten Pfad erschnüffeln kann.
+          {pipLine}
         </p>
+        <div className="mt-4 rounded-2xl border border-amber-100/15 bg-white/10 p-3 text-xs font-bold leading-5 text-amber-50/70">
+          {quest.subtitle}
+        </div>
         <div className="mt-7">
           <div className="mb-2 flex justify-between text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">
             <span>Runde</span>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Check, FlaskConical, GraduationCap, Home, LockKeyhole, PawPrint, Sparkles, Star, Trees, Waves } from 'lucide-react';
 import { useAuth } from '../App';
-import { AcademyQuest, academyQuests as fallbackQuests } from '../data/academy';
+import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory } from '../data/academy';
 
 interface ProgressRow {
   wordId: number;
@@ -72,6 +72,7 @@ export default function WorldMap() {
   const status = questStatus(selectedQuest);
   const mastered = questMasteredCount(selectedQuest);
   const selectedPercent = Math.round((mastered / selectedQuest.words.length) * 100);
+  const selectedStory = getQuestStory(selectedQuest.id);
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-[1500px] flex-col gap-5 px-3 py-4 sm:px-5 sm:py-5">
@@ -145,7 +146,7 @@ export default function WorldMap() {
               <div className="text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Begleiter</div>
               <h2 className="text-xl font-black">Pip, der Papierdrache</h2>
               <p className="mt-2 text-sm font-semibold leading-6 text-amber-50/75">
-                Willkommen, {user?.name}. Ich rieche Wortfunken! {selectedQuest.guide}
+                Willkommen, {user?.name}. Ich rieche Wortfunken! {selectedStory.mapTeaser}
               </p>
             </div>
           </div>
@@ -159,6 +160,11 @@ export default function WorldMap() {
               <p className="mt-2 text-sm font-semibold leading-6 text-stone-600">{selectedQuest.subtitle}</p>
             </div>
             <Star className="mt-1 h-7 w-7 text-amber-500" />
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-blue-950/10 bg-white/55 p-4">
+            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/55">{selectedStory.arc}</div>
+            <p className="mt-2 text-sm font-bold leading-6 text-slate-800">{selectedQuest.guide}</p>
           </div>
 
           <div className="mt-5">
