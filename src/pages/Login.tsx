@@ -16,7 +16,7 @@ export default function Login() {
       if (mode === 'login') await login(name, pin);
       else await register(name, pin);
     } catch {
-      setError(mode === 'login' ? 'Name oder PIN stimmt nicht.' : 'Registrierung nicht moeglich.');
+      setError(mode === 'login' ? 'Name oder PIN stimmt nicht.' : 'Registrierung nicht möglich.');
     }
   };
 
@@ -36,13 +36,13 @@ export default function Login() {
           <div className="max-w-xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-amber-100/25 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-amber-100 backdrop-blur">
               <Sparkles className="h-3.5 w-3.5" />
-              Aufnahmepruefung beginnt
+              Aufnahmeprüfung beginnt
             </div>
             <h1 className="text-5xl font-black leading-none tracking-normal text-amber-50 drop-shadow-2xl sm:text-6xl">
               Wordwick Academy
             </h1>
             <p className="mt-5 max-w-lg text-lg font-semibold leading-8 text-amber-100 drop-shadow">
-              Eine magische Lernschule fuer englische Woerter, wilde Verben und kleine Siege nach jeder bestandenen Quest.
+              Eine magische Lernschule für englische Wörter, wilde Verben und kleine Siege nach jeder bestandenen Quest.
             </p>
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
               {[
@@ -64,7 +64,7 @@ export default function Login() {
                 <Wand2 className="h-8 w-8" />
               </div>
               <div>
-                <h2 className="text-2xl font-black text-slate-950">{mode === 'login' ? 'Zurueck in die Halle' : 'Neue Schuelerkarte'}</h2>
+                <h2 className="text-2xl font-black text-slate-950">{mode === 'login' ? 'Zurück in die Halle' : 'Neue Schülerkarte'}</h2>
                 <p className="text-sm font-semibold text-stone-500">Name und vierstelliger Zaubercode</p>
               </div>
             </div>
@@ -105,7 +105,7 @@ export default function Login() {
 
             <button type="submit" className="magic-button mt-6 w-full">
               <BookOpen className="h-5 w-5" />
-              {mode === 'login' ? 'Akademie betreten' : 'Schueler anlegen'}
+              {mode === 'login' ? 'Akademie betreten' : 'Schüler anlegen'}
             </button>
 
             <button
@@ -113,7 +113,7 @@ export default function Login() {
               onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
               className="mt-4 w-full rounded-xl px-4 py-3 text-sm font-black text-blue-950 transition hover:bg-blue-950/10"
             >
-              {mode === 'login' ? 'Neue Schuelerkarte erstellen' : 'Ich habe schon eine Schuelerkarte'}
+              {mode === 'login' ? 'Neue Schülerkarte erstellen' : 'Ich habe schon eine Schülerkarte'}
             </button>
           </form>
         </div>

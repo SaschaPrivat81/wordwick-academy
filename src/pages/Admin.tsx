@@ -32,7 +32,7 @@ export default function Admin() {
   const loadContent = async () => {
     const response = await fetch('/api/admin/content', { credentials: 'include' });
     if (!response.ok) {
-      setContentError('Der Content-Bereich ist fuer Eltern/Admins vorgesehen.');
+      setContentError('Der Content-Bereich ist für Eltern/Admins vorgesehen.');
       return;
     }
     setContent(await response.json());
@@ -51,7 +51,7 @@ export default function Admin() {
       body: JSON.stringify({ csv }),
     });
     const data = await res.json();
-    setResult(`${data.imported ?? 0} Woerter importiert.`);
+    setResult(`${data.imported ?? 0} Wörter importiert.`);
     await loadContent();
   };
 
@@ -102,7 +102,7 @@ export default function Admin() {
                     <h3 className="mt-1 text-lg font-black text-slate-950">{quest.title}</h3>
                   </div>
                   <div className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black uppercase tracking-[0.12em] text-amber-900">
-                    {quest.wordItems.length} Woerter
+                    {quest.wordItems.length} Wörter
                   </div>
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -174,9 +174,9 @@ gehen,go,irregular,verben,went,gone`}
             {stats && (
               <div className="mt-4 space-y-2 text-sm font-semibold text-stone-700">
                 <p><strong>Name:</strong> {stats.user.name}</p>
-                <p><strong>Gelernte Woerter:</strong> {stats.progressCount}</p>
+                <p><strong>Gelernte Wörter:</strong> {stats.progressCount}</p>
                 <p><strong>Beherrscht:</strong> {stats.masteredCount}</p>
-                {stats.weakWords.length > 0 && <p><strong>Schwierige Woerter:</strong></p>}
+                {stats.weakWords.length > 0 && <p><strong>Schwierige Wörter:</strong></p>}
                 {stats.weakWords.map((word: any) => (
                   <p key={word.id}>{word.german} / {word.english} ({word.wrongCount}x falsch)</p>
                 ))}

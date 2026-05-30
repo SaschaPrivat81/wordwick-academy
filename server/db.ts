@@ -122,16 +122,16 @@ const questCount = db.prepare('SELECT COUNT(*) as c FROM quests').get() as { c: 
 if (questCount.c === 0) {
   const now = new Date().toISOString();
   const quests = [
-    [1, 'Wordwick Hall', 'Die ersten Zauberworte fuer Tiere', 'Haupthalle', 'vocab', 53, 53, 'paw', 'Bronzefeder', 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Woertern.'],
+    [1, 'Wordwick Hall', 'Die ersten Zauberworte für Tiere', 'Haupthalle', 'vocab', 53, 53, 'paw', 'Bronzefeder', 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Wörtern.'],
     [2, 'Moonlit Library', 'Worte aus Zimmern und Fluren', 'Bibliothek', 'vocab', 29, 78, 'home', 'Silbertinte', 'Zwischen alten Regalen lernt jedes Ding seinen englischen Namen.'],
-    [3, 'Wordbrew Workshop', 'go, went, gone und Freunde', 'Wortbrauerei', 'verb', 39, 41, 'spark', 'Sternenstempel', 'Unregelmaessige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.'],
-    [4, 'Sky Practice Yards', 'sehen, trinken und merken', 'Flugplatz', 'verb', 18, 66, 'water', 'Mondkristall', 'Auf dem Uebungsplatz zaehlt Tempo: sehen, erkennen, richtig antworten.'],
+    [3, 'Wordbrew Workshop', 'go, went, gone und Freunde', 'Wortbrauerei', 'verb', 39, 41, 'spark', 'Sternenstempel', 'Unregelmäßige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.'],
+    [4, 'Sky Practice Yards', 'sehen, trinken und merken', 'Flugplatz', 'verb', 18, 66, 'water', 'Mondkristall', 'Auf dem Übungsplatz zählt Tempo: sehen, erkennen, richtig antworten.'],
     [5, 'Stargazer Tower', 'ruhige Worte, starke Formen', 'Sternenturm', 'mixed', 58, 20, 'book', 'Goldenes Lesezeichen', 'Im Sternenturm sammelt sich alles, was du bisher gelernt hast.'],
     [6, 'Glasshouse Garden', 'Pflanzen, Farben und kleine Dinge', 'Glashaus', 'vocab', 26, 51, 'spark', 'Kristallsamen', 'Das Glashaus wartet auf neue Vokabeln aus deinem Eltern-Dashboard.'],
-    [7, 'Whispering Woods', 'Laute, Tiere und Waldwoerter', 'Fluesterwald', 'vocab', 78, 28, 'trees', 'Silberblatt', 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird spaeter gefuellt.'],
-    [8, 'Wyrm Cave', 'Mutprobe fuer starke Verben', 'Drachenhoehle', 'verb', 82, 52, 'spark', 'Drachenmarke', 'Die Hoehle wird ein Hauptlevel mit einer groesseren Pruefung.'],
-    [9, 'Moonwell Lake', 'Wiederholen und festigen', 'Mondsee', 'mixed', 77, 72, 'water', 'Mondperle', 'Am Mondsee werden schwierige Woerter spaeter gezielt wiederholt.'],
-    [10, 'Mastery Grounds', 'Finale des ersten Kapitels', 'Abschlussplatz', 'mixed', 55, 83, 'graduation', 'Meisterabzeichen', 'Hier kann spaeter eine echte Belohnung freigeschaltet werden.'],
+    [7, 'Whispering Woods', 'Laute, Tiere und Waldwörter', 'Flüsterwald', 'vocab', 78, 28, 'trees', 'Silberblatt', 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird später gefüllt.'],
+    [8, 'Wyrm Cave', 'Mutprobe für starke Verben', 'Drachenhöhle', 'verb', 82, 52, 'spark', 'Drachenmarke', 'Die Höhle wird ein Hauptlevel mit einer größeren Prüfung.'],
+    [9, 'Moonwell Lake', 'Wiederholen und festigen', 'Mondsee', 'mixed', 77, 72, 'water', 'Mondperle', 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.'],
+    [10, 'Mastery Grounds', 'Finale des ersten Kapitels', 'Abschlussplatz', 'mixed', 55, 83, 'graduation', 'Meisterabzeichen', 'Hier kann später eine echte Belohnung freigeschaltet werden.'],
   ];
   const insertQuest = db.prepare(`
     INSERT INTO quests (id, title, subtitle, chapter, kind, x, y, sigil, reward, guide, sortOrder, createdAt)
@@ -152,6 +152,25 @@ if (questCount.c === 0) {
   for (const [index, relation] of questWords.entries()) {
     insertQuestWord.run(relation[0], relation[1], index);
   }
+}
+
+const umlautQuestFixes = [
+  { id: 1, field: 'subtitle', oldValue: 'Die ersten Zauberworte fuer Tiere', newValue: 'Die ersten Zauberworte für Tiere' },
+  { id: 1, field: 'guide', oldValue: 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Woertern.', newValue: 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Wörtern.' },
+  { id: 3, field: 'guide', oldValue: 'Unregelmaessige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.', newValue: 'Unregelmäßige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.' },
+  { id: 4, field: 'guide', oldValue: 'Auf dem Uebungsplatz zaehlt Tempo: sehen, erkennen, richtig antworten.', newValue: 'Auf dem Übungsplatz zählt Tempo: sehen, erkennen, richtig antworten.' },
+  { id: 7, field: 'subtitle', oldValue: 'Laute, Tiere und Waldwoerter', newValue: 'Laute, Tiere und Waldwörter' },
+  { id: 7, field: 'chapter', oldValue: 'Fluesterwald', newValue: 'Flüsterwald' },
+  { id: 7, field: 'guide', oldValue: 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird spaeter gefuellt.', newValue: 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird später gefüllt.' },
+  { id: 8, field: 'subtitle', oldValue: 'Mutprobe fuer starke Verben', newValue: 'Mutprobe für starke Verben' },
+  { id: 8, field: 'chapter', oldValue: 'Drachenhoehle', newValue: 'Drachenhöhle' },
+  { id: 8, field: 'guide', oldValue: 'Die Hoehle wird ein Hauptlevel mit einer groesseren Pruefung.', newValue: 'Die Höhle wird ein Hauptlevel mit einer größeren Prüfung.' },
+  { id: 9, field: 'guide', oldValue: 'Am Mondsee werden schwierige Woerter spaeter gezielt wiederholt.', newValue: 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.' },
+  { id: 10, field: 'guide', oldValue: 'Hier kann spaeter eine echte Belohnung freigeschaltet werden.', newValue: 'Hier kann später eine echte Belohnung freigeschaltet werden.' },
+];
+
+for (const fix of umlautQuestFixes) {
+  db.prepare(`UPDATE quests SET ${fix.field} = ? WHERE id = ? AND ${fix.field} = ?`).run(fix.newValue, fix.id, fix.oldValue);
 }
 
 export { db };

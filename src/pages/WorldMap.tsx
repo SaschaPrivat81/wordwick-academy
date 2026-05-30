@@ -187,7 +187,7 @@ export default function WorldMap() {
             disabled={status === 'locked'}
             className="magic-button mt-5 w-full"
           >
-            {status === 'completed' ? 'Nochmal ueben' : status === 'locked' ? 'Noch verschlossen' : 'Quest starten'}
+            {status === 'completed' ? 'Nochmal üben' : status === 'locked' ? 'Noch verschlossen' : 'Quest starten'}
           </button>
         </section>
       </aside>

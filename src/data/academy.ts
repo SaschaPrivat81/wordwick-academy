@@ -18,7 +18,7 @@ export const academyQuests: AcademyQuest[] = [
   {
     id: 1,
     title: 'Wordwick Hall',
-    subtitle: 'Die ersten Zauberworte fuer Tiere',
+    subtitle: 'Die ersten Zauberworte für Tiere',
     chapter: 'Haupthalle',
     kind: 'vocab',
     x: 53,
@@ -26,7 +26,7 @@ export const academyQuests: AcademyQuest[] = [
     sigil: 'paw',
     words: [1, 2],
     reward: 'Bronzefeder',
-    guide: 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Woertern.',
+    guide: 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Wörtern.',
   },
   {
     id: 2,
@@ -52,7 +52,7 @@ export const academyQuests: AcademyQuest[] = [
     sigil: 'spark',
     words: [4, 5, 6],
     reward: 'Sternenstempel',
-    guide: 'Unregelmaessige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.',
+    guide: 'Unregelmäßige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.',
   },
   {
     id: 4,
@@ -65,7 +65,7 @@ export const academyQuests: AcademyQuest[] = [
     sigil: 'water',
     words: [7, 8],
     reward: 'Mondkristall',
-    guide: 'Auf dem Uebungsplatz zaehlt Tempo: sehen, erkennen, richtig antworten.',
+    guide: 'Auf dem Übungsplatz zählt Tempo: sehen, erkennen, richtig antworten.',
   },
   {
     id: 5,
@@ -96,28 +96,28 @@ export const academyQuests: AcademyQuest[] = [
   {
     id: 7,
     title: 'Whispering Woods',
-    subtitle: 'Laute, Tiere und Waldwoerter',
-    chapter: 'Fluesterwald',
+    subtitle: 'Laute, Tiere und Waldwörter',
+    chapter: 'Flüsterwald',
     kind: 'vocab',
     x: 78,
     y: 28,
     sigil: 'trees',
     words: [],
     reward: 'Silberblatt',
-    guide: 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird spaeter gefuellt.',
+    guide: 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird später gefüllt.',
   },
   {
     id: 8,
     title: 'Wyrm Cave',
-    subtitle: 'Mutprobe fuer starke Verben',
-    chapter: 'Drachenhoehle',
+    subtitle: 'Mutprobe für starke Verben',
+    chapter: 'Drachenhöhle',
     kind: 'verb',
     x: 82,
     y: 52,
     sigil: 'spark',
     words: [],
     reward: 'Drachenmarke',
-    guide: 'Die Hoehle wird ein Hauptlevel mit einer groesseren Pruefung.',
+    guide: 'Die Höhle wird ein Hauptlevel mit einer größeren Prüfung.',
   },
   {
     id: 9,
@@ -130,7 +130,7 @@ export const academyQuests: AcademyQuest[] = [
     sigil: 'water',
     words: [],
     reward: 'Mondperle',
-    guide: 'Am Mondsee werden schwierige Woerter spaeter gezielt wiederholt.',
+    guide: 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.',
   },
   {
     id: 10,
@@ -143,7 +143,7 @@ export const academyQuests: AcademyQuest[] = [
     sigil: 'graduation',
     words: [],
     reward: 'Meisterabzeichen',
-    guide: 'Hier kann spaeter eine echte Belohnung freigeschaltet werden.',
+    guide: 'Hier kann später eine echte Belohnung freigeschaltet werden.',
   },
 ];
 

@@ -167,7 +167,7 @@ export default function Quest() {
             <div className="p-7 sm:p-9">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Auswertung</div>
               <h2 className="mt-2 text-3xl font-black text-slate-950">
-                {finalPercent >= 80 ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Uebungssaal.'}
+                {finalPercent >= 80 ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Übungssaal.'}
               </h2>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-white/60 p-4">
@@ -184,7 +184,7 @@ export default function Quest() {
                 </div>
               </div>
               <div className="mt-6 rounded-2xl border border-amber-900/10 bg-amber-100/70 p-4 text-sm font-bold leading-6 text-slate-950">
-                Freigeschaltet: {quest.reward}. Spaeter kann daraus eine echte Eltern-Belohnung werden.
+                Freigeschaltet: {quest.reward}. Später kann daraus eine echte Eltern-Belohnung werden.
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button onClick={() => navigate('/')} className="magic-button flex-1">Zur Karte</button>
@@ -265,7 +265,7 @@ export default function Quest() {
           <div className="mt-5 flex gap-3">
             {!result ? (
               <button type="submit" disabled={!answer.trim()} className="magic-button w-full">
-                Antwort pruefen
+                Antwort prüfen
               </button>
             ) : (
               <button type="button" onClick={next} className="gold-button w-full">

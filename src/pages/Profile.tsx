@@ -36,7 +36,7 @@ export default function Profile() {
         <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-amber-200 text-slate-950">
           <UserRound className="h-12 w-12" />
         </div>
-        <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Schuelerkarte</div>
+        <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Schülerkarte</div>
         <h1 className="mt-2 text-3xl font-black">{user?.name}</h1>
         <div className="mt-6 grid grid-cols-2 gap-3">
           <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-4">
@@ -85,7 +85,7 @@ export default function Profile() {
                   disabled={(user?.coins ?? 0) < reward.cost}
                   className="magic-button px-4 py-2"
                 >
-                  Einloesen
+                  Einlösen
                 </button>
               )}
             </div>
