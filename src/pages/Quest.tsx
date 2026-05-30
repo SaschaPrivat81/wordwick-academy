@@ -62,6 +62,8 @@ export default function Quest() {
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [finished, setFinished] = useState(false);
   const [missionStarted, setMissionStarted] = useState(false);
+  const [selectedGermanId, setSelectedGermanId] = useState<number | null>(null);
+  const [matchedWordIds, setMatchedWordIds] = useState<number[]>([]);
 
   useEffect(() => {
     setQuest(fallbackQuests.find(item => item.id === questId) ?? null);
@@ -74,6 +76,8 @@ export default function Quest() {
     setCoinsEarned(0);
     setFinished(false);
     setMissionStarted(false);
+    setSelectedGermanId(null);
+    setMatchedWordIds([]);
 
     Promise.all([
       fetch(`/api/quests/${questId}`, { credentials: 'include' }).then(response => response.ok ? response.json() : null),
@@ -132,7 +136,22 @@ export default function Quest() {
   }, [quest, words]);
 
   const current = challenges[currentIndex];
-  const percent = challenges.length > 0 ? Math.round((currentIndex / challenges.length) * 100) : 0;
+  const isLibrarySorter = quest?.id === 2;
+  const libraryWords = useMemo(() => {
+    if (!isLibrarySorter) return [];
+    const combined = [...words, ...allWords.filter(word => word.type === 'vocab')];
+    const unique = new Map<number, Word>();
+    for (const word of combined) unique.set(word.id, word);
+    return Array.from(unique.values()).slice(0, 4);
+  }, [allWords, isLibrarySorter, words]);
+  const libraryEnglishCards = useMemo(
+    () => [...libraryWords].sort((a, b) => ((a.id * 7) % 11) - ((b.id * 7) % 11)),
+    [libraryWords],
+  );
+  const totalTasks = isLibrarySorter ? libraryWords.length : challenges.length;
+  const percent = isLibrarySorter
+    ? (totalTasks > 0 ? Math.round((matchedWordIds.length / totalTasks) * 100) : 0)
+    : (challenges.length > 0 ? Math.round((currentIndex / challenges.length) * 100) : 0);
   const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
   const isSparkCatcher = quest?.id === 1 && current?.eyebrow === 'Vokabel';
   const choiceOptions = useMemo(() => {
@@ -181,6 +200,44 @@ export default function Quest() {
     await checkAnswer(value);
   };
 
+  const chooseLibraryGerman = (wordId: number) => {
+    if (matchedWordIds.includes(wordId)) return;
+    setSelectedGermanId(wordId);
+    setResult(null);
+  };
+
+  const chooseLibraryEnglish = async (word: Word) => {
+    if (!selectedGermanId || result || matchedWordIds.includes(word.id)) return;
+
+    const selectedWord = libraryWords.find(item => item.id === selectedGermanId);
+    if (!selectedWord) return;
+
+    const isCorrect = selectedWord.id === word.id;
+    setResult({ correct: isCorrect, expected: selectedWord.english });
+
+    if (isCorrect) {
+      const nextMatched = [...matchedWordIds, word.id];
+      setMatchedWordIds(nextMatched);
+      setSelectedGermanId(null);
+      setCorrectCount(value => value + 1);
+      setCoinsEarned(value => value + 1);
+      await report(word.id, true);
+
+      if (nextMatched.length >= libraryWords.length) {
+        window.setTimeout(() => setFinished(true), 700);
+      } else {
+        window.setTimeout(() => setResult(null), 650);
+      }
+      return;
+    }
+
+    await report(selectedWord.id, false);
+    window.setTimeout(() => {
+      setResult(null);
+      setSelectedGermanId(null);
+    }, 900);
+  };
+
   const next = () => {
     setAnswer('');
     setResult(null);
@@ -196,7 +253,7 @@ export default function Quest() {
   const story = getQuestStory(quest.id);
   const pipLine = result ? (result.correct ? story.correct : story.wrong) : story.missionIntro;
 
-  if (challenges.length === 0) {
+  if (challenges.length === 0 || (isLibrarySorter && libraryWords.length === 0)) {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
         <div className="animate-spin rounded-full border-4 border-amber-200 border-t-transparent p-5" />
@@ -231,7 +288,7 @@ export default function Quest() {
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-white/60 p-4">
-                  <div className="text-2xl font-black text-slate-950">{challenges.length}</div>
+                  <div className="text-2xl font-black text-slate-950">{totalTasks}</div>
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
                 </div>
                 <div className="rounded-2xl bg-white/60 p-4">
@@ -266,7 +323,7 @@ export default function Quest() {
   }
 
   if (finished) {
-    const finalPercent = Math.round((correctCount / challenges.length) * 100);
+    const finalPercent = Math.round((correctCount / totalTasks) * 100);
     return (
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl items-center px-4 py-6">
         <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
@@ -292,7 +349,7 @@ export default function Quest() {
                   <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Richtig</div>
                 </div>
                 <div className="rounded-2xl bg-white/60 p-4">
-                  <div className="text-3xl font-black text-slate-950">{challenges.length}</div>
+                  <div className="text-3xl font-black text-slate-950">{totalTasks}</div>
                   <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
                 </div>
                 <div className="rounded-2xl bg-white/60 p-4">
@@ -339,7 +396,7 @@ export default function Quest() {
         <div className="mt-7">
           <div className="mb-2 flex justify-between text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">
             <span>Runde</span>
-            <span>{currentIndex + 1}/{challenges.length}</span>
+            <span>{isLibrarySorter ? `${matchedWordIds.length}/${totalTasks}` : `${currentIndex + 1}/${challenges.length}`}</span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-white/12">
             <div className="h-full rounded-full bg-amber-200" style={{ width: `${percent}%` }} />
@@ -351,7 +408,7 @@ export default function Quest() {
         <div>
           <div className="flex items-center justify-between gap-3">
             <div className="rounded-full bg-blue-950 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
-              {current.eyebrow}
+              {isLibrarySorter ? 'Bücherregal sortieren' : current.eyebrow}
             </div>
             <div className="flex items-center gap-1 text-amber-600">
               <Sparkles className="h-4 w-4" />
@@ -361,17 +418,64 @@ export default function Quest() {
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
             <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
-              {isSparkCatcher ? 'Wortfunken fangen' : 'Aufgabe'}
+              {isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : 'Aufgabe'}
             </div>
             <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-slate-950 sm:text-5xl">
-              {current.prompt}
+              {isLibrarySorter ? 'Welche Buchseiten gehören zusammen?' : current.prompt}
             </h2>
-            <p className="mt-5 text-sm font-bold text-stone-500">{current.helper}</p>
+            <p className="mt-5 text-sm font-bold text-stone-500">
+              {isLibrarySorter ? 'Wähle erst ein deutsches Wort und dann den passenden englischen Buchrücken.' : current.helper}
+            </p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-7">
-          {isSparkCatcher ? (
+          {isLibrarySorter ? (
+            <div className="grid gap-4 lg:grid-cols-2">
+              <div className="rounded-[28px] border border-amber-900/10 bg-white/55 p-4">
+                <div className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-blue-950/55">Deutsche Buchseiten</div>
+                <div className="grid gap-3">
+                  {libraryWords.map(word => {
+                    const isMatched = matchedWordIds.includes(word.id);
+                    const isSelected = selectedGermanId === word.id;
+                    return (
+                      <button
+                        key={word.id}
+                        type="button"
+                        onClick={() => chooseLibraryGerman(word.id)}
+                        disabled={isMatched}
+                        className={`library-card ${isSelected ? 'library-card-selected' : ''} ${isMatched ? 'library-card-matched' : ''}`}
+                      >
+                        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/45">Seite</span>
+                        <span className="text-xl font-black text-slate-950">{word.german}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-blue-950/10 bg-blue-950/5 p-4">
+                <div className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-blue-950/55">Englische Buchrücken</div>
+                <div className="grid gap-3">
+                  {libraryEnglishCards.map(word => {
+                    const isMatched = matchedWordIds.includes(word.id);
+                    return (
+                      <button
+                        key={word.id}
+                        type="button"
+                        onClick={() => chooseLibraryEnglish(word)}
+                        disabled={isMatched || !selectedGermanId || Boolean(result)}
+                        className={`library-card library-card-spine ${isMatched ? 'library-card-matched' : ''}`}
+                      >
+                        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-200/80">Book</span>
+                        <span className="text-xl font-black text-amber-50">{word.english}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : isSparkCatcher ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {choiceOptions.map((option, optionIndex) => {
                 const isSelected = normalizeAnswer(answer) === normalizeAnswer(option);
@@ -416,7 +520,11 @@ export default function Quest() {
           )}
 
           <div className="mt-5 flex gap-3">
-            {!result ? (
+            {isLibrarySorter ? (
+              <div className="w-full rounded-2xl bg-white/45 px-4 py-3 text-center text-sm font-black text-blue-950/70">
+                {matchedWordIds.length >= totalTasks ? 'Alle Bücher sortiert.' : selectedGermanId ? 'Wähle jetzt den passenden englischen Buchrücken.' : 'Wähle eine deutsche Buchseite.'}
+              </div>
+            ) : !result ? (
               <button type="submit" disabled={isSparkCatcher || !answer.trim()} className={isSparkCatcher ? 'hidden' : 'magic-button w-full'}>
                 Antwort prüfen
               </button>

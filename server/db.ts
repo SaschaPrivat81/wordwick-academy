@@ -173,4 +173,20 @@ for (const fix of umlautQuestFixes) {
   db.prepare(`UPDATE quests SET ${fix.field} = ? WHERE id = ? AND ${fix.field} = ?`).run(fix.newValue, fix.id, fix.oldValue);
 }
 
+const libraryWords = [
+  ['Zimmer', 'room', 'vocab', 'wohnen'],
+  ['Tür', 'door', 'vocab', 'wohnen'],
+  ['Fenster', 'window', 'vocab', 'wohnen'],
+  ['Buch', 'book', 'vocab', 'schule'],
+];
+
+const findWord = db.prepare('SELECT id FROM words WHERE english = ?');
+const insertLibraryWord = db.prepare('INSERT INTO words (german, english, type, category, createdAt) VALUES (?, ?, ?, ?, ?)');
+const insertLibraryQuestWord = db.prepare('INSERT OR IGNORE INTO quest_words (questId, wordId, sortOrder) VALUES (?, ?, ?)');
+for (const [index, word] of libraryWords.entries()) {
+  const existing = findWord.get(word[1]) as { id: number } | undefined;
+  const wordId = existing?.id ?? Number(insertLibraryWord.run(word[0], word[1], word[2], word[3], new Date().toISOString()).lastInsertRowid);
+  insertLibraryQuestWord.run(2, wordId, 20 + index);
+}
+
 export { db };
