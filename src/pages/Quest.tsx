@@ -140,8 +140,9 @@ export default function Quest() {
   }, [quest, words]);
 
   const current = challenges[currentIndex];
-  const isLibrarySorter = quest?.id === 2;
-  const isVerbAssembler = quest?.id === 3;
+  const activeGameType = quest?.gameType ?? (quest?.id === 1 ? 'spark-catcher' : quest?.id === 2 ? 'library-sorter' : quest?.id === 3 ? 'verb-assembler' : 'text-input');
+  const isLibrarySorter = activeGameType === 'library-sorter';
+  const isVerbAssembler = activeGameType === 'verb-assembler';
   const verbWords = useMemo(
     () => words.filter(word => word.type === 'irregular' && word.past && word.participle),
     [words],
@@ -170,7 +171,7 @@ export default function Quest() {
     ? (totalTasks > 0 ? Math.round((matchedWordIds.length / totalTasks) * 100) : 0)
     : (challenges.length > 0 ? Math.round((currentIndex / challenges.length) * 100) : 0);
   const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
-  const isSparkCatcher = quest?.id === 1 && current?.eyebrow === 'Vokabel';
+  const isSparkCatcher = activeGameType === 'spark-catcher' && current?.eyebrow === 'Vokabel';
   const choiceOptions = useMemo(() => {
     if (!current || !isSparkCatcher) return [];
     const candidateWords = allWords.length > 0 ? allWords : words;

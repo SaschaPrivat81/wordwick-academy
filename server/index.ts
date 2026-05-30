@@ -222,6 +222,81 @@ app.get('/api/admin/stats/:userId', requireAdmin, (req, res) => {
   res.json({ user, progressCount: progress.length, masteredCount: progress.filter(p => p.mastered).length, weakWords });
 });
 
+app.post('/api/admin/words', requireAdmin, (req, res) => {
+  const { german, english, type, category, past, participle } = req.body;
+  const nextType = type === 'irregular' ? 'irregular' : 'vocab';
+  if (!german?.trim() || !english?.trim()) {
+    return res.status(400).json({ error: 'Deutsch und Englisch sind Pflichtfelder' });
+  }
+  if (nextType === 'irregular' && (!past?.trim() || !participle?.trim())) {
+    return res.status(400).json({ error: 'Unregelmäßige Verben brauchen Past Simple und Past Participle' });
+  }
+
+  const now = new Date().toISOString();
+  const result = db.prepare(`
+    INSERT INTO words (german, english, type, category, past, participle, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    german.trim(),
+    english.trim(),
+    nextType,
+    category?.trim() || null,
+    nextType === 'irregular' ? past.trim() : null,
+    nextType === 'irregular' ? participle.trim() : null,
+    now,
+  );
+
+  const word = db.prepare('SELECT id, german, english, type, category, past, participle FROM words WHERE id = ?')
+    .get(Number(result.lastInsertRowid));
+  res.status(201).json(word);
+});
+
+app.patch('/api/admin/quests/:id', requireAdmin, (req, res) => {
+  const questId = Number(req.params.id);
+  const allowedGameTypes = new Set(['spark-catcher', 'library-sorter', 'verb-assembler', 'text-input']);
+  const allowedKinds = new Set(['vocab', 'verb', 'mixed']);
+  const existing = db.prepare('SELECT * FROM quests WHERE id = ?').get(questId) as any;
+  if (!existing) return res.status(404).json({ error: 'Quest nicht gefunden' });
+
+  const title = req.body.title?.trim();
+  const subtitle = req.body.subtitle?.trim();
+  const chapter = req.body.chapter?.trim();
+  const kind = allowedKinds.has(req.body.kind) ? req.body.kind : existing.kind;
+  const gameType = allowedGameTypes.has(req.body.gameType) ? req.body.gameType : existing.gameType;
+  const reward = typeof req.body.reward === 'string' ? req.body.reward.trim() : existing.reward;
+  const guide = req.body.guide?.trim();
+
+  if (!title || !subtitle || !chapter || !guide) {
+    return res.status(400).json({ error: 'Titel, Untertitel, Kapitel und Pips Hinweis sind Pflichtfelder' });
+  }
+
+  db.prepare(`
+    UPDATE quests
+    SET title = ?, subtitle = ?, chapter = ?, kind = ?, gameType = ?, reward = ?, guide = ?
+    WHERE id = ?
+  `).run(title, subtitle, chapter, kind, gameType, reward, guide, questId);
+
+  res.json(getQuests().find(item => item.id === questId));
+});
+
+app.post('/api/admin/quests/:id/words', requireAdmin, (req, res) => {
+  const questId = Number(req.params.id);
+  const wordId = Number(req.body.wordId);
+  const quest = db.prepare('SELECT id FROM quests WHERE id = ?').get(questId);
+  const word = db.prepare('SELECT id FROM words WHERE id = ?').get(wordId);
+  if (!quest || !word) return res.status(404).json({ error: 'Quest oder Wort nicht gefunden' });
+
+  const row = db.prepare('SELECT COALESCE(MAX(sortOrder), 0) + 1 as nextOrder FROM quest_words WHERE questId = ?').get(questId) as { nextOrder: number };
+  db.prepare('INSERT OR IGNORE INTO quest_words (questId, wordId, sortOrder) VALUES (?, ?, ?)')
+    .run(questId, wordId, row.nextOrder);
+  res.json({ ok: true });
+});
+
+app.delete('/api/admin/quests/:questId/words/:wordId', requireAdmin, (req, res) => {
+  db.prepare('DELETE FROM quest_words WHERE questId = ? AND wordId = ?').run(Number(req.params.questId), Number(req.params.wordId));
+  res.json({ ok: true });
+});
+
 app.get('/api/admin/content', requireAdmin, (_req, res) => {
   const quests = getQuests();
   const words = db.prepare('SELECT id, german, english, type, category, past, participle FROM words ORDER BY id').all() as any[];

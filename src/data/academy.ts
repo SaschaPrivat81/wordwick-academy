@@ -6,6 +6,7 @@ export interface AcademyQuest {
   subtitle: string;
   chapter: string;
   kind: QuestKind;
+  gameType?: 'spark-catcher' | 'library-sorter' | 'verb-assembler' | 'text-input';
   x: number;
   y: number;
   sigil: string;
@@ -136,6 +137,7 @@ export const academyQuests: AcademyQuest[] = [
     subtitle: 'Die ersten Zauberworte für Tiere',
     chapter: 'Haupthalle',
     kind: 'vocab',
+    gameType: 'spark-catcher',
     x: 53,
     y: 53,
     sigil: 'paw',
@@ -149,6 +151,7 @@ export const academyQuests: AcademyQuest[] = [
     subtitle: 'Worte aus Zimmern und Fluren',
     chapter: 'Bibliothek',
     kind: 'vocab',
+    gameType: 'library-sorter',
     x: 29,
     y: 78,
     sigil: 'home',
@@ -162,6 +165,7 @@ export const academyQuests: AcademyQuest[] = [
     subtitle: 'go, went, gone und Freunde',
     chapter: 'Wortbrauerei',
     kind: 'verb',
+    gameType: 'verb-assembler',
     x: 39,
     y: 41,
     sigil: 'spark',
@@ -175,6 +179,7 @@ export const academyQuests: AcademyQuest[] = [
     subtitle: 'sehen, trinken und merken',
     chapter: 'Flugplatz',
     kind: 'verb',
+    gameType: 'text-input',
     x: 18,
     y: 66,
     sigil: 'water',
@@ -188,6 +193,7 @@ export const academyQuests: AcademyQuest[] = [
     subtitle: 'ruhige Worte, starke Formen',
     chapter: 'Sternenturm',
     kind: 'mixed',
+    gameType: 'text-input',
     x: 58,
     y: 20,
     sigil: 'book',

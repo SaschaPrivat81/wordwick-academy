@@ -87,6 +87,10 @@ const questColumns = db.prepare('PRAGMA table_info(quests)').all() as { name: st
 if (!questColumns.some(column => column.name === 'sortOrder')) {
   db.prepare('ALTER TABLE quests ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0').run();
 }
+const addedGameTypeColumn = !questColumns.some(column => column.name === 'gameType');
+if (addedGameTypeColumn) {
+  db.prepare("ALTER TABLE quests ADD COLUMN gameType TEXT NOT NULL DEFAULT 'text-input'").run();
+}
 
 // ─── Seed Demo-Daten ───
 const wordCount = db.prepare('SELECT COUNT(*) as c FROM words').get() as { c: number };
@@ -187,6 +191,21 @@ for (const [index, word] of libraryWords.entries()) {
   const existing = findWord.get(word[1]) as { id: number } | undefined;
   const wordId = existing?.id ?? Number(insertLibraryWord.run(word[0], word[1], word[2], word[3], new Date().toISOString()).lastInsertRowid);
   insertLibraryQuestWord.run(2, wordId, 20 + index);
+}
+
+const questGameTypes = [
+  { id: 1, gameType: 'spark-catcher' },
+  { id: 2, gameType: 'library-sorter' },
+  { id: 3, gameType: 'verb-assembler' },
+  { id: 4, gameType: 'text-input' },
+  { id: 5, gameType: 'text-input' },
+];
+
+if (addedGameTypeColumn) {
+  for (const quest of questGameTypes) {
+    db.prepare('UPDATE quests SET gameType = ? WHERE id = ?')
+      .run(quest.gameType, quest.id);
+  }
 }
 
 export { db };
