@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Database, FileText, LineChart, LockKeyhole, PlusCircle, Save, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
+import { BookOpen, Database, FileText, Gift, LineChart, LockKeyhole, PackageCheck, PlusCircle, Save, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
 
 interface AdminWord {
   id: number;
@@ -55,6 +55,46 @@ interface UserDraft {
   avatar: string;
 }
 
+type RewardKind = 'real' | 'game';
+type RewardUnlockType = 'coins' | 'quest' | 'final';
+type RewardClaimStatus = 'requested' | 'claimed' | 'fulfilled' | 'cancelled';
+
+interface AdminReward {
+  id: number;
+  title: string;
+  description: string;
+  cost: number;
+  icon: string;
+  kind: RewardKind;
+  unlockType: RewardUnlockType;
+  questId?: number | null;
+  questTitle?: string | null;
+  active: number;
+  sortOrder: number;
+}
+
+interface RewardDraft {
+  title: string;
+  description: string;
+  cost: string;
+  icon: string;
+  kind: RewardKind;
+  unlockType: RewardUnlockType;
+  questId: string;
+  active: boolean;
+  sortOrder: string;
+}
+
+interface RewardClaim {
+  id: number;
+  userName: string;
+  rewardTitle: string;
+  icon: string;
+  kind: RewardKind;
+  status: RewardClaimStatus;
+  claimedAt: string;
+}
+
 interface WordForm {
   german: string;
   english: string;
@@ -79,6 +119,18 @@ const emptyUserForm: UserForm = {
   role: 'child',
 };
 
+const emptyRewardDraft: RewardDraft = {
+  title: '',
+  description: '',
+  cost: '0',
+  icon: '🎁',
+  kind: 'real',
+  unlockType: 'coins',
+  questId: '',
+  active: true,
+  sortOrder: '10',
+};
+
 const inputClass = 'w-full rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 text-sm font-bold outline-none ring-blue-800/25 focus:ring-4';
 const labelClass = 'mb-1 block text-[10px] font-black uppercase tracking-[0.16em] text-blue-950/55';
 
@@ -92,6 +144,24 @@ const roleLabels: Record<UserRole, string> = {
   child: 'Kind',
   parent: 'Elternteil',
   admin: 'Admin',
+};
+
+const rewardKindLabels: Record<RewardKind, string> = {
+  real: 'Echte Belohnung',
+  game: 'Spiel-Belohnung',
+};
+
+const unlockTypeLabels: Record<RewardUnlockType, string> = {
+  coins: 'Wortfunken',
+  quest: 'Levelabschluss',
+  final: 'Finallevel',
+};
+
+const claimStatusLabels: Record<RewardClaimStatus, string> = {
+  requested: 'Offen',
+  claimed: 'Im Spiel erhalten',
+  fulfilled: 'Ausgegeben',
+  cancelled: 'Storniert',
 };
 
 const gameTypes = [
@@ -112,6 +182,11 @@ export default function Admin() {
   const [userForm, setUserForm] = useState<UserForm>(emptyUserForm);
   const [userDrafts, setUserDrafts] = useState<Record<number, UserDraft>>({});
   const [userResult, setUserResult] = useState('');
+  const [rewards, setRewards] = useState<AdminReward[]>([]);
+  const [rewardClaims, setRewardClaims] = useState<RewardClaim[]>([]);
+  const [rewardDrafts, setRewardDrafts] = useState<Record<number, RewardDraft>>({});
+  const [rewardForm, setRewardForm] = useState<RewardDraft>(emptyRewardDraft);
+  const [rewardResult, setRewardResult] = useState('');
   const [wordForm, setWordForm] = useState<WordForm>(emptyWordForm);
   const [wordResult, setWordResult] = useState('');
   const [questDrafts, setQuestDrafts] = useState<Record<number, Partial<AdminQuest>>>({});
@@ -156,9 +231,35 @@ export default function Admin() {
     setContentError('');
   };
 
+  const toRewardDraft = (reward: AdminReward): RewardDraft => ({
+    title: reward.title,
+    description: reward.description ?? '',
+    cost: String(reward.cost),
+    icon: reward.icon || '🎁',
+    kind: reward.kind ?? 'real',
+    unlockType: reward.unlockType ?? 'coins',
+    questId: reward.questId ? String(reward.questId) : '',
+    active: reward.active === 1,
+    sortOrder: String(reward.sortOrder ?? 0),
+  });
+
+  const loadRewards = async () => {
+    const response = await fetch('/api/admin/rewards', { credentials: 'include' });
+    if (!response.ok) {
+      setContentError('Der Belohnungsschrank ist für Eltern/Admins vorgesehen.');
+      return;
+    }
+    const data = await response.json();
+    setRewards(data.rewards);
+    setRewardClaims(data.claims);
+    setRewardDrafts(Object.fromEntries(data.rewards.map((reward: AdminReward) => [reward.id, toRewardDraft(reward)])));
+    setContentError('');
+  };
+
   useEffect(() => {
     loadContent();
     loadUsers();
+    loadRewards();
   }, []);
 
   const updateUserForm = <K extends keyof UserForm>(field: K, value: UserForm[K]) => {
@@ -205,6 +306,70 @@ export default function Admin() {
     }
     setUserResult(`${data.name} wurde gespeichert.`);
     await loadUsers();
+  };
+
+  const updateRewardForm = <K extends keyof RewardDraft>(field: K, value: RewardDraft[K]) => {
+    setRewardForm(current => ({
+      ...current,
+      [field]: value,
+      ...(field === 'unlockType' && value === 'coins' ? { questId: '' } : {}),
+    }));
+  };
+
+  const createReward = async () => {
+    setRewardResult('');
+    const response = await fetch('/api/admin/rewards', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(rewardForm),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setRewardResult(data.error ?? 'Belohnung konnte nicht angelegt werden.');
+      return;
+    }
+    setRewardResult(`${data.title} wurde in den Schrank gestellt.`);
+    setRewardForm(emptyRewardDraft);
+    await loadRewards();
+  };
+
+  const updateRewardDraft = <K extends keyof RewardDraft>(rewardId: number, field: K, value: RewardDraft[K]) => {
+    setRewardDrafts(current => ({
+      ...current,
+      [rewardId]: {
+        ...current[rewardId],
+        [field]: value,
+        ...(field === 'unlockType' && value === 'coins' ? { questId: '' } : {}),
+      },
+    }));
+  };
+
+  const saveReward = async (rewardId: number) => {
+    setRewardResult('');
+    const response = await fetch(`/api/admin/rewards/${rewardId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(rewardDrafts[rewardId]),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setRewardResult(data.error ?? 'Belohnung konnte nicht gespeichert werden.');
+      return;
+    }
+    setRewardResult(`${data.title} wurde gespeichert.`);
+    await loadRewards();
+  };
+
+  const updateClaimStatus = async (claimId: number, status: RewardClaimStatus) => {
+    await fetch(`/api/admin/reward-claims/${claimId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ status }),
+    });
+    await loadRewards();
   };
 
   const updateWordForm = <K extends keyof WordForm>(field: K, value: WordForm[K]) => {
@@ -421,6 +586,188 @@ export default function Admin() {
               Zugang speichern
             </button>
             {userResult && <p className="mt-2 text-sm font-black text-blue-800">{userResult}</p>}
+          </div>
+        </div>
+      </section>
+
+      <section className="parchment mb-5 rounded-[28px] border border-amber-100/70 p-5">
+        <div className="mb-4 flex items-center gap-3">
+          <Gift className="h-6 w-6 text-blue-950" />
+          <div>
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Belohnungsschrank</div>
+            <h2 className="text-2xl font-black text-slate-950">Fächer befüllen</h2>
+          </div>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[1fr_360px]">
+          <div className="grid gap-3 lg:grid-cols-2">
+            {rewards.map(reward => {
+              const draft = rewardDrafts[reward.id] ?? toRewardDraft(reward);
+              return (
+                <div key={reward.id} className={`rounded-2xl border border-amber-900/10 bg-white/60 p-4 ${draft.active ? '' : 'opacity-65'}`}>
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-950 text-xl text-amber-100">{draft.icon}</div>
+                      <div>
+                        <div className="text-xs font-black uppercase tracking-[0.16em] text-blue-950/50">Fach {reward.id}</div>
+                        <div className="font-black text-slate-950">{reward.title}</div>
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-blue-950">
+                      {draft.active ? 'Aktiv' : 'Aus'}
+                    </span>
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <label>
+                      <span className={labelClass}>Titel</span>
+                      <input className={inputClass} value={draft.title} onChange={event => updateRewardDraft(reward.id, 'title', event.target.value)} />
+                    </label>
+                    <label>
+                      <span className={labelClass}>Symbol</span>
+                      <input className={inputClass} value={draft.icon} onChange={event => updateRewardDraft(reward.id, 'icon', event.target.value)} />
+                    </label>
+                    <label>
+                      <span className={labelClass}>Typ</span>
+                      <select className={inputClass} value={draft.kind} onChange={event => updateRewardDraft(reward.id, 'kind', event.target.value as RewardKind)}>
+                        <option value="real">Echte Belohnung</option>
+                        <option value="game">Spiel-Belohnung</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span className={labelClass}>Freischaltung</span>
+                      <select className={inputClass} value={draft.unlockType} onChange={event => updateRewardDraft(reward.id, 'unlockType', event.target.value as RewardUnlockType)}>
+                        <option value="coins">Wortfunken</option>
+                        <option value="quest">Levelabschluss</option>
+                        <option value="final">Finallevel</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span className={labelClass}>Kosten</span>
+                      <input className={inputClass} type="number" min={0} value={draft.cost} onChange={event => updateRewardDraft(reward.id, 'cost', event.target.value)} />
+                    </label>
+                    <label>
+                      <span className={labelClass}>Sortierung</span>
+                      <input className={inputClass} type="number" value={draft.sortOrder} onChange={event => updateRewardDraft(reward.id, 'sortOrder', event.target.value)} />
+                    </label>
+                    {draft.unlockType !== 'coins' && (
+                      <label className="sm:col-span-2">
+                        <span className={labelClass}>Verbundenes Level</span>
+                        <select className={inputClass} value={draft.questId} onChange={event => updateRewardDraft(reward.id, 'questId', event.target.value)}>
+                          <option value="">Level wählen</option>
+                          {(content?.quests ?? []).map(quest => <option key={quest.id} value={quest.id}>{quest.id}. {quest.title}</option>)}
+                        </select>
+                      </label>
+                    )}
+                  </div>
+
+                  <label className="mt-3 block">
+                    <span className={labelClass}>Beschreibung</span>
+                    <textarea className={`${inputClass} min-h-20`} value={draft.description} onChange={event => updateRewardDraft(reward.id, 'description', event.target.value)} />
+                  </label>
+
+                  <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                    <label className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-blue-950/60">
+                      <input type="checkbox" checked={draft.active} onChange={event => updateRewardDraft(reward.id, 'active', event.target.checked)} />
+                      Im Schrank sichtbar
+                    </label>
+                    <button onClick={() => saveReward(reward.id)} className="gold-button px-4 py-2">
+                      <Save className="h-4 w-4" />
+                      Speichern
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="grid content-start gap-4">
+            <div className="rounded-2xl border border-amber-900/10 bg-white/60 p-4">
+              <div className="mb-4 flex items-center gap-3">
+                <PlusCircle className="h-6 w-6 text-blue-950" />
+                <h3 className="text-xl font-black text-slate-950">Neues Fach</h3>
+              </div>
+              <div className="grid gap-3">
+                <label>
+                  <span className={labelClass}>Titel</span>
+                  <input className={inputClass} value={rewardForm.title} onChange={event => updateRewardForm('title', event.target.value)} />
+                </label>
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                  <label>
+                    <span className={labelClass}>Symbol</span>
+                    <input className={inputClass} value={rewardForm.icon} onChange={event => updateRewardForm('icon', event.target.value)} />
+                  </label>
+                  <label>
+                    <span className={labelClass}>Kosten</span>
+                    <input className={inputClass} type="number" min={0} value={rewardForm.cost} onChange={event => updateRewardForm('cost', event.target.value)} />
+                  </label>
+                </div>
+                <label>
+                  <span className={labelClass}>Typ</span>
+                  <select className={inputClass} value={rewardForm.kind} onChange={event => updateRewardForm('kind', event.target.value as RewardKind)}>
+                    <option value="real">Echte Belohnung</option>
+                    <option value="game">Spiel-Belohnung</option>
+                  </select>
+                </label>
+                <label>
+                  <span className={labelClass}>Freischaltung</span>
+                  <select className={inputClass} value={rewardForm.unlockType} onChange={event => updateRewardForm('unlockType', event.target.value as RewardUnlockType)}>
+                    <option value="coins">Wortfunken</option>
+                    <option value="quest">Levelabschluss</option>
+                    <option value="final">Finallevel</option>
+                  </select>
+                </label>
+                {rewardForm.unlockType !== 'coins' && (
+                  <label>
+                    <span className={labelClass}>Verbundenes Level</span>
+                    <select className={inputClass} value={rewardForm.questId} onChange={event => updateRewardForm('questId', event.target.value)}>
+                      <option value="">Level wählen</option>
+                      {(content?.quests ?? []).map(quest => <option key={quest.id} value={quest.id}>{quest.id}. {quest.title}</option>)}
+                    </select>
+                  </label>
+                )}
+                <label>
+                  <span className={labelClass}>Beschreibung</span>
+                  <textarea className={`${inputClass} min-h-24`} value={rewardForm.description} onChange={event => updateRewardForm('description', event.target.value)} />
+                </label>
+              </div>
+              <button onClick={createReward} className="magic-button mt-3 w-full">
+                <Gift className="h-4 w-4" />
+                Fach befüllen
+              </button>
+              {rewardResult && <p className="mt-2 text-sm font-black text-blue-800">{rewardResult}</p>}
+            </div>
+
+            <div className="rounded-2xl border border-amber-900/10 bg-white/60 p-4">
+              <div className="mb-4 flex items-center gap-3">
+                <PackageCheck className="h-6 w-6 text-blue-950" />
+                <h3 className="text-xl font-black text-slate-950">Anfragen</h3>
+              </div>
+              <div className="grid gap-2">
+                {rewardClaims.length > 0 ? rewardClaims.map(claim => (
+                  <div key={claim.id} className="rounded-xl bg-white/70 p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-black text-slate-950">{claim.icon} {claim.rewardTitle}</div>
+                        <div className="text-xs font-bold text-stone-500">{claim.userName} · {claimStatusLabels[claim.status]}</div>
+                      </div>
+                      <select
+                        className="rounded-lg border border-amber-900/15 bg-white px-2 py-1 text-xs font-bold"
+                        value={claim.status}
+                        onChange={event => updateClaimStatus(claim.id, event.target.value as RewardClaimStatus)}
+                      >
+                        <option value="requested">Offen</option>
+                        <option value="claimed">Im Spiel erhalten</option>
+                        <option value="fulfilled">Ausgegeben</option>
+                        <option value="cancelled">Storniert</option>
+                      </select>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="rounded-xl bg-white/70 p-3 text-sm font-bold text-stone-600">Noch keine Anfragen.</div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>

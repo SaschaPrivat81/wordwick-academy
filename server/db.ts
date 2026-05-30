@@ -83,6 +83,31 @@ if (!userColumns.some(column => column.name === 'role')) {
   db.prepare("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'child'").run();
 }
 
+const rewardColumns = db.prepare('PRAGMA table_info(rewards)').all() as { name: string }[];
+if (!rewardColumns.some(column => column.name === 'description')) {
+  db.prepare("ALTER TABLE rewards ADD COLUMN description TEXT NOT NULL DEFAULT ''").run();
+}
+if (!rewardColumns.some(column => column.name === 'kind')) {
+  db.prepare("ALTER TABLE rewards ADD COLUMN kind TEXT NOT NULL DEFAULT 'real'").run();
+}
+if (!rewardColumns.some(column => column.name === 'unlockType')) {
+  db.prepare("ALTER TABLE rewards ADD COLUMN unlockType TEXT NOT NULL DEFAULT 'coins'").run();
+}
+if (!rewardColumns.some(column => column.name === 'questId')) {
+  db.prepare('ALTER TABLE rewards ADD COLUMN questId INTEGER').run();
+}
+if (!rewardColumns.some(column => column.name === 'active')) {
+  db.prepare('ALTER TABLE rewards ADD COLUMN active INTEGER NOT NULL DEFAULT 1').run();
+}
+if (!rewardColumns.some(column => column.name === 'sortOrder')) {
+  db.prepare('ALTER TABLE rewards ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0').run();
+}
+
+const claimedRewardColumns = db.prepare('PRAGMA table_info(claimed_rewards)').all() as { name: string }[];
+if (!claimedRewardColumns.some(column => column.name === 'status')) {
+  db.prepare("ALTER TABLE claimed_rewards ADD COLUMN status TEXT NOT NULL DEFAULT 'claimed'").run();
+}
+
 const questColumns = db.prepare('PRAGMA table_info(quests)').all() as { name: string }[];
 if (!questColumns.some(column => column.name === 'sortOrder')) {
   db.prepare('ALTER TABLE quests ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0').run();
@@ -206,6 +231,25 @@ if (addedGameTypeColumn) {
     db.prepare('UPDATE quests SET gameType = ? WHERE id = ?')
       .run(quest.gameType, quest.id);
   }
+}
+
+const rewardDefaults = [
+  { title: '20 Min Minecraft', description: 'Ein echtes Eltern-Fach: 20 Minuten Spielzeit nach Absprache.', kind: 'real', unlockType: 'coins', cost: 30, icon: '🎮', sortOrder: 1 },
+  { title: 'Eis essen gehen', description: 'Eine größere echte Belohnung für fleißig gesammelte Wortfunken.', kind: 'real', unlockType: 'coins', cost: 50, icon: '🍦', sortOrder: 2 },
+  { title: 'Neues Buch', description: 'Ein besonderes Schrankfach für ein starkes Lernziel.', kind: 'real', unlockType: 'coins', cost: 100, icon: '📚', sortOrder: 3 },
+];
+
+for (const reward of rewardDefaults) {
+  db.prepare(`
+    UPDATE rewards
+    SET description = CASE WHEN description = '' THEN ? ELSE description END,
+        kind = ?,
+        unlockType = ?,
+        cost = ?,
+        icon = ?,
+        sortOrder = ?
+    WHERE title = ?
+  `).run(reward.description, reward.kind, reward.unlockType, reward.cost, reward.icon, reward.sortOrder, reward.title);
 }
 
 export { db };

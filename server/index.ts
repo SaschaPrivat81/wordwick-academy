@@ -94,6 +94,35 @@ function getQuests() {
   }));
 }
 
+function isQuestCompleted(userId: number, questId: number) {
+  const words = db.prepare('SELECT wordId FROM quest_words WHERE questId = ?').all(questId) as { wordId: number }[];
+  if (words.length === 0) return false;
+  const masteredRows = db.prepare(`
+    SELECT wordId
+    FROM progress
+    WHERE userId = ? AND mastered = 1 AND wordId IN (${words.map(() => '?').join(',')})
+  `).all(userId, ...words.map(word => word.wordId)) as { wordId: number }[];
+  return masteredRows.length === words.length;
+}
+
+function rewardAccess(userId: number, reward: any, userCoins: number) {
+  const unlockType = reward.unlockType ?? 'coins';
+  const questUnlocked = unlockType === 'quest' || unlockType === 'final'
+    ? Boolean(reward.questId && isQuestCompleted(userId, reward.questId))
+    : true;
+  const coinsUnlocked = userCoins >= reward.cost;
+  const unlocked = unlockType === 'coins' ? coinsUnlocked : questUnlocked && (reward.cost > 0 ? coinsUnlocked : true);
+  const lockedReason = unlocked
+    ? ''
+    : unlockType === 'coins'
+      ? `${reward.cost} Wortfunken nötig`
+      : reward.cost > 0
+        ? `Level abschließen und ${reward.cost} Wortfunken sammeln`
+        : 'Level noch nicht abgeschlossen';
+
+  return { unlocked, lockedReason };
+}
+
 app.get('/api/quests', requirePin, (_req, res) => {
   res.json(getQuests());
 });
@@ -165,25 +194,51 @@ app.post('/api/progress', requirePin, (req, res) => {
   res.json({ ok: true });
 });
 
-// ─── Belohnungen ───
+// ─── Belohnungsschrank ───
 app.get('/api/rewards', requirePin, (req, res) => {
-  const rewards = db.prepare('SELECT * FROM rewards').all() as any[];
-  const claimed = db.prepare('SELECT rewardId FROM claimed_rewards WHERE userId = ?').all(req.session.userId) as any[];
-  const claimedIds = new Set(claimed.map(c => c.rewardId));
-  res.json(rewards.map(r => ({ ...r, claimed: claimedIds.has(r.id) })));
+  const userId = Number(req.session.userId);
+  const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId) as { coins: number };
+  const rewards = db.prepare(`
+    SELECT r.*, q.title as questTitle
+    FROM rewards r
+    LEFT JOIN quests q ON q.id = r.questId
+    WHERE r.active = 1
+    ORDER BY r.sortOrder, r.id
+  `).all() as any[];
+  const claimed = db.prepare('SELECT id, rewardId, status, claimedAt FROM claimed_rewards WHERE userId = ?').all(userId) as any[];
+  const claimedByReward = new Map(claimed.map(row => [row.rewardId, row]));
+  res.json(rewards.map(reward => {
+    const claim = claimedByReward.get(reward.id);
+    const access = rewardAccess(userId, reward, user.coins);
+    return {
+      ...reward,
+      claimed: Boolean(claim),
+      claimId: claim?.id ?? null,
+      claimStatus: claim?.status ?? null,
+      claimedAt: claim?.claimedAt ?? null,
+      ...access,
+    };
+  }));
 });
 
 app.post('/api/rewards/:id/claim', requirePin, (req, res) => {
-  const userId = req.session.userId;
+  const userId = Number(req.session.userId);
   const reward = db.prepare('SELECT * FROM rewards WHERE id = ?').get(req.params.id) as any;
   const user = db.prepare('SELECT coins FROM users WHERE id = ?').get(userId) as any;
-  if (!reward) return res.status(404).json({ error: 'Nicht gefunden' });
-  if (user.coins < reward.cost) return res.status(400).json({ error: 'Nicht genug Münzen' });
+  if (!reward || reward.active !== 1) return res.status(404).json({ error: 'Nicht gefunden' });
+  const existingClaim = db.prepare('SELECT id FROM claimed_rewards WHERE userId = ? AND rewardId = ?').get(userId, reward.id);
+  if (existingClaim) return res.status(400).json({ error: 'Belohnung wurde bereits gewählt' });
+
+  const access = rewardAccess(userId, reward, user.coins);
+  if (!access.unlocked) return res.status(400).json({ error: access.lockedReason });
   
-  db.prepare('UPDATE users SET coins = coins - ? WHERE id = ?').run(reward.cost, userId);
-  db.prepare('INSERT INTO claimed_rewards (userId, rewardId, claimedAt) VALUES (?, ?, ?)')
-    .run(userId, reward.id, new Date().toISOString());
-  res.json({ ok: true });
+  if (reward.cost > 0) {
+    db.prepare('UPDATE users SET coins = coins - ? WHERE id = ?').run(reward.cost, userId);
+  }
+  const status = reward.kind === 'real' ? 'requested' : 'claimed';
+  const result = db.prepare('INSERT INTO claimed_rewards (userId, rewardId, status, claimedAt) VALUES (?, ?, ?, ?)')
+    .run(userId, reward.id, status, new Date().toISOString());
+  res.json({ ok: true, claimId: Number(result.lastInsertRowid), status });
 });
 
 // ─── Admin: CSV-Upload ───
@@ -307,6 +362,125 @@ app.patch('/api/admin/users/:id', requireAdmin, (req, res) => {
   const user = db.prepare('SELECT id, name, pin, role, coins, streak, lastPlayed, avatar, createdAt FROM users WHERE id = ?')
     .get(userId);
   res.json(user);
+});
+
+const allowedRewardKinds = new Set(['real', 'game']);
+const allowedUnlockTypes = new Set(['coins', 'quest', 'final']);
+const allowedClaimStatuses = new Set(['requested', 'claimed', 'fulfilled', 'cancelled']);
+
+function sanitizeRewardInput(body: any, existing?: any) {
+  const title = typeof body.title === 'string' ? body.title.trim() : existing?.title;
+  const description = typeof body.description === 'string' ? body.description.trim() : existing?.description ?? '';
+  const icon = typeof body.icon === 'string' && body.icon.trim() ? body.icon.trim() : existing?.icon ?? '🎁';
+  const kind = allowedRewardKinds.has(body.kind) ? body.kind : existing?.kind ?? 'real';
+  const unlockType = allowedUnlockTypes.has(body.unlockType) ? body.unlockType : existing?.unlockType ?? 'coins';
+  const cost = body.cost === undefined ? existing?.cost ?? 0 : Math.max(0, Number(body.cost));
+  const questId = body.questId === undefined || body.questId === '' ? null : Number(body.questId);
+  const active = body.active === undefined ? existing?.active ?? 1 : body.active ? 1 : 0;
+  const sortOrder = body.sortOrder === undefined || body.sortOrder === '' ? existing?.sortOrder ?? 0 : Number(body.sortOrder);
+
+  if (!title || Number.isNaN(cost) || Number.isNaN(sortOrder) || (questId !== null && Number.isNaN(questId))) {
+    return { error: 'Bitte Titel, Kosten und Sortierung prüfen' };
+  }
+  if ((unlockType === 'quest' || unlockType === 'final') && questId === null) {
+    return { error: 'Level-Belohnungen brauchen ein verbundenes Level' };
+  }
+  if (questId !== null) {
+    const quest = db.prepare('SELECT id FROM quests WHERE id = ?').get(questId);
+    if (!quest) return { error: 'Verbundenes Level wurde nicht gefunden' };
+  }
+
+  return {
+    reward: {
+      title,
+      description,
+      icon,
+      kind,
+      unlockType,
+      cost: Math.floor(cost),
+      questId,
+      active,
+      sortOrder: Math.floor(sortOrder),
+    },
+  };
+}
+
+app.get('/api/admin/rewards', requireAdmin, (_req, res) => {
+  const rewards = db.prepare(`
+    SELECT r.*, q.title as questTitle
+    FROM rewards r
+    LEFT JOIN quests q ON q.id = r.questId
+    ORDER BY r.active DESC, r.sortOrder, r.id
+  `).all() as any[];
+  const claims = db.prepare(`
+    SELECT cr.id, cr.userId, cr.rewardId, cr.status, cr.claimedAt, u.name as userName, r.title as rewardTitle, r.icon, r.kind
+    FROM claimed_rewards cr
+    JOIN users u ON u.id = cr.userId
+    JOIN rewards r ON r.id = cr.rewardId
+    ORDER BY
+      CASE cr.status WHEN 'requested' THEN 0 WHEN 'claimed' THEN 1 WHEN 'fulfilled' THEN 2 ELSE 3 END,
+      cr.claimedAt DESC
+  `).all() as any[];
+  res.json({ rewards, claims });
+});
+
+app.post('/api/admin/rewards', requireAdmin, (req, res) => {
+  const parsed = sanitizeRewardInput(req.body);
+  if ('error' in parsed) return res.status(400).json({ error: parsed.error });
+  const reward = parsed.reward;
+  const result = db.prepare(`
+    INSERT INTO rewards (title, description, cost, icon, kind, unlockType, questId, active, sortOrder, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    reward.title,
+    reward.description,
+    reward.cost,
+    reward.icon,
+    reward.kind,
+    reward.unlockType,
+    reward.questId,
+    reward.active,
+    reward.sortOrder,
+    new Date().toISOString(),
+  );
+  res.status(201).json(db.prepare('SELECT * FROM rewards WHERE id = ?').get(Number(result.lastInsertRowid)));
+});
+
+app.patch('/api/admin/rewards/:id', requireAdmin, (req, res) => {
+  const rewardId = Number(req.params.id);
+  const existing = db.prepare('SELECT * FROM rewards WHERE id = ?').get(rewardId) as any;
+  if (!existing) return res.status(404).json({ error: 'Belohnung nicht gefunden' });
+  const parsed = sanitizeRewardInput(req.body, existing);
+  if ('error' in parsed) return res.status(400).json({ error: parsed.error });
+  const reward = parsed.reward;
+
+  db.prepare(`
+    UPDATE rewards
+    SET title = ?, description = ?, cost = ?, icon = ?, kind = ?, unlockType = ?, questId = ?, active = ?, sortOrder = ?
+    WHERE id = ?
+  `).run(
+    reward.title,
+    reward.description,
+    reward.cost,
+    reward.icon,
+    reward.kind,
+    reward.unlockType,
+    reward.questId,
+    reward.active,
+    reward.sortOrder,
+    rewardId,
+  );
+  res.json(db.prepare('SELECT * FROM rewards WHERE id = ?').get(rewardId));
+});
+
+app.patch('/api/admin/reward-claims/:id', requireAdmin, (req, res) => {
+  const claimId = Number(req.params.id);
+  const status = allowedClaimStatuses.has(req.body.status) ? req.body.status : null;
+  if (!status) return res.status(400).json({ error: 'Ungültiger Status' });
+  const existing = db.prepare('SELECT id FROM claimed_rewards WHERE id = ?').get(claimId);
+  if (!existing) return res.status(404).json({ error: 'Anforderung nicht gefunden' });
+  db.prepare('UPDATE claimed_rewards SET status = ? WHERE id = ?').run(status, claimId);
+  res.json({ ok: true, status });
 });
 
 app.post('/api/admin/words', requireAdmin, (req, res) => {
