@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Check, Home, LockKeyhole, PawPrint, Sparkles, Star, Waves } from 'lucide-react';
+import { BookOpen, Check, FlaskConical, GraduationCap, Home, LockKeyhole, PawPrint, Sparkles, Star, Trees, Waves } from 'lucide-react';
 import { useAuth } from '../App';
 import { AcademyQuest, academyQuests } from '../data/academy';
 
@@ -12,10 +12,18 @@ interface ProgressRow {
 const sigils = {
   paw: PawPrint,
   home: Home,
-  spark: Sparkles,
+  spark: FlaskConical,
   water: Waves,
   book: BookOpen,
 };
+
+const futureStops = [
+  { id: 6, title: 'Glasshouse Garden', x: 26, y: 51, Icon: Sparkles },
+  { id: 7, title: 'Whispering Woods', x: 78, y: 28, Icon: Trees },
+  { id: 8, title: 'Wyrm Cave', x: 82, y: 52, Icon: Sparkles },
+  { id: 9, title: 'Moonwell Lake', x: 77, y: 72, Icon: Waves },
+  { id: 10, title: 'Mastery Grounds', x: 55, y: 83, Icon: GraduationCap },
+];
 
 export default function WorldMap() {
   const { user } = useAuth();
@@ -50,73 +58,21 @@ export default function WorldMap() {
 
   return (
     <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-5 px-4 py-5 lg:grid-cols-[1fr_360px]">
-      <section className="relative min-h-[620px] overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30">
-        <div className="absolute left-5 top-5 z-20 rounded-2xl border border-amber-100/25 bg-slate-950/75 px-4 py-3 text-amber-50 backdrop-blur">
-          <div className="text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Schulkarte</div>
-          <h1 className="text-2xl font-black">Wordwick Academy</h1>
+      <section className="relative aspect-[16/9] min-h-[420px] overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30">
+        <img
+          src="/assets/wordwick-map-v1.jpg"
+          alt="Illustrated parchment map of Wordwick Academy"
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/22 via-transparent to-slate-950/5" />
+
+        <div className="absolute left-[7%] top-[6%] z-20 max-w-[260px] text-amber-950">
+          <div className="font-serif text-4xl font-black leading-none tracking-normal sm:text-5xl">Wordwick</div>
+          <div className="font-serif text-3xl font-black leading-none tracking-normal sm:text-4xl">Academy</div>
+          <div className="mt-2 inline-flex rounded-full border border-amber-950/30 bg-amber-100/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-950/80 backdrop-blur-sm">
+            Learn magic words
+          </div>
         </div>
-
-        <svg viewBox="0 0 1000 720" className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-          <defs>
-            <linearGradient id="mapGround" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stopColor="#0f172a" />
-              <stop offset="0.42" stopColor="#1e3a8a" />
-              <stop offset="1" stopColor="#d8c58a" />
-            </linearGradient>
-            <radialGradient id="lakeGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0" stopColor="#93c5fd" stopOpacity="0.85" />
-              <stop offset="1" stopColor="#1e3a8a" stopOpacity="0.2" />
-            </radialGradient>
-            <filter id="softShadow">
-              <feDropShadow dx="0" dy="16" stdDeviation="14" floodColor="#020617" floodOpacity="0.34" />
-            </filter>
-          </defs>
-          <rect width="1000" height="720" fill="url(#mapGround)" />
-          <circle cx="802" cy="96" r="62" fill="#dbeafe" opacity="0.72" />
-          <g fill="#f8e7b0" opacity="0.9">
-            <circle cx="96" cy="92" r="3" />
-            <circle cx="182" cy="158" r="2" />
-            <circle cx="318" cy="98" r="2.5" />
-            <circle cx="706" cy="168" r="2.5" />
-            <circle cx="892" cy="240" r="2" />
-            <path d="M548 78 l5 11 11 5 -11 5 -5 11 -5 -11 -11 -5 11 -5z" />
-            <path d="M252 276 l4 8 8 4 -8 4 -4 8 -4 -8 -8 -4 8 -4z" />
-          </g>
-          <path d="M-20 560 C126 498 190 606 330 538 C488 462 572 552 760 468 C866 420 948 428 1020 386 L1020 740 L-20 740 Z" fill="#111827" opacity="0.76" />
-          <path d="M0 156 C146 208 240 132 350 182 C512 256 630 140 776 198 C880 240 924 214 1008 178 L1008 -20 L0 -20 Z" fill="#020617" opacity="0.54" />
-          <ellipse cx="690" cy="506" rx="180" ry="74" fill="url(#lakeGlow)" opacity="0.7" />
-          <path d="M166 562 C220 450 362 420 412 342 C472 250 604 284 674 204" fill="none" stroke="#dbeafe" strokeWidth="30" strokeLinecap="round" strokeDasharray="5 34" opacity="0.84" />
-          <path d="M166 562 C220 450 362 420 412 342 C472 250 604 284 674 204" fill="none" stroke="#f7d273" strokeWidth="5" strokeLinecap="round" opacity="0.42" />
-          <g filter="url(#softShadow)">
-            <path d="M430 226 L486 80 L542 226 Z" fill="#1e3a8a" />
-            <path d="M459 82 L486 22 L513 82 Z" fill="#e8bd59" />
-            <rect x="378" y="224" width="216" height="128" rx="14" fill="#1d4ed8" opacity="0.78" />
-            <path d="M402 226 L438 132 L474 226 Z" fill="#172554" />
-            <path d="M504 226 L540 132 L576 226 Z" fill="#172554" />
-            <rect x="462" y="286" width="48" height="66" rx="24" fill="#020617" />
-            <path d="M344 356 C406 332 504 332 632 356 L650 410 C520 388 412 388 326 410 Z" fill="#172554" />
-            <g fill="#f8e7b0" opacity="0.82">
-              <rect x="470" y="142" width="32" height="48" rx="16" />
-              <rect x="416" y="244" width="28" height="34" rx="14" />
-              <rect x="528" y="244" width="28" height="34" rx="14" />
-              <rect x="366" y="370" width="30" height="38" rx="15" />
-              <rect x="604" y="370" width="30" height="38" rx="15" />
-            </g>
-          </g>
-          <g opacity="0.58" fill="#0f172a">
-            <path d="M78 152 l36 -84 38 84z" />
-            <path d="M124 168 l32 -74 34 74z" />
-            <path d="M828 170 l48 -108 50 108z" />
-            <path d="M842 618 l56 -126 58 126z" />
-          </g>
-        </svg>
-
-        <svg className="absolute inset-0 h-full w-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          {academyQuests.slice(0, -1).map((quest, index) => {
-            const next = academyQuests[index + 1];
-            return <line key={quest.id} x1={quest.x} y1={quest.y} x2={next.x} y2={next.y} stroke="#f8e7b0" strokeWidth="0.35" strokeDasharray="1.2 1.2" opacity="0.72" />;
-          })}
-        </svg>
 
         {academyQuests.map(quest => {
           const questState = questStatus(quest);
@@ -131,12 +87,28 @@ export default function WorldMap() {
               style={{ left: `${quest.x}%`, top: `${quest.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
               aria-label={quest.title}
             >
-              <Icon className="h-7 w-7" />
+              <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-amber-100 bg-amber-800 text-[11px] font-black text-amber-50 shadow-md">{quest.id}</span>
+              <Icon className="h-6 w-6" />
               {questState === 'completed' && <Check className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-blue-950 p-1 text-amber-100" />}
               {questState === 'locked' && <LockKeyhole className="absolute h-7 w-7 text-stone-200" />}
+              <span className="map-ribbon hidden sm:block">{quest.title}</span>
             </button>
           );
         })}
+
+        {futureStops.map(stop => (
+          <div
+            key={stop.id}
+            className="quest-node locked opacity-80"
+            style={{ left: `${stop.x}%`, top: `${stop.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
+            aria-hidden="true"
+          >
+            <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-stone-600 text-[11px] font-black text-stone-100 shadow-md">{stop.id}</span>
+            <stop.Icon className="h-6 w-6" />
+            <LockKeyhole className="absolute h-7 w-7 text-stone-200" />
+            <span className="map-ribbon hidden sm:block">{stop.title}</span>
+          </div>
+        ))}
       </section>
 
       <aside className="grid content-start gap-4">
