@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Sparkles, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, PlayCircle, Sparkles, XCircle } from 'lucide-react';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, normalizeAnswer } from '../data/academy';
 
 interface Word {
@@ -61,6 +61,7 @@ export default function Quest() {
   const [correctCount, setCorrectCount] = useState(0);
   const [coinsEarned, setCoinsEarned] = useState(0);
   const [finished, setFinished] = useState(false);
+  const [missionStarted, setMissionStarted] = useState(false);
 
   useEffect(() => {
     setQuest(fallbackQuests.find(item => item.id === questId) ?? null);
@@ -72,6 +73,7 @@ export default function Quest() {
     setCorrectCount(0);
     setCoinsEarned(0);
     setFinished(false);
+    setMissionStarted(false);
 
     Promise.all([
       fetch(`/api/quests/${questId}`, { credentials: 'include' }).then(response => response.ok ? response.json() : null),
@@ -198,6 +200,64 @@ export default function Quest() {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
         <div className="animate-spin rounded-full border-4 border-amber-200 border-t-transparent p-5" />
+      </main>
+    );
+  }
+
+  if (!missionStarted) {
+    return (
+      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center px-4 py-6">
+        <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
+          <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
+            <div className="ink-panel relative flex min-h-[360px] flex-col items-center justify-center overflow-hidden p-8 text-center text-amber-50">
+              <div className="absolute inset-x-8 top-8 h-px bg-amber-100/20" />
+              <img
+                src="/assets/pip-guide.webp"
+                alt="Pip zeigt den nächsten Auftrag"
+                className="h-48 w-48 object-contain drop-shadow-2xl"
+              />
+              <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Auftrag</div>
+              <h1 className="mt-2 text-4xl font-black leading-tight">{quest.title}</h1>
+            </div>
+
+            <div className="p-7 sm:p-9">
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{story.arc}</div>
+              <h2 className="mt-2 text-3xl font-black leading-tight text-slate-950">Die Spur beginnt hier.</h2>
+              <p className="mt-4 text-base font-bold leading-7 text-stone-700">{story.mapTeaser}</p>
+              <p className="mt-3 text-base font-bold leading-7 text-slate-900">{story.missionIntro}</p>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl bg-white/60 p-4">
+                  <div className="text-2xl font-black text-slate-950">{challenges.length}</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
+                </div>
+                <div className="rounded-2xl bg-white/60 p-4">
+                  <div className="text-2xl font-black text-slate-950">{quest.reward}</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Belohnung</div>
+                </div>
+                <div className="rounded-2xl bg-white/60 p-4">
+                  <div className="text-2xl font-black text-slate-950">{quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Magie</div>
+                </div>
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-blue-950/10 bg-blue-100/70 p-4 text-sm font-bold leading-6 text-blue-950">
+                Ziel: Sammle Wortfunken, damit Pip den nächsten Pfad auf der Karte wiederfinden kann.
+              </div>
+
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <button onClick={() => navigate('/')} className="gold-button flex-1">
+                  <ArrowLeft className="h-4 w-4" />
+                  Zur Karte
+                </button>
+                <button onClick={() => setMissionStarted(true)} className="magic-button flex-1">
+                  <PlayCircle className="h-5 w-5" />
+                  Mission starten
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     );
   }

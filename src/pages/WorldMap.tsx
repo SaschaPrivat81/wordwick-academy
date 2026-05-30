@@ -73,6 +73,9 @@ export default function WorldMap() {
   const mastered = questMasteredCount(selectedQuest);
   const selectedPercent = Math.round((mastered / selectedQuest.words.length) * 100);
   const selectedStory = getQuestStory(selectedQuest.id);
+  const chapterQuests = quests.filter(quest => quest.id <= 5 && quest.words.length > 0);
+  const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
+  const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-[1500px] flex-col gap-5 px-3 py-4 sm:px-5 sm:py-5">
@@ -89,6 +92,26 @@ export default function WorldMap() {
           <div className="font-serif text-3xl font-black leading-none tracking-normal sm:text-4xl">Academy</div>
           <div className="mt-2 inline-flex rounded-full border border-amber-950/30 bg-amber-100/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-950/80 backdrop-blur-sm">
             Learn magic words
+          </div>
+        </div>
+
+        <div className="absolute right-[5%] top-[6%] z-20 hidden w-[300px] rounded-2xl border border-amber-100/35 bg-slate-950/62 p-4 text-amber-50 shadow-2xl shadow-slate-950/25 backdrop-blur-md md:block">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-200/70">
+            <Sparkles className="h-3.5 w-3.5" />
+            Kapitelstatus
+          </div>
+          <h2 className="mt-2 text-lg font-black leading-tight">{selectedStory.arc}</h2>
+          <p className="mt-2 text-xs font-bold leading-5 text-amber-50/75">
+            Pip sucht die verlorenen Wortfunken. Jede bestandene Station bringt eine Spur zurück auf die Karte.
+          </p>
+          <div className="mt-4">
+            <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-amber-200/70">
+              <span>Spuren gefunden</span>
+              <span>{completedChapterQuests}/{chapterQuests.length}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/15">
+              <div className="h-full rounded-full bg-amber-200" style={{ width: `${chapterPercent}%` }} />
+            </div>
           </div>
         </div>
 
