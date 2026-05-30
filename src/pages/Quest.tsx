@@ -26,6 +26,27 @@ interface ResultState {
   expected: string;
 }
 
+function buildChoiceOptions(expected: string, candidates: string[], seed: number) {
+  const normalizedExpected = normalizeAnswer(expected);
+  const pool = Array.from(new Set(candidates))
+    .filter(candidate => normalizeAnswer(candidate) !== normalizedExpected)
+    .filter(Boolean);
+
+  const picked: string[] = [];
+  if (pool.length > 0) {
+    let index = seed % pool.length;
+    while (picked.length < 3 && picked.length < pool.length) {
+      const candidate = pool[index % pool.length];
+      if (!picked.includes(candidate)) picked.push(candidate);
+      index += 2;
+    }
+  }
+
+  const options = [expected, ...picked];
+  const rotation = seed % options.length;
+  return [...options.slice(rotation), ...options.slice(0, rotation)];
+}
+
 export default function Quest() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -33,6 +54,7 @@ export default function Quest() {
 
   const [quest, setQuest] = useState<AcademyQuest | null>(fallbackQuests.find(item => item.id === questId) ?? null);
   const [words, setWords] = useState<Word[]>([]);
+  const [allWords, setAllWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
   const [result, setResult] = useState<ResultState | null>(null);
@@ -43,6 +65,7 @@ export default function Quest() {
   useEffect(() => {
     setQuest(fallbackQuests.find(item => item.id === questId) ?? null);
     setWords([]);
+    setAllWords([]);
     setCurrentIndex(0);
     setAnswer('');
     setResult(null);
@@ -53,9 +76,11 @@ export default function Quest() {
     Promise.all([
       fetch(`/api/quests/${questId}`, { credentials: 'include' }).then(response => response.ok ? response.json() : null),
       fetch(`/api/quests/${questId}/words`, { credentials: 'include' }).then(response => response.ok ? response.json() : []),
-    ]).then(([nextQuest, nextWords]: [AcademyQuest | null, Word[]]) => {
+      fetch('/api/words', { credentials: 'include' }).then(response => response.ok ? response.json() : []),
+    ]).then(([nextQuest, nextWords, nextAllWords]: [AcademyQuest | null, Word[], Word[]]) => {
       setQuest(nextQuest ?? fallbackQuests.find(item => item.id === questId) ?? null);
       setWords(nextWords);
+      setAllWords(nextAllWords);
     });
   }, [questId]);
 
@@ -107,6 +132,16 @@ export default function Quest() {
   const current = challenges[currentIndex];
   const percent = challenges.length > 0 ? Math.round((currentIndex / challenges.length) * 100) : 0;
   const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
+  const isSparkCatcher = quest?.id === 1 && current?.eyebrow === 'Vokabel';
+  const choiceOptions = useMemo(() => {
+    if (!current || !isSparkCatcher) return [];
+    const candidateWords = allWords.length > 0 ? allWords : words;
+    return buildChoiceOptions(
+      current.expected,
+      candidateWords.map(word => word.english),
+      current.wordId + currentIndex + questId,
+    );
+  }, [allWords, current, currentIndex, isSparkCatcher, questId, words]);
 
   const report = async (wordId: number, isCorrect: boolean) => {
     await fetch('/api/progress', {
@@ -117,11 +152,10 @@ export default function Quest() {
     });
   };
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const checkAnswer = async (value: string) => {
     if (!current || result) return;
 
-    const normalized = normalizeAnswer(answer);
+    const normalized = normalizeAnswer(value);
     const acceptable = current.acceptable.map(normalizeAnswer).filter(Boolean);
     const isCorrect = acceptable.includes(normalized);
     setResult({ correct: isCorrect, expected: current.expected });
@@ -132,6 +166,17 @@ export default function Quest() {
     }
 
     await report(current.wordId, isCorrect);
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    await checkAnswer(answer);
+  };
+
+  const chooseAnswer = async (value: string) => {
+    if (result) return;
+    setAnswer(value);
+    await checkAnswer(value);
   };
 
   const next = () => {
@@ -252,7 +297,9 @@ export default function Quest() {
           </div>
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
-            <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">Aufgabe</div>
+            <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
+              {isSparkCatcher ? 'Wortfunken fangen' : 'Aufgabe'}
+            </div>
             <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-slate-950 sm:text-5xl">
               {current.prompt}
             </h2>
@@ -261,14 +308,39 @@ export default function Quest() {
         </div>
 
         <form onSubmit={handleSubmit} className="mt-7">
-          <input
-            value={answer}
-            onChange={event => setAnswer(event.target.value)}
-            disabled={Boolean(result)}
-            autoFocus
-            className="w-full rounded-2xl border border-amber-900/15 bg-white/80 px-5 py-5 text-center text-2xl font-black text-slate-950 outline-none ring-blue-800/25 transition placeholder:text-stone-300 focus:ring-4 disabled:opacity-70"
-            placeholder="Antwort eintippen"
-          />
+          {isSparkCatcher ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {choiceOptions.map((option, optionIndex) => {
+                const isSelected = normalizeAnswer(answer) === normalizeAnswer(option);
+                const isExpected = result && normalizeAnswer(option) === normalizeAnswer(result.expected);
+                const isWrongPick = result && isSelected && !result.correct;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => chooseAnswer(option)}
+                    disabled={Boolean(result)}
+                    className={`answer-card ${result?.correct && isSelected ? 'answer-card-correct' : ''} ${isWrongPick ? 'answer-card-wrong' : ''} ${isExpected && !result.correct ? 'answer-card-reveal' : ''}`}
+                  >
+                    <span className="absolute right-3 top-3 text-amber-400/75">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/45">Funke {optionIndex + 1}</span>
+                    <span className="mt-2 block text-2xl font-black text-slate-950">{option}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <input
+              value={answer}
+              onChange={event => setAnswer(event.target.value)}
+              disabled={Boolean(result)}
+              autoFocus
+              className="w-full rounded-2xl border border-amber-900/15 bg-white/80 px-5 py-5 text-center text-2xl font-black text-slate-950 outline-none ring-blue-800/25 transition placeholder:text-stone-300 focus:ring-4 disabled:opacity-70"
+              placeholder="Antwort eintippen"
+            />
+          )}
 
           {result && (
             <div className={`mt-4 flex items-start gap-3 rounded-2xl p-4 text-sm font-bold ${result.correct ? 'bg-blue-100 text-blue-950' : 'bg-red-100 text-red-800'}`}>
@@ -282,7 +354,7 @@ export default function Quest() {
 
           <div className="mt-5 flex gap-3">
             {!result ? (
-              <button type="submit" disabled={!answer.trim()} className="magic-button w-full">
+              <button type="submit" disabled={isSparkCatcher || !answer.trim()} className={isSparkCatcher ? 'hidden' : 'magic-button w-full'}>
                 Antwort prüfen
               </button>
             ) : (
