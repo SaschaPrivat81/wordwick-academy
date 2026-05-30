@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BookOpen, KeyRound, Sparkles, UserRound, Wand2 } from 'lucide-react';
+import { BookOpen, KeyRound, Sparkles, UserRound } from 'lucide-react';
 import { useAuth } from '../App';
 
 export default function Login() {
@@ -60,12 +60,16 @@ export default function Login() {
 
           <form onSubmit={handle} className="parchment w-full rounded-[28px] border border-amber-100/70 p-6 text-stone-900 sm:p-8">
             <div className="mb-6 flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-950 text-amber-100 shadow-lg">
-                <Wand2 className="h-8 w-8" />
+              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-blue-950/90 shadow-lg">
+                <img
+                  src="/assets/pip-paper-dragon-v1.png"
+                  alt="Pip"
+                  className="h-24 w-24 object-contain drop-shadow-xl"
+                />
               </div>
               <div>
                 <h2 className="text-2xl font-black text-slate-950">{mode === 'login' ? 'Zurück in die Halle' : 'Neue Schülerkarte'}</h2>
-                <p className="text-sm font-semibold text-stone-500">Name und vierstelliger Zaubercode</p>
+                <p className="text-sm font-semibold text-stone-500">Pip wartet auf deinen vierstelligen Zaubercode.</p>
               </div>
             </div>
 

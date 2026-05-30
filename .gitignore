@@ -14,6 +14,7 @@ dist/
 *.log
 .DS_Store
 __MACOSX/
+work/
 
 # Editor/project noise
 .idea/

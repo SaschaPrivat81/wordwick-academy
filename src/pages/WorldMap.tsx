@@ -134,14 +134,18 @@ export default function WorldMap() {
       <aside className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(380px,0.65fr)]">
         <section className="ink-panel rounded-[28px] border border-amber-100/20 p-5 text-amber-50">
           <div className="flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-200 text-slate-950 shadow-lg">
-              <Sparkles className="h-8 w-8" />
+            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-amber-100/10">
+              <img
+                src="/assets/pip-paper-dragon-v1.png"
+                alt="Pip, der Papierdrache"
+                className="h-28 w-28 object-contain drop-shadow-2xl"
+              />
             </div>
             <div>
-              <div className="text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Mentor</div>
-              <h2 className="text-xl font-black">Professor Quill</h2>
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Begleiter</div>
+              <h2 className="text-xl font-black">Pip, der Papierdrache</h2>
               <p className="mt-2 text-sm font-semibold leading-6 text-amber-50/75">
-                Willkommen, {user?.name}. {selectedQuest.guide}
+                Willkommen, {user?.name}. Ich rieche Wortfunken! {selectedQuest.guide}
               </p>
             </div>
           </div>

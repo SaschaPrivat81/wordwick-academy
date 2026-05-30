@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Sparkles, Trophy, Wand2, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Sparkles, Trophy, XCircle } from 'lucide-react';
 import { AcademyQuest, academyQuests as fallbackQuests, normalizeAnswer } from '../data/academy';
 
 interface Word {
@@ -204,12 +204,18 @@ export default function Quest() {
           <ArrowLeft className="h-4 w-4" />
           Karte
         </button>
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-200 text-slate-950">
-          <Wand2 className="h-10 w-10" />
+        <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10">
+          <img
+            src="/assets/pip-paper-dragon-v1.png"
+            alt="Pip"
+            className="h-28 w-28 object-contain drop-shadow-2xl"
+          />
         </div>
-        <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">{quest.chapter}</div>
+        <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Mission · {quest.chapter}</div>
         <h1 className="mt-2 text-3xl font-black leading-tight">{quest.title}</h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-amber-50/75">{quest.subtitle}</p>
+        <p className="mt-3 text-sm font-semibold leading-6 text-amber-50/75">
+          {quest.subtitle} Sammle Wortfunken, damit Pip den nächsten Pfad erschnüffeln kann.
+        </p>
         <div className="mt-7">
           <div className="mb-2 flex justify-between text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">
             <span>Runde</span>
