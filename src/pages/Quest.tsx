@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, CheckCircle2, Sparkles, Trophy, Wand2, XCircle } from 'lucide-react';
-import { academyQuests, normalizeAnswer } from '../data/academy';
+import { AcademyQuest, academyQuests as fallbackQuests, normalizeAnswer } from '../data/academy';
 
 interface Word {
   id: number;
@@ -30,8 +30,8 @@ export default function Quest() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const questId = Number(id);
-  const quest = academyQuests.find(item => item.id === questId);
 
+  const [quest, setQuest] = useState<AcademyQuest | null>(fallbackQuests.find(item => item.id === questId) ?? null);
   const [words, setWords] = useState<Word[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
@@ -41,13 +41,23 @@ export default function Quest() {
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
-    fetch('/api/words', { credentials: 'include' })
-      .then(response => response.json())
-      .then((allWords: Word[]) => {
-        const selectedIds = new Set(quest?.words ?? []);
-        setWords(allWords.filter(word => selectedIds.has(word.id)));
-      });
-  }, [quest?.words]);
+    setQuest(fallbackQuests.find(item => item.id === questId) ?? null);
+    setWords([]);
+    setCurrentIndex(0);
+    setAnswer('');
+    setResult(null);
+    setCorrectCount(0);
+    setCoinsEarned(0);
+    setFinished(false);
+
+    Promise.all([
+      fetch(`/api/quests/${questId}`, { credentials: 'include' }).then(response => response.ok ? response.json() : null),
+      fetch(`/api/quests/${questId}/words`, { credentials: 'include' }).then(response => response.ok ? response.json() : []),
+    ]).then(([nextQuest, nextWords]: [AcademyQuest | null, Word[]]) => {
+      setQuest(nextQuest ?? fallbackQuests.find(item => item.id === questId) ?? null);
+      setWords(nextWords);
+    });
+  }, [questId]);
 
   const challenges = useMemo<Challenge[]>(() => {
     if (!quest) return [];

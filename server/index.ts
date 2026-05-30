@@ -73,6 +73,44 @@ app.get('/api/words/:id', requirePin, (req, res) => {
   res.json(word);
 });
 
+// ─── Quests / Level ───
+function getQuests() {
+  const quests = db.prepare('SELECT * FROM quests ORDER BY sortOrder, id').all() as any[];
+  const rows = db.prepare('SELECT questId, wordId FROM quest_words ORDER BY sortOrder, wordId').all() as any[];
+  const wordsByQuest = new Map<number, number[]>();
+  for (const row of rows) {
+    const words = wordsByQuest.get(row.questId) ?? [];
+    words.push(row.wordId);
+    wordsByQuest.set(row.questId, words);
+  }
+
+  return quests.map(quest => ({
+    ...quest,
+    words: wordsByQuest.get(quest.id) ?? [],
+  }));
+}
+
+app.get('/api/quests', requirePin, (_req, res) => {
+  res.json(getQuests());
+});
+
+app.get('/api/quests/:id', requirePin, (req, res) => {
+  const quest = getQuests().find(item => item.id === Number(req.params.id));
+  if (!quest) return res.status(404).json({ error: 'Quest nicht gefunden' });
+  res.json(quest);
+});
+
+app.get('/api/quests/:id/words', requirePin, (req, res) => {
+  const words = db.prepare(`
+    SELECT w.*
+    FROM quest_words qw
+    JOIN words w ON w.id = qw.wordId
+    WHERE qw.questId = ?
+    ORDER BY qw.sortOrder, w.id
+  `).all(req.params.id) as any[];
+  res.json(words);
+});
+
 // ─── Fortschritt ───
 app.get('/api/progress', requirePin, (req, res) => {
   const rows = db.prepare(`
@@ -182,6 +220,19 @@ app.get('/api/admin/stats/:userId', requireAdmin, (req, res) => {
   `).all(userId) as any[];
   const weakWords = progress.filter(p => p.wrongCount > p.correctCount).slice(0, 10);
   res.json({ user, progressCount: progress.length, masteredCount: progress.filter(p => p.mastered).length, weakWords });
+});
+
+app.get('/api/admin/content', requireAdmin, (_req, res) => {
+  const quests = getQuests();
+  const words = db.prepare('SELECT id, german, english, type, category, past, participle FROM words ORDER BY id').all() as any[];
+  const wordsById = new Map(words.map(word => [word.id, word]));
+  res.json({
+    quests: quests.map(quest => ({
+      ...quest,
+      wordItems: quest.words.map((wordId: number) => wordsById.get(wordId)).filter(Boolean),
+    })),
+    words,
+  });
 });
 
 // ─── Static files ───

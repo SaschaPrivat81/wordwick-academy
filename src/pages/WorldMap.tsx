@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, Check, FlaskConical, GraduationCap, Home, LockKeyhole, PawPrint, Sparkles, Star, Trees, Waves } from 'lucide-react';
 import { useAuth } from '../App';
-import { AcademyQuest, academyQuests } from '../data/academy';
+import { AcademyQuest, academyQuests as fallbackQuests } from '../data/academy';
 
 interface ProgressRow {
   wordId: number;
@@ -17,13 +17,12 @@ const sigils = {
   book: BookOpen,
 };
 
-const futureStops = [
-  { id: 6, title: 'Glasshouse Garden', x: 26, y: 51, Icon: Sparkles },
-  { id: 7, title: 'Whispering Woods', x: 78, y: 28, Icon: Trees },
-  { id: 8, title: 'Wyrm Cave', x: 82, y: 52, Icon: Sparkles },
-  { id: 9, title: 'Moonwell Lake', x: 77, y: 72, Icon: Waves },
-  { id: 10, title: 'Mastery Grounds', x: 55, y: 83, Icon: GraduationCap },
-];
+const futureSigils = {
+  spark: Sparkles,
+  trees: Trees,
+  water: Waves,
+  graduation: GraduationCap,
+};
 
 function ribbonClass(x: number, y: number) {
   if (y >= 70) return 'map-ribbon map-ribbon-above hidden sm:block';
@@ -36,9 +35,18 @@ export default function WorldMap() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [progress, setProgress] = useState<Record<number, ProgressRow>>({});
-  const [selectedQuest, setSelectedQuest] = useState<AcademyQuest>(academyQuests[0]);
+  const [quests, setQuests] = useState<AcademyQuest[]>(fallbackQuests);
+  const [selectedQuest, setSelectedQuest] = useState<AcademyQuest>(fallbackQuests[0]);
 
   useEffect(() => {
+    fetch('/api/quests', { credentials: 'include' })
+      .then(response => response.ok ? response.json() : fallbackQuests)
+      .then((data: AcademyQuest[]) => {
+        const nextQuests = data.length > 0 ? data : fallbackQuests;
+        setQuests(nextQuests);
+        setSelectedQuest(current => nextQuests.find(quest => quest.id === current.id) ?? nextQuests[0]);
+      });
+
     fetch('/api/progress', { credentials: 'include' })
       .then(response => response.json())
       .then((data: ProgressRow[]) => {
@@ -51,10 +59,12 @@ export default function WorldMap() {
   const questMasteredCount = (quest: AcademyQuest) => quest.words.filter(wordId => progress[wordId]?.mastered).length;
 
   const questStatus = (quest: AcademyQuest) => {
+    if (quest.words.length === 0) return 'locked';
     const mastered = questMasteredCount(quest);
     if (mastered === quest.words.length) return 'completed';
     if (quest.id === 1) return 'unlocked';
-    const previous = academyQuests[quest.id - 2];
+    const previousIndex = quests.findIndex(item => item.id === quest.id) - 1;
+    const previous = previousIndex >= 0 ? quests[previousIndex] : null;
     if (!previous) return 'unlocked';
     return questMasteredCount(previous) === previous.words.length ? 'unlocked' : 'locked';
   };
@@ -81,7 +91,7 @@ export default function WorldMap() {
           </div>
         </div>
 
-        {academyQuests.map(quest => {
+        {quests.filter(quest => quest.words.length > 0).map(quest => {
           const questState = questStatus(quest);
           const Icon = sigils[quest.sigil as keyof typeof sigils];
           return (
@@ -103,7 +113,9 @@ export default function WorldMap() {
           );
         })}
 
-        {futureStops.map(stop => (
+        {quests.filter(quest => quest.words.length === 0).map(stop => {
+          const Icon = futureSigils[stop.sigil as keyof typeof futureSigils] ?? Sparkles;
+          return (
           <div
             key={stop.id}
             className="quest-node locked opacity-80"
@@ -111,11 +123,12 @@ export default function WorldMap() {
             aria-hidden="true"
           >
             <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-stone-600 text-[11px] font-black text-stone-100 shadow-md">{stop.id}</span>
-            <stop.Icon className="h-6 w-6" />
+            <Icon className="h-6 w-6" />
             <LockKeyhole className="absolute h-7 w-7 text-stone-200" />
             <span className={ribbonClass(stop.x, stop.y)}>{stop.title}</span>
           </div>
-        ))}
+        );
+        })}
       </section>
 
       <aside className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(380px,0.65fr)]">
