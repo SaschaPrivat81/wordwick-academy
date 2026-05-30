@@ -24,6 +24,33 @@ const futureSigils = {
   graduation: GraduationCap,
 };
 
+const prologuePages = [
+  {
+    eyebrow: 'Prolog',
+    title: 'Willkommen in Wordwick Academy',
+    body: 'Wordwick Academy ist keine gewöhnliche Schule. Hier werden englische Wörter nicht nur gelernt, sie leuchten, fliegen, verstecken sich in Büchern und öffnen geheime Wege auf der alten Akademiekarte. Jedes Wort, das du richtig erkennst, kann zu einem kleinen blauen Wortfunken werden.',
+    extra: 'Eigentlich passen die Lehrerinnen und Lehrer gut auf diese Funken auf. Aber heute Morgen ist etwas Seltsames passiert: Die Karte ist still geworden, viele Pfade sind dunkel, und in den Fluren flüstern nur noch halbe Wörter.',
+  },
+  {
+    eyebrow: 'Die Nacht des Sturms',
+    title: 'Die Wortfunken sind verschwunden',
+    body: 'In der Nacht zog ein kräftiger Wind über die Türme der Akademie. Er rüttelte an Fenstern, blätterte alte Wörterbücher auf und wirbelte die englischen Wortfunken aus ihren sicheren Plätzen. Seitdem findet niemand mehr zuverlässig den Weg zu den Übungsräumen.',
+    extra: 'Die Haupthalle, die Mondbibliothek und sogar der Sternenturm warten darauf, wieder geweckt zu werden. Aber dafür braucht die Akademie jemanden, der mutig genug ist, die Wörter einzusammeln.',
+  },
+  {
+    eyebrow: 'Pip erscheint',
+    title: 'Ein Papierdrache braucht Hilfe',
+    body: 'Aus einem alten Wörterbuch flattert Pip hervor, ein kleiner Papierdrache mit Tintensternen auf den Flügeln. Er kennt die Karte besser als jeder andere, aber ohne die Wortfunken kann selbst er die versteckten Pfade nicht lesen.',
+    extra: 'Pip ist neugierig, ein bisschen ungeduldig und ziemlich sicher, dass du genau die richtige Person für diese Aufgabe bist. Er begleitet dich durch jedes Level, zeigt dir Spuren und bleibt auch dann bei dir, wenn ein Wort mal nicht sofort klappt.',
+  },
+  {
+    eyebrow: 'Dein Auftrag',
+    title: 'Bring die Pfade zurück',
+    body: 'In jeder Mission wartet ein kleiner Teil der Akademie auf dich. Du fängst Wortfunken, übst englische Wörter und sammelst Belohnungen, die Pips Karte wieder heller machen. Wenn genug Spuren zurückkehren, öffnet sich der Weg zum nächsten wichtigen Ort.',
+    extra: 'Dein erstes Ziel ist Wordwick Hall. Dort liegen die ersten Tierwörter im Dunkeln. Pip hat die Spur gefunden, aber er braucht dich, um sie wieder zum Leuchten zu bringen.',
+  },
+];
+
 function ribbonClass(x: number, y: number) {
   if (y >= 70) return 'map-ribbon map-ribbon-above hidden sm:block';
   if (x <= 24) return 'map-ribbon map-ribbon-right hidden sm:block';
@@ -37,8 +64,14 @@ export default function WorldMap() {
   const [progress, setProgress] = useState<Record<number, ProgressRow>>({});
   const [quests, setQuests] = useState<AcademyQuest[]>(fallbackQuests);
   const [selectedQuest, setSelectedQuest] = useState<AcademyQuest>(fallbackQuests[0]);
+  const [prologueStep, setPrologueStep] = useState(0);
+  const [showPrologue, setShowPrologue] = useState(false);
 
   useEffect(() => {
+    if (user) {
+      setShowPrologue(localStorage.getItem(`wordwick-prologue-seen-${user.id}`) !== 'yes');
+    }
+
     fetch('/api/quests', { credentials: 'include' })
       .then(response => response.ok ? response.json() : fallbackQuests)
       .then((data: AcademyQuest[]) => {
@@ -54,7 +87,7 @@ export default function WorldMap() {
         for (const row of data) map[row.wordId] = row;
         setProgress(map);
       });
-  }, []);
+  }, [user]);
 
   const questMasteredCount = (quest: AcademyQuest) => quest.words.filter(wordId => progress[wordId]?.mastered).length;
 
@@ -76,6 +109,62 @@ export default function WorldMap() {
   const chapterQuests = quests.filter(quest => quest.id <= 5 && quest.words.length > 0);
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
+  const currentPrologue = prologuePages[prologueStep];
+  const finishPrologue = () => {
+    if (user) localStorage.setItem(`wordwick-prologue-seen-${user.id}`, 'yes');
+    setShowPrologue(false);
+  };
+
+  if (showPrologue) {
+    return (
+      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center px-4 py-6">
+        <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
+          <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className="ink-panel relative flex min-h-[520px] flex-col items-center justify-center overflow-hidden p-7 text-center text-amber-50 sm:p-10">
+              <div className="absolute left-8 right-8 top-8 h-px bg-amber-100/20" />
+              <img
+                src="/assets/pip-guide.webp"
+                alt="Pip, der Papierdrache"
+                className="h-72 w-72 object-contain drop-shadow-2xl sm:h-80 sm:w-80"
+              />
+              <div className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Pip wartet auf dich</div>
+              <h1 className="mt-2 text-4xl font-black leading-tight sm:text-5xl">Wordwick Academy</h1>
+            </div>
+
+            <div className="p-7 sm:p-10">
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{currentPrologue.eyebrow}</div>
+              <h2 className="mt-2 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">{currentPrologue.title}</h2>
+              <p className="mt-5 text-base font-bold leading-8 text-stone-700">{currentPrologue.body}</p>
+              <p className="mt-4 text-base font-bold leading-8 text-slate-900">{currentPrologue.extra}</p>
+
+              <div className="mt-7">
+                <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-blue-950/55">
+                  <span>Vorgeschichte</span>
+                  <span>{prologueStep + 1}/{prologuePages.length}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-950/10">
+                  <div className="h-full rounded-full bg-blue-800" style={{ width: `${((prologueStep + 1) / prologuePages.length) * 100}%` }} />
+                </div>
+              </div>
+
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                <button onClick={finishPrologue} className="gold-button flex-1">Direkt zur Karte</button>
+                {prologueStep + 1 < prologuePages.length ? (
+                  <button onClick={() => setPrologueStep(step => step + 1)} className="magic-button flex-1">
+                    Weiter
+                  </button>
+                ) : (
+                  <button onClick={finishPrologue} className="magic-button flex-1">
+                    Zur Karte
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-[1500px] flex-col gap-5 px-3 py-4 sm:px-5 sm:py-5">
@@ -88,8 +177,8 @@ export default function WorldMap() {
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/22 via-transparent to-slate-950/5" />
 
         <div className="absolute left-[7%] top-[6%] z-20 max-w-[260px] text-amber-950">
-          <div className="font-serif text-4xl font-black leading-none tracking-normal sm:text-5xl">Wordwick</div>
-          <div className="font-serif text-3xl font-black leading-none tracking-normal sm:text-4xl">Academy</div>
+          <div className="wordwick-title-outline font-serif text-4xl font-black leading-none tracking-normal sm:text-5xl">Wordwick</div>
+          <div className="wordwick-title-outline font-serif text-3xl font-black leading-none tracking-normal sm:text-4xl">Academy</div>
           <div className="mt-2 inline-flex rounded-full border border-amber-950/30 bg-amber-100/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-950/80 backdrop-blur-sm">
             Learn magic words
           </div>
@@ -158,11 +247,11 @@ export default function WorldMap() {
       <aside className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(380px,0.65fr)]">
         <section className="ink-panel rounded-[28px] border border-amber-100/20 p-5 text-amber-50">
           <div className="flex items-start gap-4">
-            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-amber-100/10">
+            <div className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-amber-100/10">
               <img
                 src="/assets/pip-neutral.webp"
                 alt="Pip, der Papierdrache"
-                className="h-28 w-28 object-contain drop-shadow-2xl"
+                className="h-40 w-40 object-contain drop-shadow-2xl"
               />
             </div>
             <div>

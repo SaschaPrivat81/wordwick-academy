@@ -60,11 +60,11 @@ export default function Login() {
 
           <form onSubmit={handle} className="parchment w-full rounded-[28px] border border-amber-100/70 p-6 text-stone-900 sm:p-8">
             <div className="mb-6 flex items-center gap-4">
-              <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-blue-950/90 shadow-lg">
+              <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl bg-blue-950/90 shadow-lg">
                 <img
                   src="/assets/pip-guide.webp"
                   alt="Pip"
-                  className="h-24 w-24 object-contain drop-shadow-xl"
+                  className="h-36 w-36 object-contain drop-shadow-xl"
                 />
               </div>
               <div>

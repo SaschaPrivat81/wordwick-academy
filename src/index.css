@@ -45,6 +45,15 @@ input {
   @apply inline-flex items-center justify-center gap-2 rounded-xl bg-amber-300 px-4 py-3 text-sm font-black text-slate-950 shadow-lg shadow-amber-950/10 transition hover:bg-amber-200 active:scale-[0.98];
 }
 
+.wordwick-title-outline {
+  text-shadow:
+    -1px -1px 0 rgba(255, 248, 220, 0.88),
+    1px -1px 0 rgba(255, 248, 220, 0.88),
+    -1px 1px 0 rgba(255, 248, 220, 0.88),
+    1px 1px 0 rgba(255, 248, 220, 0.88),
+    0 3px 10px rgba(255, 248, 220, 0.5);
+}
+
 .answer-card {
   @apply relative min-h-28 rounded-2xl border border-blue-950/10 bg-white/75 px-5 py-5 text-left shadow-lg shadow-slate-950/10 outline-none ring-blue-800/25 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-xl focus:ring-4 active:scale-[0.98] disabled:cursor-default disabled:hover:translate-y-0;
 }

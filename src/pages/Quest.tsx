@@ -209,12 +209,12 @@ export default function Quest() {
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center px-4 py-6">
         <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
           <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="ink-panel relative flex min-h-[360px] flex-col items-center justify-center overflow-hidden p-8 text-center text-amber-50">
+            <div className="ink-panel relative flex min-h-[420px] flex-col items-center justify-center overflow-hidden p-8 text-center text-amber-50">
               <div className="absolute inset-x-8 top-8 h-px bg-amber-100/20" />
               <img
                 src="/assets/pip-guide.webp"
                 alt="Pip zeigt den nächsten Auftrag"
-                className="h-48 w-48 object-contain drop-shadow-2xl"
+                className="h-64 w-64 object-contain drop-shadow-2xl sm:h-72 sm:w-72"
               />
               <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Auftrag</div>
               <h1 className="mt-2 text-4xl font-black leading-tight">{quest.title}</h1>
@@ -225,6 +225,9 @@ export default function Quest() {
               <h2 className="mt-2 text-3xl font-black leading-tight text-slate-950">Die Spur beginnt hier.</h2>
               <p className="mt-4 text-base font-bold leading-7 text-stone-700">{story.mapTeaser}</p>
               <p className="mt-3 text-base font-bold leading-7 text-slate-900">{story.missionIntro}</p>
+              <p className="mt-3 text-sm font-bold leading-6 text-stone-600">
+                Wenn du diese Mission schaffst, merkt sich die Akademiekarte den Ort wieder ein Stück besser. Pip sammelt jeden richtigen Wortfunken, legt ihn auf die Karte und sucht damit nach dem nächsten hellen Pfad.
+              </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-white/60 p-4">
@@ -272,7 +275,7 @@ export default function Quest() {
               <img
                 src="/assets/pip-cheer.webp"
                 alt="Pip jubelt"
-                className="h-40 w-40 object-contain drop-shadow-2xl"
+                className="h-56 w-56 object-contain drop-shadow-2xl"
               />
               <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Quest abgeschlossen</div>
               <h1 className="mt-2 text-4xl font-black">{quest.title}</h1>
@@ -318,11 +321,11 @@ export default function Quest() {
           <ArrowLeft className="h-4 w-4" />
           Karte
         </button>
-        <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10">
+        <div className="flex h-32 w-32 items-center justify-center rounded-3xl bg-white/10">
           <img
             src={pipMissionImage}
             alt="Pip"
-            className="h-28 w-28 object-contain drop-shadow-2xl"
+            className="h-40 w-40 object-contain drop-shadow-2xl"
           />
         </div>
         <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Mission · {quest.chapter}</div>
