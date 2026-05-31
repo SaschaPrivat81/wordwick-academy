@@ -66,6 +66,7 @@ export default function Quest() {
   const [matchedWordIds, setMatchedWordIds] = useState<number[]>([]);
   const [verbIndex, setVerbIndex] = useState(0);
   const [verbSlots, setVerbSlots] = useState<string[]>([]);
+  const [completionSaved, setCompletionSaved] = useState(false);
 
   useEffect(() => {
     setQuest(fallbackQuests.find(item => item.id === questId) ?? null);
@@ -82,6 +83,7 @@ export default function Quest() {
     setMatchedWordIds([]);
     setVerbIndex(0);
     setVerbSlots([]);
+    setCompletionSaved(false);
 
     Promise.all([
       fetch(`/api/quests/${questId}`, { credentials: 'include' }).then(response => response.ok ? response.json() : null),
@@ -191,6 +193,22 @@ export default function Quest() {
     });
   };
 
+  const completeQuest = async (finalCorrectCount = correctCount) => {
+    setFinished(true);
+    if (completionSaved || !quest || totalTasks <= 0) return;
+    setCompletionSaved(true);
+    await fetch('/api/quest-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        questId: quest.id,
+        correct: finalCorrectCount,
+        total: totalTasks,
+      }),
+    });
+  };
+
   const checkAnswer = async (value: string) => {
     if (!current || result) return;
 
@@ -242,7 +260,7 @@ export default function Quest() {
       await report(word.id, true);
 
       if (nextMatched.length >= libraryWords.length) {
-        window.setTimeout(() => setFinished(true), 700);
+        window.setTimeout(() => completeQuest(nextMatched.length), 700);
       } else {
         window.setTimeout(() => setResult(null), 650);
       }
@@ -288,7 +306,7 @@ export default function Quest() {
     setVerbSlots([]);
     setResult(null);
     if (verbIndex + 1 >= verbWords.length) {
-      setFinished(true);
+      completeQuest(correctCount);
     } else {
       setVerbIndex(value => value + 1);
     }
@@ -298,7 +316,7 @@ export default function Quest() {
     setAnswer('');
     setResult(null);
     if (currentIndex + 1 >= challenges.length) {
-      setFinished(true);
+      completeQuest(correctCount);
     } else {
       setCurrentIndex(value => value + 1);
     }
@@ -379,6 +397,7 @@ export default function Quest() {
 
   if (finished) {
     const finalPercent = Math.round((correctCount / totalTasks) * 100);
+    const questCompleted = finalPercent >= 80;
     return (
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl items-center px-4 py-6">
         <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
@@ -395,9 +414,11 @@ export default function Quest() {
             <div className="p-7 sm:p-9">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{story.arc}</div>
               <h2 className="mt-2 text-3xl font-black text-slate-950">
-                {finalPercent >= 80 ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Übungssaal.'}
+                {questCompleted ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Übungssaal.'}
               </h2>
-              <p className="mt-3 text-sm font-bold leading-6 text-stone-600">{story.completed}</p>
+              <p className="mt-3 text-sm font-bold leading-6 text-stone-600">
+                {questCompleted ? story.completed : 'Pip hat die Wortfunken gezählt. Ab 80 Prozent öffnet sich der nächste Pfad auf der Karte.'}
+              </p>
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-white/60 p-4">
                   <div className="text-3xl font-black text-slate-950">{correctCount}</div>
@@ -412,8 +433,8 @@ export default function Quest() {
                   <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Funken</div>
                 </div>
               </div>
-              <div className="mt-6 rounded-2xl border border-amber-900/10 bg-amber-100/70 p-4 text-sm font-bold leading-6 text-slate-950">
-                Freigeschaltet: {quest.reward}. {story.rewardReveal}
+              <div className={`mt-6 rounded-2xl border p-4 text-sm font-bold leading-6 ${questCompleted ? 'border-amber-900/10 bg-amber-100/70 text-slate-950' : 'border-blue-950/10 bg-blue-100/70 text-blue-950'}`}>
+                {questCompleted ? `Freigeschaltet: ${quest.reward}. ${story.rewardReveal}` : `Noch nicht freigeschaltet: ${quest.reward}. Versuch es gleich nochmal.`}
               </div>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button onClick={() => navigate('/')} className="magic-button flex-1">Zur Karte</button>

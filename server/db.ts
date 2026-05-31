@@ -40,6 +40,20 @@ db.exec(`
     UNIQUE(userId, wordId)
   );
 
+  CREATE TABLE IF NOT EXISTS quest_results (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER NOT NULL,
+    questId INTEGER NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0,
+    bestPercent INTEGER NOT NULL DEFAULT 0,
+    bestCorrect INTEGER NOT NULL DEFAULT 0,
+    bestTotal INTEGER NOT NULL DEFAULT 0,
+    completed INTEGER NOT NULL DEFAULT 0,
+    lastPlayed TEXT NOT NULL,
+    completedAt TEXT,
+    UNIQUE(userId, questId)
+  );
+
   CREATE TABLE IF NOT EXISTS rewards (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     title TEXT NOT NULL,
@@ -322,6 +336,7 @@ const freshPlayStateMigration = db.prepare("SELECT value FROM app_settings WHERE
 if (!freshPlayStateMigration) {
   db.prepare('DELETE FROM progress').run();
   db.prepare('DELETE FROM claimed_rewards').run();
+  db.prepare('DELETE FROM quest_results').run();
   db.prepare('UPDATE users SET coins = 0, streak = 0, lastPlayed = NULL').run();
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('fresh-play-state-v1', 'applied')").run();
 }

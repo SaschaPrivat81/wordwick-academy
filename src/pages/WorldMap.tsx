@@ -10,6 +10,13 @@ interface ProgressRow {
   mastered: number;
 }
 
+interface QuestResultRow {
+  questId: number;
+  attempts: number;
+  bestPercent: number;
+  completed: number;
+}
+
 const PROLOGUE_VERSION = 'v2';
 const PROLOGUE_NODE = {
   x: 51,
@@ -79,6 +86,7 @@ export default function WorldMap() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [progress, setProgress] = useState<Record<number, ProgressRow>>({});
+  const [questResults, setQuestResults] = useState<Record<number, QuestResultRow>>({});
   const [quests, setQuests] = useState<AcademyQuest[]>(fallbackQuests);
   const [selectedQuest, setSelectedQuest] = useState<AcademyQuest>(fallbackQuests[0]);
   const [prologueStep, setPrologueStep] = useState(0);
@@ -104,6 +112,14 @@ export default function WorldMap() {
         for (const row of data) map[row.wordId] = row;
         setProgress(map);
       });
+
+    fetch('/api/quest-results', { credentials: 'include' })
+      .then(response => response.ok ? response.json() : [])
+      .then((data: QuestResultRow[]) => {
+        const map: Record<number, QuestResultRow> = {};
+        for (const row of data) map[row.questId] = row;
+        setQuestResults(map);
+      });
   }, [user]);
 
   const questOrder = (quest: AcademyQuest) => quest.sortOrder ?? quest.id;
@@ -113,15 +129,14 @@ export default function WorldMap() {
 
   const questStatus = (quest: AcademyQuest) => {
     if (quest.words.length === 0) return 'locked';
-    const mastered = questMasteredCount(quest);
-    if (mastered === quest.words.length) return 'completed';
+    if (questResults[quest.id]?.completed) return 'completed';
     if (quest.id === 1) return 'unlocked';
     const previousIndex = orderedQuests.findIndex(item => item.id === quest.id);
     const previous = previousIndex > 0
       ? [...orderedQuests.slice(0, previousIndex)].reverse().find(item => item.words.length > 0)
       : null;
     if (!previous) return 'unlocked';
-    return questMasteredCount(previous) === previous.words.length ? 'unlocked' : 'locked';
+    return questResults[previous.id]?.completed ? 'unlocked' : 'locked';
   };
 
   const status = questStatus(selectedQuest);
@@ -289,6 +304,11 @@ export default function WorldMap() {
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Schritt {selectedStep} · {selectedQuest.chapter}</div>
               <h2 className="mt-1 text-xl font-black leading-tight text-slate-950 xl:text-2xl">{selectedQuest.title}</h2>
               <p className="mt-2 text-sm font-semibold leading-5 text-stone-600 xl:leading-6">{selectedQuest.subtitle}</p>
+              {questResults[selectedQuest.id] && (
+                <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-blue-950/55">
+                  Bestwert: {questResults[selectedQuest.id].bestPercent}%
+                </p>
+              )}
             </div>
             <Star className="mt-1 h-7 w-7 text-amber-500" />
           </div>

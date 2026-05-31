@@ -191,6 +191,9 @@ export default function Admin() {
   const [wordResult, setWordResult] = useState('');
   const [questDrafts, setQuestDrafts] = useState<Record<number, Partial<AdminQuest>>>({});
   const [selectedWords, setSelectedWords] = useState<Record<number, string>>({});
+  const readyQuestCount = content?.quests.filter(quest => quest.words.length > 0).length ?? 0;
+  const totalQuestCount = content?.quests.length ?? 0;
+  const wordBankCount = content?.words.length ?? 0;
 
   const loadContent = async () => {
     const response = await fetch('/api/admin/content', { credentials: 'include' });
@@ -776,9 +779,13 @@ export default function Admin() {
         <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
           <div className="mb-4 flex items-center gap-3">
             <BookOpen className="h-6 w-6 text-blue-950" />
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Levelstruktur</div>
               <h2 className="text-2xl font-black text-slate-950">Kartenorte befüllen</h2>
+            </div>
+            <div className="hidden rounded-2xl bg-blue-950/5 px-4 py-2 text-right text-xs font-black text-blue-950/65 sm:block">
+              <div>{readyQuestCount}/{totalQuestCount} Level befüllt</div>
+              <div>{wordBankCount} Wörter in der Bank</div>
             </div>
           </div>
 
@@ -788,6 +795,14 @@ export default function Admin() {
               const availableWords = (content?.words ?? []).filter(word => !quest.words.includes(word.id));
               return (
                 <div key={quest.id} className="rounded-2xl border border-amber-900/10 bg-white/60 p-4">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-blue-950/55">
+                      {quest.wordItems.length} Inhalt{quest.wordItems.length === 1 ? '' : 'e'} · {gameTypes.find(([value]) => value === (draft.gameType ?? quest.gameType))?.[1] ?? 'Spieltyp'}
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${quest.wordItems.length > 0 ? 'bg-blue-100 text-blue-950' : 'bg-amber-100 text-amber-900'}`}>
+                      {quest.wordItems.length > 0 ? 'Bereit' : 'Zu befüllen'}
+                    </span>
+                  </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     <label>
                       <span className={labelClass}>Titel</span>

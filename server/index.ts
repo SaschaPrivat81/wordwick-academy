@@ -31,6 +31,7 @@ function requireAdmin(req: express.Request, res: express.Response, next: express
 const allowedRoles = new Set(['child', 'parent', 'admin']);
 const canManageAcademy = (role: string) => role === 'parent' || role === 'admin';
 const isValidPin = (pin: unknown) => typeof pin === 'string' && /^\d{4}$/.test(pin);
+const QUEST_COMPLETION_PERCENT = 80;
 
 // ─── Auth ───
 app.post('/api/login', (req, res) => {
@@ -95,14 +96,9 @@ function getQuests() {
 }
 
 function isQuestCompleted(userId: number, questId: number) {
-  const words = db.prepare('SELECT wordId FROM quest_words WHERE questId = ?').all(questId) as { wordId: number }[];
-  if (words.length === 0) return false;
-  const masteredRows = db.prepare(`
-    SELECT wordId
-    FROM progress
-    WHERE userId = ? AND mastered = 1 AND wordId IN (${words.map(() => '?').join(',')})
-  `).all(userId, ...words.map(word => word.wordId)) as { wordId: number }[];
-  return masteredRows.length === words.length;
+  const result = db.prepare('SELECT completed FROM quest_results WHERE userId = ? AND questId = ?')
+    .get(userId, questId) as { completed: number } | undefined;
+  return result?.completed === 1;
 }
 
 function rewardAccess(userId: number, reward: any, userCoins: number) {
@@ -153,6 +149,68 @@ app.get('/api/progress', requirePin, (req, res) => {
     WHERE p.userId = ?
   `).all(req.session.userId) as any[];
   res.json(rows);
+});
+
+app.get('/api/quest-results', requirePin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT questId, attempts, bestPercent, bestCorrect, bestTotal, completed, lastPlayed, completedAt
+    FROM quest_results
+    WHERE userId = ?
+  `).all(req.session.userId) as any[];
+  res.json(rows);
+});
+
+app.post('/api/quest-results', requirePin, (req, res) => {
+  const userId = Number(req.session.userId);
+  const questId = Number(req.body.questId);
+  const correct = Math.max(0, Number(req.body.correct));
+  const total = Math.max(0, Number(req.body.total));
+  const quest = db.prepare('SELECT id FROM quests WHERE id = ?').get(questId);
+  if (!quest || !Number.isFinite(correct) || !Number.isFinite(total) || total <= 0) {
+    return res.status(400).json({ error: 'Quest-Ergebnis konnte nicht gespeichert werden' });
+  }
+
+  const percent = Math.max(0, Math.min(100, Math.round((correct / total) * 100)));
+  const completed = percent >= QUEST_COMPLETION_PERCENT ? 1 : 0;
+  const now = new Date().toISOString();
+  const existing = db.prepare('SELECT * FROM quest_results WHERE userId = ? AND questId = ?')
+    .get(userId, questId) as any;
+
+  if (existing) {
+    const isNewBest = percent > existing.bestPercent;
+    db.prepare(`
+      UPDATE quest_results
+      SET attempts = attempts + 1,
+          bestPercent = ?,
+          bestCorrect = ?,
+          bestTotal = ?,
+          completed = ?,
+          lastPlayed = ?,
+          completedAt = CASE WHEN ? = 1 AND completedAt IS NULL THEN ? ELSE completedAt END
+      WHERE id = ?
+    `).run(
+      isNewBest ? percent : existing.bestPercent,
+      isNewBest ? Math.floor(correct) : existing.bestCorrect,
+      isNewBest ? Math.floor(total) : existing.bestTotal,
+      existing.completed === 1 || completed === 1 ? 1 : 0,
+      now,
+      completed,
+      now,
+      existing.id,
+    );
+  } else {
+    db.prepare(`
+      INSERT INTO quest_results (userId, questId, attempts, bestPercent, bestCorrect, bestTotal, completed, lastPlayed, completedAt)
+      VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)
+    `).run(userId, questId, percent, Math.floor(correct), Math.floor(total), completed, now, completed ? now : null);
+  }
+
+  const saved = db.prepare(`
+    SELECT questId, attempts, bestPercent, bestCorrect, bestTotal, completed, lastPlayed, completedAt
+    FROM quest_results
+    WHERE userId = ? AND questId = ?
+  `).get(userId, questId);
+  res.json(saved);
 });
 
 app.post('/api/progress', requirePin, (req, res) => {
