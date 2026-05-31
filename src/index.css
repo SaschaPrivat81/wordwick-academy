@@ -169,6 +169,51 @@ input {
   @apply absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-amber-100 bg-blue-950 text-[11px] font-black text-amber-50 shadow-md;
 }
 
+.story-scroll-marker {
+  @apply relative flex h-8 w-11 items-center justify-center border border-amber-900/35 bg-amber-100 text-amber-950 shadow-lg transition-all duration-200 active:scale-95 sm:h-9 sm:w-12;
+  border-radius: 45% 18% 42% 18%;
+  transform-origin: center;
+  box-shadow:
+    inset 8px 0 0 rgba(146, 64, 14, 0.18),
+    inset -8px 0 0 rgba(146, 64, 14, 0.14),
+    0 8px 18px rgba(15, 23, 42, 0.28);
+}
+
+.story-scroll-marker::before,
+.story-scroll-marker::after {
+  content: '';
+  @apply absolute top-1/2 h-7 w-2 -translate-y-1/2 rounded-full border border-amber-900/30 bg-amber-200;
+}
+
+.story-scroll-marker::before {
+  @apply -left-1;
+}
+
+.story-scroll-marker::after {
+  @apply -right-1;
+}
+
+.story-scroll-marker.available {
+  @apply cursor-pointer border-blue-900/40 text-blue-950 hover:-translate-y-0.5;
+  box-shadow:
+    inset 8px 0 0 rgba(146, 64, 14, 0.16),
+    inset -8px 0 0 rgba(146, 64, 14, 0.12),
+    0 0 0 3px rgba(59, 130, 246, 0.25),
+    0 10px 22px rgba(15, 23, 42, 0.28);
+}
+
+.story-scroll-marker.seen {
+  @apply cursor-pointer border-amber-900/35 bg-amber-200 text-amber-950 opacity-90 hover:-translate-y-0.5;
+}
+
+.story-scroll-marker.locked {
+  @apply cursor-not-allowed border-stone-400 bg-stone-300 text-stone-500 opacity-55;
+  box-shadow:
+    inset 8px 0 0 rgba(68, 64, 60, 0.13),
+    inset -8px 0 0 rgba(68, 64, 60, 0.1),
+    0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
 .map-ribbon {
   @apply pointer-events-none absolute left-1/2 top-[calc(100%+0.25rem)] min-w-max -translate-x-1/2 rounded-md border border-amber-900/35 bg-amber-100/90 px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-amber-950 shadow-md backdrop-blur-sm;
 }

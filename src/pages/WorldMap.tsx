@@ -236,11 +236,11 @@ export default function WorldMap() {
 
         <button
           onClick={openPrologue}
-          className="quest-node prologue z-30"
-          style={{ left: `${PROLOGUE_NODE.x}%`, top: `${PROLOGUE_NODE.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
+          className="story-scroll-marker seen z-30 -rotate-6"
+          style={{ left: `${PROLOGUE_NODE.x}%`, top: `${PROLOGUE_NODE.y}%`, position: 'absolute', transform: 'translate(-50%, -50%) rotate(-8deg)' }}
           aria-label="Prolog noch einmal ansehen"
         >
-          <Sparkles className="h-6 w-6" />
+          <ScrollText className="relative z-10 h-4 w-4" />
           <span className="map-ribbon map-ribbon-prologue">
             <span className="text-[9px] uppercase tracking-[0.14em] opacity-70">Obergeschoss</span>
             <span className="block">Prolog</span>
@@ -283,13 +283,13 @@ export default function WorldMap() {
               onClick={() => {
                 if (unlocked) navigate(`/story/${scene.id}`);
               }}
-              className={`quest-node z-30 ${unlocked ? seen ? 'completed' : 'prologue' : 'locked'}`}
-              style={{ left: `${scene.x}%`, top: `${scene.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
+              className={`story-scroll-marker z-30 ${unlocked ? seen ? 'seen' : 'available' : 'locked'} ${seen ? 'rotate-3' : '-rotate-6'}`}
+              style={{ left: `${scene.x}%`, top: `${scene.y}%`, position: 'absolute', transform: `translate(-50%, -50%) rotate(${seen ? 6 : -8}deg)` }}
               aria-label={scene.title}
             >
-              <ScrollText className="h-6 w-6" />
+              <ScrollText className="relative z-10 h-4 w-4" />
               {!seen && unlocked && <Sparkles className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-blue-950 p-1 text-amber-100" />}
-              {!unlocked && <LockKeyhole className="absolute h-7 w-7 text-stone-200" />}
+              {!unlocked && <LockKeyhole className="absolute z-10 h-4 w-4 text-stone-600" />}
               <span className={unlocked && !seen ? activeRibbonClass(scene.x, scene.y) : ribbonClass(scene.x, scene.y)}>
                 <span className="text-[9px] uppercase tracking-[0.14em] opacity-70">{scene.eyebrow}</span>
                 <span className="block">{scene.title}</span>

@@ -146,8 +146,8 @@ export const storyScenes: StoryScene[] = [
     subtitle: 'Eine Spur ist plötzlich sehr falsch beschriftet.',
     eyebrow: 'Zwischensequenz I',
     rewardLine: 'Pip findet heraus, dass die verschwundenen Wortfunken nicht einfach weggeweht wurden.',
-    x: 46,
-    y: 35,
+    x: 58,
+    y: 55,
     pages: [
       {
         speaker: 'Erzähler',
@@ -176,8 +176,8 @@ export const storyScenes: StoryScene[] = [
     subtitle: 'Im Glashaus wächst ein Wort, das niemand gepflanzt hat.',
     eyebrow: 'Zwischensequenz II',
     rewardLine: 'Die Akademie zeigt, dass neue Wörter nicht nur gesammelt, sondern gepflegt werden müssen.',
-    x: 32,
-    y: 55,
+    x: 33,
+    y: 47,
     pages: [
       {
         speaker: 'Portrait',
@@ -206,8 +206,8 @@ export const storyScenes: StoryScene[] = [
     subtitle: 'Der See zeigt, warum der Tintennebel entstanden ist.',
     eyebrow: 'Zwischensequenz III',
     rewardLine: 'Vor dem Finale wird klar: Der Gegner ist eher ein Unfall als ein Bösewicht.',
-    x: 70,
-    y: 66,
+    x: 80,
+    y: 62,
     pages: [
       {
         speaker: 'Erzähler',
@@ -235,8 +235,8 @@ export const storyScenes: StoryScene[] = [
     subtitle: 'Die Akademie erkennt den ersten großen Fortschritt.',
     eyebrow: 'Finalszene',
     rewardLine: 'Kapitel I ist abgeschlossen und ein neuer Bereich der Akademie beginnt zu flimmern.',
-    x: 60,
-    y: 14,
+    x: 63,
+    y: 18,
     pages: [
       {
         speaker: 'Erzähler',
