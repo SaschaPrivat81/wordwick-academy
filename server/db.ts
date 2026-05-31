@@ -156,16 +156,16 @@ const questCount = db.prepare('SELECT COUNT(*) as c FROM quests').get() as { c: 
 if (questCount.c === 0) {
   const now = new Date().toISOString();
   const quests = [
-    [1, 'Wordwick Hall', 'Die ersten Zauberworte für Tiere', 'Haupthalle', 'vocab', 53, 53, 'paw', 'Bronzefeder', 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Wörtern.'],
-    [2, 'Moonlit Library', 'Worte aus Zimmern und Fluren', 'Bibliothek', 'vocab', 29, 78, 'home', 'Silbertinte', 'Zwischen alten Regalen lernt jedes Ding seinen englischen Namen.'],
-    [3, 'Wordbrew Workshop', 'go, went, gone und Freunde', 'Wortbrauerei', 'verb', 39, 41, 'spark', 'Sternenstempel', 'Unregelmäßige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.'],
-    [4, 'Sky Practice Yards', 'sehen, trinken und merken', 'Flugplatz', 'verb', 18, 66, 'water', 'Mondkristall', 'Auf dem Übungsplatz zählt Tempo: sehen, erkennen, richtig antworten.'],
-    [5, 'Stargazer Tower', 'ruhige Worte, starke Formen', 'Sternenturm', 'mixed', 58, 20, 'book', 'Goldenes Lesezeichen', 'Im Sternenturm sammelt sich alles, was du bisher gelernt hast.'],
-    [6, 'Glasshouse Garden', 'Pflanzen, Farben und kleine Dinge', 'Glashaus', 'vocab', 26, 51, 'spark', 'Kristallsamen', 'Das Glashaus wartet auf neue Vokabeln aus deinem Eltern-Dashboard.'],
-    [7, 'Whispering Woods', 'Laute, Tiere und Waldwörter', 'Flüsterwald', 'vocab', 78, 28, 'trees', 'Silberblatt', 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird später gefüllt.'],
-    [8, 'Wyrm Cave', 'Mutprobe für starke Verben', 'Drachenhöhle', 'verb', 82, 52, 'spark', 'Drachenmarke', 'Die Höhle wird ein Hauptlevel mit einer größeren Prüfung.'],
-    [9, 'Moonwell Lake', 'Wiederholen und festigen', 'Mondsee', 'mixed', 77, 72, 'water', 'Mondperle', 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.'],
-    [10, 'Mastery Grounds', 'Finale des ersten Kapitels', 'Abschlussplatz', 'mixed', 55, 83, 'graduation', 'Meisterabzeichen', 'Hier kann später eine echte Belohnung freigeschaltet werden.'],
+    [1, 'Wordwick Hall', 'Die ersten Zauberworte für Tiere', 'Haupthalle', 'vocab', 53, 53, 'hall', 'Bronzefeder', 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Wörtern.'],
+    [2, 'Moonlit Library', 'Worte aus Zimmern und Fluren', 'Bibliothek', 'vocab', 29, 78, 'library', 'Silbertinte', 'Zwischen alten Regalen lernt jedes Ding seinen englischen Namen.'],
+    [3, 'Wordbrew Workshop', 'go, went, gone und Freunde', 'Wortbrauerei', 'verb', 39, 41, 'brew', 'Sternenstempel', 'Unregelmäßige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.'],
+    [4, 'Sky Practice Yards', 'sehen, trinken und merken', 'Flugplatz', 'verb', 18, 66, 'sky', 'Mondkristall', 'Auf dem Übungsplatz zählt Tempo: sehen, erkennen, richtig antworten.'],
+    [5, 'Stargazer Tower', 'ruhige Worte, starke Formen', 'Sternenturm', 'mixed', 58, 20, 'tower', 'Goldenes Lesezeichen', 'Im Sternenturm sammelt sich alles, was du bisher gelernt hast.'],
+    [6, 'Glasshouse Garden', 'Pflanzen, Farben und kleine Dinge', 'Glashaus', 'vocab', 26, 51, 'garden', 'Kristallsamen', 'Das Glashaus wartet auf neue Vokabeln aus deinem Eltern-Dashboard.'],
+    [7, 'Whispering Woods', 'Laute, Tiere und Waldwörter', 'Flüsterwald', 'vocab', 78, 28, 'woods', 'Silberblatt', 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird später gefüllt.'],
+    [8, 'Wyrm Cave', 'Mutprobe für starke Verben', 'Drachenhöhle', 'verb', 82, 52, 'cave', 'Drachenmarke', 'Die Höhle wird ein Hauptlevel mit einer größeren Prüfung.'],
+    [9, 'Moonwell Lake', 'Wiederholen und festigen', 'Mondsee', 'mixed', 77, 72, 'moonwell', 'Mondperle', 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.'],
+    [10, 'Mastery Grounds', 'Finale des ersten Kapitels', 'Abschlussplatz', 'mixed', 55, 83, 'mastery', 'Meisterabzeichen', 'Hier kann später eine echte Belohnung freigeschaltet werden.'],
   ];
   const insertQuest = db.prepare(`
     INSERT INTO quests (id, title, subtitle, chapter, kind, x, y, sigil, reward, guide, sortOrder, createdAt)
@@ -283,6 +283,27 @@ if (!lightPathMigration) {
     db.prepare('UPDATE quests SET sortOrder = ? WHERE id = ?').run(quest.sortOrder, quest.id);
   }
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('map-progression-v2-light-path', 'applied')").run();
+}
+
+const mapSigilsMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'map-sigils-v1'").get();
+if (!mapSigilsMigration) {
+  const questSigils = [
+    { id: 1, sigil: 'hall' },
+    { id: 2, sigil: 'library' },
+    { id: 3, sigil: 'brew' },
+    { id: 4, sigil: 'sky' },
+    { id: 5, sigil: 'tower' },
+    { id: 6, sigil: 'garden' },
+    { id: 7, sigil: 'woods' },
+    { id: 8, sigil: 'cave' },
+    { id: 9, sigil: 'moonwell' },
+    { id: 10, sigil: 'mastery' },
+  ];
+
+  for (const quest of questSigils) {
+    db.prepare('UPDATE quests SET sigil = ? WHERE id = ?').run(quest.sigil, quest.id);
+  }
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('map-sigils-v1', 'applied')").run();
 }
 
 const rewardDefaults = [

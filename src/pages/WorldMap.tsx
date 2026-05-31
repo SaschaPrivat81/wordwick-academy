@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Check, FlaskConical, GraduationCap, Home, LockKeyhole, PawPrint, Sparkles, Star, Trees, Waves } from 'lucide-react';
+import { Castle, Check, CloudSun, Flame, FlaskConical, GraduationCap, Home, LibraryBig, LockKeyhole, PawPrint, Sparkles, Sprout, Star, Telescope, Trees, Trophy, Waves } from 'lucide-react';
 import { useAuth } from '../App';
+import WordwickLogo from '../components/WordwickLogo';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory } from '../data/academy';
 
 interface ProgressRow {
@@ -10,14 +11,34 @@ interface ProgressRow {
 }
 
 const sigils = {
+  hall: Castle,
+  library: LibraryBig,
+  brew: FlaskConical,
+  sky: CloudSun,
+  tower: Telescope,
+  garden: Sprout,
+  woods: Trees,
+  cave: Flame,
+  moonwell: Waves,
+  mastery: Trophy,
   paw: PawPrint,
   home: Home,
   spark: FlaskConical,
   water: Waves,
-  book: BookOpen,
+  graduation: GraduationCap,
 };
 
 const futureSigils = {
+  hall: Castle,
+  library: LibraryBig,
+  brew: FlaskConical,
+  sky: CloudSun,
+  tower: Telescope,
+  garden: Sprout,
+  woods: Trees,
+  cave: Flame,
+  moonwell: Waves,
+  mastery: Trophy,
   spark: Sparkles,
   trees: Trees,
   water: Waves,
@@ -56,6 +77,13 @@ function ribbonClass(x: number, y: number) {
   if (x <= 24) return 'map-ribbon map-ribbon-right hidden 2xl:block';
   if (x >= 76) return 'map-ribbon map-ribbon-left hidden 2xl:block';
   return 'map-ribbon hidden 2xl:block';
+}
+
+function activeRibbonClass(x: number, y: number) {
+  if (y >= 70) return 'map-ribbon map-ribbon-active map-ribbon-above';
+  if (x <= 24) return 'map-ribbon map-ribbon-active map-ribbon-right';
+  if (x >= 76) return 'map-ribbon map-ribbon-active map-ribbon-left';
+  return 'map-ribbon map-ribbon-active';
 }
 
 export default function WorldMap() {
@@ -110,6 +138,7 @@ export default function WorldMap() {
   const status = questStatus(selectedQuest);
   const mastered = questMasteredCount(selectedQuest);
   const selectedPercent = Math.round((mastered / selectedQuest.words.length) * 100);
+  const selectedStep = stepByQuestId.get(selectedQuest.id) ?? selectedQuest.id;
   const selectedStory = getQuestStory(selectedQuest.id);
   const chapterQuests = orderedQuests.filter(quest => quest.words.length > 0);
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
@@ -181,18 +210,13 @@ export default function WorldMap() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/22 via-transparent to-slate-950/5" />
 
-        <div className="absolute left-[7%] top-[6%] z-20 max-w-[260px] text-amber-950">
-          <div className="wordwick-title-outline font-serif text-4xl font-black leading-none tracking-normal sm:text-5xl">Wordwick</div>
-          <div className="wordwick-title-outline font-serif text-3xl font-black leading-none tracking-normal sm:text-4xl">Academy</div>
-          <div className="mt-2 inline-flex rounded-full border border-amber-950/30 bg-amber-100/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-950/80 backdrop-blur-sm">
-            Learn magic words
-          </div>
-        </div>
+        <WordwickLogo tone="map" className="absolute left-[6%] top-[5%] z-20 max-w-[280px]" />
 
         {quests.filter(quest => quest.words.length > 0).map(quest => {
           const questState = questStatus(quest);
-          const Icon = sigils[quest.sigil as keyof typeof sigils];
+          const Icon = sigils[quest.sigil as keyof typeof sigils] ?? Sparkles;
           const stepNumber = stepByQuestId.get(quest.id) ?? quest.id;
+          const isSelected = selectedQuest.id === quest.id;
           return (
             <button
               key={quest.id}
@@ -207,7 +231,10 @@ export default function WorldMap() {
               <Icon className="h-6 w-6" />
               {questState === 'completed' && <Check className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-blue-950 p-1 text-amber-100" />}
               {questState === 'locked' && <LockKeyhole className="absolute h-7 w-7 text-stone-200" />}
-              <span className={ribbonClass(quest.x, quest.y)}>{quest.title}</span>
+              <span className={isSelected ? activeRibbonClass(quest.x, quest.y) : ribbonClass(quest.x, quest.y)}>
+                <span className="text-[9px] uppercase tracking-[0.14em] opacity-70">Schritt {stepNumber} · {quest.chapter}</span>
+                <span className="block">{quest.title}</span>
+              </span>
             </button>
           );
         })}
@@ -225,7 +252,10 @@ export default function WorldMap() {
             <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-stone-600 text-[11px] font-black text-stone-100 shadow-md">{stepNumber}</span>
             <Icon className="h-6 w-6" />
             <LockKeyhole className="absolute h-7 w-7 text-stone-200" />
-            <span className={ribbonClass(stop.x, stop.y)}>{stop.title}</span>
+            <span className={selectedQuest.id === stop.id ? activeRibbonClass(stop.x, stop.y) : ribbonClass(stop.x, stop.y)}>
+              <span className="text-[9px] uppercase tracking-[0.14em] opacity-70">Schritt {stepNumber} · {stop.chapter}</span>
+              <span className="block">{stop.title}</span>
+            </span>
           </div>
         );
         })}
@@ -263,7 +293,7 @@ export default function WorldMap() {
         <section className="parchment rounded-[28px] border border-amber-100/70 p-4 xl:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{selectedQuest.chapter}</div>
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Schritt {selectedStep} · {selectedQuest.chapter}</div>
               <h2 className="mt-1 text-xl font-black leading-tight text-slate-950 xl:text-2xl">{selectedQuest.title}</h2>
               <p className="mt-2 text-sm font-semibold leading-5 text-stone-600 xl:leading-6">{selectedQuest.subtitle}</p>
             </div>

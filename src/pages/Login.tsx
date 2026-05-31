@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BookOpen, KeyRound, Sparkles, UserRound } from 'lucide-react';
 import { useAuth } from '../App';
+import WordwickLogo from '../components/WordwickLogo';
 
 export default function Login() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
@@ -38,9 +39,7 @@ export default function Login() {
               <Sparkles className="h-3.5 w-3.5" />
               Aufnahmeprüfung beginnt
             </div>
-            <h1 className="text-5xl font-black leading-none tracking-normal text-amber-50 drop-shadow-2xl sm:text-6xl">
-              Wordwick Academy
-            </h1>
+            <WordwickLogo className="drop-shadow-2xl" />
             <p className="mt-5 max-w-lg text-lg font-semibold leading-8 text-amber-100 drop-shadow">
               Eine magische Lernschule für englische Wörter, wilde Verben und kleine Siege nach jeder bestandenen Quest.
             </p>

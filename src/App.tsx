@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { Link, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { LogOut, Shield, Sparkles, UserRound } from 'lucide-react';
+import WordwickLogo from './components/WordwickLogo';
 import Login from './pages/Login';
 import WorldMap from './pages/WorldMap';
 import Quest from './pages/Quest';
@@ -77,34 +78,30 @@ function App() {
       <div className="min-h-screen academy-shell text-stone-950">
         {user && (
           <header className="sticky top-0 z-50 border-b border-blue-100/20 bg-blue-950/95 px-4 py-3 text-amber-50 shadow-lg shadow-slate-950/20 backdrop-blur-md">
-            <div className="flex items-center gap-2">
-              <Link to="/" className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200/50 bg-slate-950 text-sm font-black text-amber-100 shadow-inner">WA</div>
-                <div className="leading-tight">
-                  <div className="text-sm font-black">Wordwick</div>
-                  <div className="text-[10px] uppercase tracking-[0.18em] text-amber-200/70">Academy</div>
+            <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3">
+              <Link to="/" aria-label="Zur Karte">
+                <WordwickLogo compact />
+              </Link>
+              <div className="flex items-center gap-2">
+                <div className="hidden items-center gap-1 rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:flex">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>{user.coins}</span>
                 </div>
-              </Link>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="hidden items-center gap-1 rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:flex">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>{user.coins}</span>
-              </div>
-              <div className="hidden rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:block">
-                {user.streak} Tage
-              </div>
-              <Link to="/profile" className="icon-button" aria-label="Profil">
-                <UserRound className="h-4 w-4" />
-              </Link>
-              {(user.role === 'parent' || user.role === 'admin') && (
-                <Link to="/admin" className="icon-button" aria-label="Akademieleitung">
-                  <Shield className="h-4 w-4" />
+                <div className="hidden rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:block">
+                  {user.streak} Tage
+                </div>
+                <Link to="/profile" className="icon-button" aria-label="Profil">
+                  <UserRound className="h-4 w-4" />
                 </Link>
-              )}
-              <button onClick={logout} className="icon-button" aria-label="Logout">
-                <LogOut className="h-4 w-4" />
-              </button>
+                {(user.role === 'parent' || user.role === 'admin') && (
+                  <Link to="/admin" className="icon-button" aria-label="Akademieleitung">
+                    <Shield className="h-4 w-4" />
+                  </Link>
+                )}
+                <button onClick={logout} className="icon-button" aria-label="Logout">
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </header>
         )}
