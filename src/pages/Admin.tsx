@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Database, FileText, Gift, LineChart, LockKeyhole, PackageCheck, PlusCircle, Save, ShieldCheck, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
+import { BookOpen, Database, Download, FileText, Gift, LineChart, LockKeyhole, PackageCheck, PlusCircle, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Wand2 } from 'lucide-react';
 
 interface AdminWord {
   id: number;
@@ -112,6 +112,34 @@ interface WordForm {
   participle: string;
 }
 
+interface ImportPreviewRow {
+  rowNumber: number;
+  german: string;
+  english: string;
+  type: 'vocab' | 'irregular';
+  category: string;
+  past: string;
+  participle: string;
+  level: number | null;
+  questTitle: string | null;
+  action: 'create' | 'link' | 'skip' | 'error';
+  valid: boolean;
+  errors: string[];
+}
+
+interface ImportPreview {
+  rows: ImportPreviewRow[];
+  parseErrors: string[];
+  summary: {
+    total: number;
+    valid: number;
+    creates: number;
+    links: number;
+    skips: number;
+    errors: number;
+  };
+}
+
 const emptyWordForm: WordForm = {
   german: '',
   english: '',
@@ -183,9 +211,24 @@ const gameTypes = [
   ['text-input', 'Texteingabe'],
 ];
 
+const importActionLabels: Record<ImportPreviewRow['action'], string> = {
+  create: 'Neu',
+  link: 'Verknüpfen',
+  skip: 'Schon vorhanden',
+  error: 'Fehler',
+};
+
+const importActionClasses: Record<ImportPreviewRow['action'], string> = {
+  create: 'bg-blue-100 text-blue-950',
+  link: 'bg-amber-100 text-amber-900',
+  skip: 'bg-stone-200 text-stone-600',
+  error: 'bg-red-100 text-red-800',
+};
+
 export default function Admin() {
   const [csv, setCsv] = useState('');
   const [result, setResult] = useState('');
+  const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
   const [userId, setUserId] = useState('');
   const [stats, setStats] = useState<any>(null);
   const [content, setContent] = useState<{ quests: AdminQuest[]; words: AdminWord[] } | null>(null);
@@ -471,7 +514,26 @@ export default function Admin() {
     await loadContent();
   };
 
+  const previewImport = async () => {
+    setResult('');
+    setImportPreview(null);
+    const res = await fetch('/api/admin/words/import-preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ csv }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setResult(data.error ?? 'CSV konnte nicht gelesen werden.');
+      return;
+    }
+    setImportPreview(data);
+    setResult(data.summary.errors > 0 ? 'Bitte Fehler prüfen und danach erneut importieren.' : 'Vorschau ist bereit.');
+  };
+
   const importWords = async () => {
+    setResult('');
     const res = await fetch('/api/admin/words/import', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -479,7 +541,13 @@ export default function Admin() {
       body: JSON.stringify({ csv }),
     });
     const data = await res.json();
-    setResult(`${data.imported ?? 0} Wörter importiert.`);
+    if (!res.ok) {
+      setImportPreview(data.preview ?? importPreview);
+      setResult(data.error ?? 'CSV konnte nicht importiert werden.');
+      return;
+    }
+    setResult(`${data.imported ?? 0} Wörter importiert, ${data.linked ?? 0} Level-Zuordnungen erstellt, ${data.skipped ?? 0} Duplikate übersprungen.`);
+    setImportPreview(data.preview ?? null);
     await loadContent();
   };
 
@@ -1045,20 +1113,111 @@ export default function Admin() {
           <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
             <div className="mb-4 flex items-center gap-3">
               <FileText className="h-6 w-6 text-blue-950" />
-              <h2 className="text-xl font-black text-slate-950">CSV-Import</h2>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Mit Vorschau</div>
+                <h2 className="text-xl font-black text-slate-950">CSV-Import</h2>
+              </div>
+              <a
+                href="/templates/wordwick-content-template.csv"
+                download
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-950 text-amber-50 transition hover:bg-blue-800"
+                title="CSV-Vorlage herunterladen"
+              >
+                <Download className="h-4 w-4" />
+              </a>
             </div>
-            <p className="mb-2 text-xs font-bold text-stone-500">Format: german,english,type,category,past,participle</p>
+            <p className="mb-2 text-xs font-bold text-stone-500">Spalten: deutsch, englisch, typ, kategorie, past, participle, level</p>
             <textarea
               value={csv}
-              onChange={event => setCsv(event.target.value)}
-              rows={6}
+              onChange={event => {
+                setCsv(event.target.value);
+                setImportPreview(null);
+              }}
+              rows={7}
               className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 font-mono text-sm outline-none ring-blue-800/25 focus:ring-4"
-              placeholder={`german,english,type,category,past,participle
-Hund,dog,vocab,tiere,,
-gehen,go,irregular,verben,went,gone`}
+              placeholder={`deutsch,englisch,typ,kategorie,past,participle,level
+Hund,dog,vocab,animals,,,1
+gehen,go,irregular,verbs,went,gone,3`}
             />
-            <button onClick={importWords} className="magic-button mt-3 w-full">Importieren</button>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <button onClick={previewImport} className="magic-button w-full">
+                <Search className="h-4 w-4" />
+                Vorschau prüfen
+              </button>
+              <button
+                onClick={importWords}
+                disabled={!importPreview || importPreview.summary.errors > 0 || importPreview.summary.valid === 0}
+                className="gold-button w-full disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <UploadCloud className="h-4 w-4" />
+                Import übernehmen
+              </button>
+            </div>
             {result && <p className="mt-2 text-sm font-black text-blue-800">{result}</p>}
+
+            {importPreview && (
+              <div className="mt-4 space-y-3">
+                <div className="grid grid-cols-3 gap-2 text-center text-xs font-black sm:grid-cols-6">
+                  <div className="rounded-xl bg-white/70 p-2">
+                    <div className="text-lg text-slate-950">{importPreview.summary.total}</div>
+                    <div className="uppercase tracking-[0.1em] text-stone-500">Zeilen</div>
+                  </div>
+                  <div className="rounded-xl bg-blue-100 p-2 text-blue-950">
+                    <div className="text-lg">{importPreview.summary.creates}</div>
+                    <div className="uppercase tracking-[0.1em]">Neu</div>
+                  </div>
+                  <div className="rounded-xl bg-amber-100 p-2 text-amber-900">
+                    <div className="text-lg">{importPreview.summary.links}</div>
+                    <div className="uppercase tracking-[0.1em]">Level</div>
+                  </div>
+                  <div className="rounded-xl bg-stone-200 p-2 text-stone-600">
+                    <div className="text-lg">{importPreview.summary.skips}</div>
+                    <div className="uppercase tracking-[0.1em]">Doppelt</div>
+                  </div>
+                  <div className="rounded-xl bg-red-100 p-2 text-red-800">
+                    <div className="text-lg">{importPreview.summary.errors}</div>
+                    <div className="uppercase tracking-[0.1em]">Fehler</div>
+                  </div>
+                  <div className="rounded-xl bg-white/70 p-2">
+                    <div className="text-lg text-slate-950">{importPreview.summary.valid}</div>
+                    <div className="uppercase tracking-[0.1em] text-stone-500">Gültig</div>
+                  </div>
+                </div>
+
+                {importPreview.parseErrors.length > 0 && (
+                  <div className="rounded-2xl bg-red-100 p-3 text-xs font-bold text-red-800">
+                    {importPreview.parseErrors.map(error => <div key={error}>{error}</div>)}
+                  </div>
+                )}
+
+                <div className="max-h-72 space-y-2 overflow-auto pr-1">
+                  {importPreview.rows.map(row => (
+                    <div key={`${row.rowNumber}-${row.german}-${row.english}`} className="rounded-2xl border border-amber-900/10 bg-white/65 p-3">
+                      <div className="mb-2 flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <div className="text-xs font-black uppercase tracking-[0.14em] text-blue-950/50">Zeile {row.rowNumber}</div>
+                          <div className="truncate text-sm font-black text-slate-950">
+                            {row.german || '?'} / {row.english || '?'}
+                          </div>
+                        </div>
+                        <span className={`shrink-0 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.1em] ${importActionClasses[row.action]}`}>
+                          {importActionLabels[row.action]}
+                        </span>
+                      </div>
+                      <div className="text-xs font-bold text-stone-600">
+                        {row.type === 'irregular' ? `Verb: ${row.english} / ${row.past || '?'} / ${row.participle || '?'}` : `Vokabel · ${row.category || 'ohne Kategorie'}`}
+                        {row.level && <span> · Level {row.level}{row.questTitle ? `: ${row.questTitle}` : ''}</span>}
+                      </div>
+                      {row.errors.length > 0 && (
+                        <div className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-800">
+                          {row.errors.join(' · ')}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
           <section className="parchment rounded-[28px] border border-amber-100/70 p-5">

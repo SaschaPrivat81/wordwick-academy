@@ -33,6 +33,133 @@ const canManageAcademy = (role: string) => role === 'parent' || role === 'admin'
 const isValidPin = (pin: unknown) => typeof pin === 'string' && /^\d{4}$/.test(pin);
 const QUEST_COMPLETION_PERCENT = 80;
 
+const importHeaderAliases = {
+  german: ['german', 'deutsch', 'de'],
+  english: ['english', 'englisch', 'en'],
+  type: ['type', 'typ', 'art'],
+  category: ['category', 'kategorie', 'thema'],
+  past: ['past', 'pastsimple', 'simplepast', 'form2', '2form', 'zweiteform'],
+  participle: ['participle', 'pastparticiple', 'form3', '3form', 'dritteform'],
+  level: ['level', 'quest', 'questid', 'kapitel', 'kartenlevel'],
+};
+
+type ImportField = keyof typeof importHeaderAliases;
+
+interface ImportPreviewRow {
+  rowNumber: number;
+  german: string;
+  english: string;
+  type: 'vocab' | 'irregular';
+  category: string;
+  past: string;
+  participle: string;
+  level: number | null;
+  questTitle: string | null;
+  existingWordId: number | null;
+  duplicateInFile: boolean;
+  action: 'create' | 'link' | 'skip' | 'error';
+  valid: boolean;
+  errors: string[];
+}
+
+function normalizeImportHeader(value: string) {
+  return value.trim().toLowerCase().replace(/[\s_-]/g, '');
+}
+
+function getImportValue(row: Record<string, unknown>, field: ImportField) {
+  const aliases = new Set(importHeaderAliases[field].map(normalizeImportHeader));
+  for (const [key, value] of Object.entries(row)) {
+    if (aliases.has(normalizeImportHeader(key))) {
+      return String(value ?? '').trim();
+    }
+  }
+  return '';
+}
+
+function normalizeImportType(value: string, past: string, participle: string): 'vocab' | 'irregular' {
+  const normalized = normalizeImportHeader(value);
+  if (['irregular', 'verb', 'verbs', 'unregelmaessig', 'unregelmäßig'].includes(normalized)) return 'irregular';
+  if (past || participle) return 'irregular';
+  return 'vocab';
+}
+
+function wordImportKey(german: string, english: string) {
+  return `${german.trim().toLowerCase()}::${english.trim().toLowerCase()}`;
+}
+
+function buildWordImportPreview(csv: string) {
+  const parsed = Papa.parse<Record<string, unknown>>(csv, {
+    header: true,
+    skipEmptyLines: true,
+  });
+  const parseErrors = parsed.errors.map(error => `Zeile ${error.row ? error.row + 1 : '?'}: ${error.message}`);
+  const quests = db.prepare('SELECT id, title FROM quests ORDER BY sortOrder, id').all() as { id: number; title: string }[];
+  const questsById = new Map(quests.map(quest => [quest.id, quest]));
+  const existingWords = db.prepare('SELECT id, german, english FROM words').all() as { id: number; german: string; english: string }[];
+  const existingByKey = new Map(existingWords.map(word => [wordImportKey(word.german, word.english), word.id]));
+  const seen = new Set<string>();
+
+  const rows = parsed.data.map((row, index): ImportPreviewRow => {
+    const german = getImportValue(row, 'german');
+    const english = getImportValue(row, 'english');
+    const category = getImportValue(row, 'category');
+    const past = getImportValue(row, 'past');
+    const participle = getImportValue(row, 'participle');
+    const type = normalizeImportType(getImportValue(row, 'type'), past, participle);
+    const levelRaw = getImportValue(row, 'level');
+    const level = levelRaw ? Number(levelRaw) : null;
+    const errors: string[] = [];
+
+    if (!german) errors.push('Deutsch fehlt');
+    if (!english) errors.push('Englisch fehlt');
+    if (type === 'irregular' && (!past || !participle)) {
+      errors.push('Unregelmäßiges Verb braucht Past Simple und Past Participle');
+    }
+    if (levelRaw && (!Number.isInteger(level) || !questsById.has(Number(level)))) {
+      errors.push('Level wurde nicht gefunden');
+    }
+
+    const key = wordImportKey(german, english);
+    const duplicateInFile = Boolean(german && english && seen.has(key));
+    if (duplicateInFile) errors.push('Duplikat in dieser CSV');
+    if (german && english) seen.add(key);
+
+    const existingWordId = existingByKey.get(key) ?? null;
+    const valid = errors.length === 0;
+    const action = !valid ? 'error' : existingWordId ? (level ? 'link' : 'skip') : 'create';
+
+    return {
+      rowNumber: index + 2,
+      german,
+      english,
+      type,
+      category,
+      past,
+      participle,
+      level: Number.isInteger(level) ? Number(level) : null,
+      questTitle: Number.isInteger(level) ? questsById.get(Number(level))?.title ?? null : null,
+      existingWordId,
+      duplicateInFile,
+      action,
+      valid,
+      errors,
+    };
+  });
+
+  return {
+    rows,
+    parseErrors,
+    summary: {
+      total: rows.length,
+      valid: rows.filter(row => row.valid).length,
+      creates: rows.filter(row => row.action === 'create').length,
+      links: rows.filter(row => row.valid && row.level).length,
+      skips: rows.filter(row => row.action === 'skip').length,
+      errors: rows.filter(row => !row.valid).length + parseErrors.length,
+    },
+  };
+}
+
 // ─── Auth ───
 app.post('/api/login', (req, res) => {
   const { name, pin } = req.body;
@@ -302,29 +429,70 @@ app.post('/api/rewards/:id/claim', requirePin, (req, res) => {
 });
 
 // ─── Admin: CSV-Upload ───
+app.post('/api/admin/words/import-preview', requireAdmin, (req, res) => {
+  const { csv } = req.body;
+  if (!csv) return res.status(400).json({ error: 'Kein CSV' });
+  res.json(buildWordImportPreview(csv));
+});
+
 app.post('/api/admin/words/import', requireAdmin, (req, res) => {
   const { csv } = req.body;
   if (!csv) return res.status(400).json({ error: 'Kein CSV' });
-  
-  const result = Papa.parse(csv, { header: true, skipEmptyLines: true });
-  const now = new Date().toISOString();
-  const insert = db.prepare('INSERT INTO words (german, english, type, category, past, participle, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
-  
-  let count = 0;
-  for (const row of result.data as any[]) {
-    if (!row.german || !row.english) continue;
-    insert.run(
-      row.german.trim(),
-      row.english.trim(),
-      row.type?.trim() || 'vocab',
-      row.category?.trim() || null,
-      row.past?.trim() || null,
-      row.participle?.trim() || null,
-      now
-    );
-    count++;
+
+  const preview = buildWordImportPreview(csv);
+  if (preview.summary.errors > 0) {
+    return res.status(400).json({ error: 'Bitte erst die Fehler in der Vorschau korrigieren', preview });
   }
-  res.json({ imported: count });
+
+  const insertWord = db.prepare(`
+    INSERT INTO words (german, english, type, category, past, participle, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const insertQuestWord = db.prepare('INSERT OR IGNORE INTO quest_words (questId, wordId, sortOrder) VALUES (?, ?, ?)');
+  const nextSortOrder = db.prepare('SELECT COALESCE(MAX(sortOrder), 0) + 1 as nextOrder FROM quest_words WHERE questId = ?');
+
+  let imported = 0;
+  let linked = 0;
+  let skipped = 0;
+
+  const runImport = db.transaction(() => {
+    const now = new Date().toISOString();
+    for (const row of preview.rows) {
+      if (!row.valid) continue;
+      let wordId = row.existingWordId;
+
+      if (!wordId) {
+        const result = insertWord.run(
+          row.german,
+          row.english,
+          row.type,
+          row.category || null,
+          row.type === 'irregular' ? row.past : null,
+          row.type === 'irregular' ? row.participle : null,
+          now,
+        );
+        wordId = Number(result.lastInsertRowid);
+        imported++;
+      } else if (!row.level) {
+        skipped++;
+      }
+
+      if (row.level && wordId) {
+        const before = db.prepare('SELECT COUNT(*) as c FROM quest_words WHERE questId = ? AND wordId = ?')
+          .get(row.level, wordId) as { c: number };
+        const order = nextSortOrder.get(row.level) as { nextOrder: number };
+        insertQuestWord.run(row.level, wordId, order.nextOrder);
+        if (before.c === 0) linked++;
+      }
+
+      if (!row.level && !row.existingWordId) {
+        continue;
+      }
+    }
+  });
+
+  runImport();
+  res.json({ imported, linked, skipped, preview });
 });
 
 app.get('/api/admin/stats/:userId', requireAdmin, (req, res) => {
