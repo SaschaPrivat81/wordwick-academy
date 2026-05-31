@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, PlayCircle, Sparkles, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, PlayCircle, RotateCcw, Sparkles, XCircle } from 'lucide-react';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, normalizeAnswer } from '../data/academy';
 
 interface Word {
@@ -13,18 +13,33 @@ interface Word {
 }
 
 interface Challenge {
+  id: string;
   wordId: number;
   eyebrow: string;
   prompt: string;
   helper: string;
   expected: string;
   acceptable: string[];
+  answerPool: 'english' | 'german' | 'verb';
+  mode: 'choice' | 'text';
+  retry?: boolean;
 }
 
 interface ResultState {
   correct: boolean;
   expected: string;
 }
+
+interface AnswerLogItem {
+  challengeId: string;
+  wordId: number;
+  prompt: string;
+  expected: string;
+  correct: boolean;
+  retry: boolean;
+}
+
+const MIN_STANDARD_TASKS = 6;
 
 function buildChoiceOptions(expected: string, candidates: string[], seed: number) {
   const normalizedExpected = normalizeAnswer(expected);
@@ -47,6 +62,114 @@ function buildChoiceOptions(expected: string, candidates: string[], seed: number
   return [...options.slice(rotation), ...options.slice(0, rotation)];
 }
 
+function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challenge {
+  return {
+    ...challenge,
+    id: `${challenge.id}-retry-${retryNumber}`,
+    eyebrow: 'Wiederholung',
+    helper: 'Dieses Wort war eben schwierig. Pip legt es noch einmal auf die Karte.',
+    mode: 'text',
+    retry: true,
+  };
+}
+
+function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
+  const baseChallenges = words.flatMap((word): Challenge[] => {
+    if (word.type === 'irregular' && (quest.kind === 'verb' || quest.kind === 'mixed')) {
+      const verbChallenges: Challenge[] = [
+        {
+          id: `${word.id}-base`,
+          wordId: word.id,
+          eyebrow: 'Grundform',
+          prompt: `Wie heisst "${word.german}" auf Englisch?`,
+          helper: 'Schreibe die Grundform.',
+          expected: word.english,
+          acceptable: [word.english],
+          answerPool: 'english',
+          mode: 'choice',
+        },
+        {
+          id: `${word.id}-past`,
+          wordId: word.id,
+          eyebrow: 'Past Simple',
+          prompt: `${word.english} - ? - ${word.participle ?? ''}`,
+          helper: 'Welche zweite Form fehlt?',
+          expected: word.past ?? '',
+          acceptable: [word.past ?? ''],
+          answerPool: 'verb',
+          mode: 'text',
+        },
+        {
+          id: `${word.id}-participle`,
+          wordId: word.id,
+          eyebrow: 'Past Participle',
+          prompt: `${word.english} - ${word.past ?? ''} - ?`,
+          helper: 'Welche dritte Form fehlt?',
+          expected: word.participle ?? '',
+          acceptable: [word.participle ?? ''],
+          answerPool: 'verb',
+          mode: 'text',
+        },
+      ];
+
+      return verbChallenges.filter(challenge => challenge.expected);
+    }
+
+    return [
+      {
+        id: `${word.id}-de-en`,
+        wordId: word.id,
+        eyebrow: 'Wortfunke',
+        prompt: `Wie heisst "${word.german}" auf Englisch?`,
+        helper: 'Fang den richtigen englischen Wortfunken.',
+        expected: word.english,
+        acceptable: [word.english],
+        answerPool: 'english',
+        mode: 'choice',
+      },
+      {
+        id: `${word.id}-en-de`,
+        wordId: word.id,
+        eyebrow: 'Rückzauber',
+        prompt: `Was bedeutet "${word.english}" auf Deutsch?`,
+        helper: 'Schreibe die deutsche Bedeutung.',
+        expected: word.german,
+        acceptable: [word.german],
+        answerPool: 'german',
+        mode: 'text',
+      },
+      {
+        id: `${word.id}-write`,
+        wordId: word.id,
+        eyebrow: 'Schreibzauber',
+        prompt: `Schreibe "${word.german}" auf Englisch.`,
+        helper: 'Diesmal muss der Wortfunke genau geschrieben werden.',
+        expected: word.english,
+        acceptable: [word.english],
+        answerPool: 'english',
+        mode: 'text',
+      },
+    ];
+  });
+
+  if (baseChallenges.length === 0) return [];
+
+  const expanded = [...baseChallenges];
+  let index = 0;
+  while (expanded.length < MIN_STANDARD_TASKS) {
+    const source = baseChallenges[index % baseChallenges.length];
+    expanded.push({
+      ...source,
+      id: `${source.id}-round-${Math.floor(index / baseChallenges.length) + 2}`,
+      eyebrow: source.mode === 'choice' ? 'Wortfunke' : 'Festigung',
+      mode: expanded.length % 2 === 0 ? source.mode : 'text',
+    });
+    index++;
+  }
+
+  return expanded;
+}
+
 export default function Quest() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -67,6 +190,8 @@ export default function Quest() {
   const [verbIndex, setVerbIndex] = useState(0);
   const [verbSlots, setVerbSlots] = useState<string[]>([]);
   const [completionSaved, setCompletionSaved] = useState(false);
+  const [retryChallenges, setRetryChallenges] = useState<Challenge[]>([]);
+  const [answerLog, setAnswerLog] = useState<AnswerLogItem[]>([]);
 
   useEffect(() => {
     setQuest(fallbackQuests.find(item => item.id === questId) ?? null);
@@ -84,6 +209,8 @@ export default function Quest() {
     setVerbIndex(0);
     setVerbSlots([]);
     setCompletionSaved(false);
+    setRetryChallenges([]);
+    setAnswerLog([]);
 
     Promise.all([
       fetch(`/api/quests/${questId}`, { credentials: 'include' }).then(response => response.ok ? response.json() : null),
@@ -98,50 +225,11 @@ export default function Quest() {
 
   const challenges = useMemo<Challenge[]>(() => {
     if (!quest) return [];
-    return words.flatMap(word => {
-      if (word.type === 'irregular' && (quest.kind === 'verb' || quest.kind === 'mixed')) {
-        return [
-          {
-            wordId: word.id,
-            eyebrow: 'Grundform',
-            prompt: `Wie heisst "${word.german}" auf Englisch?`,
-            helper: 'Schreibe die Grundform.',
-            expected: word.english,
-            acceptable: [word.english],
-          },
-          {
-            wordId: word.id,
-            eyebrow: 'Past Simple',
-            prompt: `${word.english} - ? - ${word.participle ?? ''}`,
-            helper: 'Welche zweite Form fehlt?',
-            expected: word.past ?? '',
-            acceptable: [word.past ?? ''],
-          },
-          {
-            wordId: word.id,
-            eyebrow: 'Past Participle',
-            prompt: `${word.english} - ${word.past ?? ''} - ?`,
-            helper: 'Welche dritte Form fehlt?',
-            expected: word.participle ?? '',
-            acceptable: [word.participle ?? ''],
-          },
-        ];
-      }
-
-      return [
-        {
-          wordId: word.id,
-          eyebrow: 'Vokabel',
-          prompt: `Wie heisst "${word.german}" auf Englisch?`,
-          helper: 'Schreibe das englische Wort.',
-          expected: word.english,
-          acceptable: [word.english],
-        },
-      ];
-    });
+    return buildChallenges(words, quest);
   }, [quest, words]);
 
-  const current = challenges[currentIndex];
+  const activeChallenges = useMemo(() => [...challenges, ...retryChallenges], [challenges, retryChallenges]);
+  const current = activeChallenges[currentIndex];
   const activeGameType = quest?.gameType ?? (quest?.id === 1 ? 'spark-catcher' : quest?.id === 2 ? 'library-sorter' : quest?.id === 3 ? 'verb-assembler' : 'text-input');
   const isLibrarySorter = activeGameType === 'library-sorter';
   const isVerbAssembler = activeGameType === 'verb-assembler';
@@ -166,23 +254,34 @@ export default function Quest() {
     () => [...libraryWords].sort((a, b) => ((a.id * 7) % 11) - ((b.id * 7) % 11)),
     [libraryWords],
   );
-  const totalTasks = isVerbAssembler ? verbWords.length : isLibrarySorter ? libraryWords.length : challenges.length;
+  const totalTasks = isVerbAssembler ? verbWords.length : isLibrarySorter ? libraryWords.length : activeChallenges.length;
   const percent = isVerbAssembler
     ? (totalTasks > 0 ? Math.round((verbIndex / totalTasks) * 100) : 0)
     : isLibrarySorter
     ? (totalTasks > 0 ? Math.round((matchedWordIds.length / totalTasks) * 100) : 0)
-    : (challenges.length > 0 ? Math.round((currentIndex / challenges.length) * 100) : 0);
+    : (activeChallenges.length > 0 ? Math.round((currentIndex / activeChallenges.length) * 100) : 0);
   const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
-  const isSparkCatcher = activeGameType === 'spark-catcher' && current?.eyebrow === 'Vokabel';
+  const isSparkCatcher = activeGameType === 'spark-catcher' && current?.mode === 'choice';
   const choiceOptions = useMemo(() => {
     if (!current || !isSparkCatcher) return [];
     const candidateWords = allWords.length > 0 ? allWords : words;
+    const candidates = current.answerPool === 'german'
+      ? candidateWords.map(word => word.german)
+      : current.answerPool === 'verb'
+      ? candidateWords.flatMap(word => [word.english, word.past, word.participle]).filter(Boolean) as string[]
+      : candidateWords.map(word => word.english);
     return buildChoiceOptions(
       current.expected,
-      candidateWords.map(word => word.english),
+      candidates,
       current.wordId + currentIndex + questId,
     );
   }, [allWords, current, currentIndex, isSparkCatcher, questId, words]);
+  const weakWordIds = useMemo(() => Array.from(new Set(answerLog.filter(item => !item.correct).map(item => item.wordId))), [answerLog]);
+  const retrySolvedCount = answerLog.filter(item => item.retry && item.correct).length;
+  const weakWords = useMemo(
+    () => weakWordIds.map(wordId => words.find(word => word.id === wordId)).filter(Boolean) as Word[],
+    [weakWordIds, words],
+  );
 
   const report = async (wordId: number, isCorrect: boolean) => {
     await fetch('/api/progress', {
@@ -216,10 +315,20 @@ export default function Quest() {
     const acceptable = current.acceptable.map(normalizeAnswer).filter(Boolean);
     const isCorrect = acceptable.includes(normalized);
     setResult({ correct: isCorrect, expected: current.expected });
+    setAnswerLog(log => [...log, {
+      challengeId: current.id,
+      wordId: current.wordId,
+      prompt: current.prompt,
+      expected: current.expected,
+      correct: isCorrect,
+      retry: Boolean(current.retry),
+    }]);
 
     if (isCorrect) {
       setCorrectCount(value => value + 1);
       setCoinsEarned(value => value + 1);
+    } else if (!current.retry) {
+      setRetryChallenges(existing => [...existing, buildRetryChallenge(current, existing.length + 1)]);
     }
 
     await report(current.wordId, isCorrect);
@@ -250,6 +359,14 @@ export default function Quest() {
 
     const isCorrect = selectedWord.id === word.id;
     setResult({ correct: isCorrect, expected: selectedWord.english });
+    setAnswerLog(log => [...log, {
+      challengeId: `library-${selectedWord.id}-${log.length}`,
+      wordId: selectedWord.id,
+      prompt: selectedWord.german,
+      expected: selectedWord.english,
+      correct: isCorrect,
+      retry: false,
+    }]);
 
     if (isCorrect) {
       const nextMatched = [...matchedWordIds, word.id];
@@ -287,6 +404,14 @@ export default function Quest() {
 
     const isCorrect = nextSlots.every((slot, index) => normalizeAnswer(slot) === normalizeAnswer(verbForms[index]));
     setResult({ correct: isCorrect, expected: verbForms.join(' - ') });
+    setAnswerLog(log => [...log, {
+      challengeId: `verb-${currentVerb.id}-${log.length}`,
+      wordId: currentVerb.id,
+      prompt: currentVerb.german,
+      expected: verbForms.join(' - '),
+      correct: isCorrect,
+      retry: false,
+    }]);
 
     if (isCorrect) {
       setCorrectCount(value => value + 1);
@@ -315,7 +440,7 @@ export default function Quest() {
   const next = () => {
     setAnswer('');
     setResult(null);
-    if (currentIndex + 1 >= challenges.length) {
+    if (currentIndex + 1 >= activeChallenges.length) {
       completeQuest(correctCount);
     } else {
       setCurrentIndex(value => value + 1);
@@ -436,6 +561,28 @@ export default function Quest() {
               <div className={`mt-6 rounded-2xl border p-4 text-sm font-bold leading-6 ${questCompleted ? 'border-amber-900/10 bg-amber-100/70 text-slate-950' : 'border-blue-950/10 bg-blue-100/70 text-blue-950'}`}>
                 {questCompleted ? `Freigeschaltet: ${quest.reward}. ${story.rewardReveal}` : `Noch nicht freigeschaltet: ${quest.reward}. Versuch es gleich nochmal.`}
               </div>
+              {(weakWords.length > 0 || retrySolvedCount > 0) && (
+                <div className="mt-4 rounded-2xl border border-blue-950/10 bg-white/60 p-4">
+                  <div className="flex items-center gap-2 text-sm font-black text-blue-950">
+                    <RotateCcw className="h-4 w-4" />
+                    Pips Wiederholungsnotiz
+                  </div>
+                  {retrySolvedCount > 0 && (
+                    <p className="mt-2 text-sm font-bold leading-6 text-stone-600">
+                      {retrySolvedCount} schwierige Wortfunken wurden in der Wiederholung wieder heller.
+                    </p>
+                  )}
+                  {weakWords.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {weakWords.map(word => (
+                        <span key={word.id} className="rounded-full bg-blue-100 px-3 py-1 text-xs font-black text-blue-950">
+                          {word.german} / {word.english}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <button onClick={() => navigate('/')} className="magic-button flex-1">Zur Karte</button>
                 <button onClick={() => window.location.reload()} className="gold-button flex-1">Nochmal spielen</button>
@@ -472,7 +619,7 @@ export default function Quest() {
         <div className="mt-7">
           <div className="mb-2 flex justify-between text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">
             <span>Runde</span>
-            <span>{isVerbAssembler ? `${verbIndex + 1}/${totalTasks}` : isLibrarySorter ? `${matchedWordIds.length}/${totalTasks}` : `${currentIndex + 1}/${challenges.length}`}</span>
+            <span>{isVerbAssembler ? `${verbIndex + 1}/${totalTasks}` : isLibrarySorter ? `${matchedWordIds.length}/${totalTasks}` : `${currentIndex + 1}/${activeChallenges.length}`}</span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-white/12">
             <div className="h-full rounded-full bg-amber-200" style={{ width: `${percent}%` }} />
