@@ -138,9 +138,13 @@ export default function PipHome() {
 
       <section className="rounded-[28px] border border-amber-100/25 bg-slate-950/40 p-4 shadow-2xl shadow-slate-950/25">
         <div className="relative aspect-[16/9] min-h-[520px] overflow-hidden rounded-[26px] border border-amber-100/20 bg-[#172033] shadow-2xl shadow-slate-950/30">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_12%,rgba(191,219,254,0.25),transparent_18rem),linear-gradient(180deg,#1e3a8a_0%,#172554_42%,#3b2f28_43%,#6b4b35_100%)]" />
-          <div className="absolute inset-x-[8%] top-[13%] h-[34%] rounded-b-[48%] border border-amber-100/20 bg-slate-950/25 shadow-inner" />
-          <div className="absolute bottom-0 left-0 right-0 h-[42%] bg-[linear-gradient(90deg,rgba(146,64,14,0.28)_0_1px,transparent_1px_12%),linear-gradient(0deg,rgba(15,23,42,0.22),transparent)]" />
+          <img
+            src="/assets/pip-home-v1.jpg"
+            alt="Gemütlicher magischer Horst von Pip"
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/20 via-transparent to-slate-950/10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/18 via-transparent to-transparent" />
 
           <div className="absolute left-[8%] top-[8%] rounded-2xl border border-amber-100/20 bg-slate-950/35 px-4 py-3 text-amber-50 backdrop-blur-sm">
             <div className="text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">Pips Horst</div>
@@ -150,7 +154,7 @@ export default function PipHome() {
           <img
             src="/assets/pip-neutral.webp"
             alt="Pip in seinem Zuhause"
-            className="absolute left-1/2 top-[49%] h-[34%] -translate-x-1/2 -translate-y-1/2 object-contain drop-shadow-2xl"
+            className="absolute left-[48%] top-[51%] h-[28%] -translate-x-1/2 -translate-y-1/2 object-contain drop-shadow-2xl"
           />
 
           {homeItems.map(item => {
