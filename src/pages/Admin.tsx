@@ -7,8 +7,12 @@ interface AdminWord {
   english: string;
   type: 'vocab' | 'irregular';
   category?: string;
+  grade?: string;
+  unit?: string;
+  difficulty?: number;
   past?: string;
   participle?: string;
+  notes?: string;
 }
 
 interface AdminQuest {
@@ -109,8 +113,12 @@ interface WordForm {
   english: string;
   type: 'vocab' | 'irregular';
   category: string;
+  grade: string;
+  unit: string;
+  difficulty: string;
   past: string;
   participle: string;
+  notes: string;
 }
 
 interface ImportPreviewRow {
@@ -119,8 +127,12 @@ interface ImportPreviewRow {
   english: string;
   type: 'vocab' | 'irregular';
   category: string;
+  grade: string;
+  unit: string;
+  difficulty: number;
   past: string;
   participle: string;
+  notes: string;
   level: number | null;
   questTitle: string | null;
   action: 'create' | 'link' | 'skip' | 'error';
@@ -146,8 +158,12 @@ const emptyWordForm: WordForm = {
   english: '',
   type: 'vocab',
   category: '',
+  grade: '3',
+  unit: '',
+  difficulty: '1',
   past: '',
   participle: '',
+  notes: '',
 };
 
 const emptyUserForm: UserForm = {
@@ -275,8 +291,12 @@ export default function Admin() {
       english: word.english,
       type: word.type,
       category: word.category ?? '',
+      grade: word.grade ?? '',
+      unit: word.unit ?? '',
+      difficulty: String(word.difficulty ?? 1),
       past: word.past ?? '',
       participle: word.participle ?? '',
+      notes: word.notes ?? '',
     }])));
     setQuestDrafts(Object.fromEntries(data.quests.map((quest: AdminQuest) => [quest.id, {
       title: quest.title,
@@ -1129,6 +1149,24 @@ export default function Admin() {
                   <input className={inputClass} value={wordForm.category} onChange={event => updateWordForm('category', event.target.value)} />
                 </label>
               </div>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label>
+                  <span className={labelClass}>Klasse</span>
+                  <input className={inputClass} value={wordForm.grade} onChange={event => updateWordForm('grade', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Lektion</span>
+                  <input className={inputClass} value={wordForm.unit} onChange={event => updateWordForm('unit', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Schwierigkeit</span>
+                  <select className={inputClass} value={wordForm.difficulty} onChange={event => updateWordForm('difficulty', event.target.value)}>
+                    <option value="1">1 · leicht</option>
+                    <option value="2">2 · mittel</option>
+                    <option value="3">3 · knifflig</option>
+                  </select>
+                </label>
+              </div>
               {wordForm.type === 'irregular' && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label>
@@ -1141,6 +1179,10 @@ export default function Admin() {
                   </label>
                 </div>
               )}
+              <label>
+                <span className={labelClass}>Notizen</span>
+                <textarea className={`${inputClass} min-h-20 resize-y`} value={wordForm.notes} onChange={event => updateWordForm('notes', event.target.value)} />
+              </label>
             </div>
             <button onClick={createWord} className="magic-button mt-3 w-full">Wort speichern</button>
             {wordResult && <p className="mt-2 text-sm font-black text-blue-800">{wordResult}</p>}
@@ -1153,16 +1195,26 @@ export default function Admin() {
                 <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Mit Vorschau</div>
                 <h2 className="text-xl font-black text-slate-950">CSV-Import</h2>
               </div>
-              <a
-                href="/templates/wordwick-content-template.csv"
-                download
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-blue-950 text-amber-50 transition hover:bg-blue-800"
-                title="CSV-Vorlage herunterladen"
-              >
-                <Download className="h-4 w-4" />
-              </a>
             </div>
-            <p className="mb-2 text-xs font-bold text-stone-500">Spalten: deutsch, englisch, typ, kategorie, past, participle, level</p>
+            <div className="mb-3 grid gap-2 sm:grid-cols-3">
+              {[
+                ['/templates/wordwick-content-template.csv', 'Komplett'],
+                ['/templates/wordwick-vocabulary-template.csv', 'Vokabeln'],
+                ['/templates/wordwick-irregular-verbs-template.csv', 'Verben'],
+              ].map(([href, label]) => (
+                <a
+                  key={href}
+                  href={href}
+                  download
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-950 px-3 py-2 text-xs font-black text-amber-50 transition hover:bg-blue-800"
+                  title={`${label}-Vorlage herunterladen`}
+                >
+                  <Download className="h-4 w-4" />
+                  {label}
+                </a>
+              ))}
+            </div>
+            <p className="mb-2 text-xs font-bold text-stone-500">Spalten: deutsch, englisch, typ, kategorie, klasse, lektion, schwierigkeit, past, participle, level, notizen</p>
             <textarea
               value={csv}
               onChange={event => {
@@ -1171,9 +1223,9 @@ export default function Admin() {
               }}
               rows={7}
               className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 font-mono text-sm outline-none ring-blue-800/25 focus:ring-4"
-              placeholder={`deutsch,englisch,typ,kategorie,past,participle,level
-Hund,dog,vocab,animals,,,1
-gehen,go,irregular,verbs,went,gone,3`}
+              placeholder={`deutsch,englisch,typ,kategorie,klasse,lektion,schwierigkeit,past,participle,level,notizen
+Hund,dog,vocab,animals,3,Unit 1,1,,,1,Tierwort
+gehen,go,irregular,verbs,3,Irregulars A,2,went,gone,3,Grundverb`}
             />
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <button onClick={previewImport} className="magic-button w-full">
@@ -1242,8 +1294,14 @@ gehen,go,irregular,verbs,went,gone,3`}
                       </div>
                       <div className="text-xs font-bold text-stone-600">
                         {row.type === 'irregular' ? `Verb: ${row.english} / ${row.past || '?'} / ${row.participle || '?'}` : `Vokabel · ${row.category || 'ohne Kategorie'}`}
+                        <span> · Klasse {row.grade || '-'} · {row.unit || 'ohne Lektion'} · Schwierigkeit {row.difficulty}</span>
                         {row.level && <span> · Level {row.level}{row.questTitle ? `: ${row.questTitle}` : ''}</span>}
                       </div>
+                      {row.notes && (
+                        <div className="mt-2 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-950/70">
+                          {row.notes}
+                        </div>
+                      )}
                       {row.errors.length > 0 && (
                         <div className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold text-red-800">
                           {row.errors.join(' · ')}
@@ -1271,8 +1329,12 @@ gehen,go,irregular,verbs,went,gone,3`}
                   english: word.english,
                   type: word.type,
                   category: word.category ?? '',
+                  grade: word.grade ?? '',
+                  unit: word.unit ?? '',
+                  difficulty: String(word.difficulty ?? 1),
                   past: word.past ?? '',
                   participle: word.participle ?? '',
+                  notes: word.notes ?? '',
                 };
                 const usedInQuests = content?.quests
                   .filter(quest => quest.words.includes(word.id))
@@ -1289,6 +1351,9 @@ gehen,go,irregular,verbs,went,gone,3`}
                           Level {usedInQuests}
                         </span>
                       )}
+                      <span className="rounded-full bg-white/70 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-stone-500">
+                        Klasse {draft.grade || '-'} · Schwierigkeit {draft.difficulty || '1'}
+                      </span>
                     </div>
 
                     <div className="grid gap-2">
@@ -1315,6 +1380,24 @@ gehen,go,irregular,verbs,went,gone,3`}
                           <input className={inputClass} value={draft.category} onChange={event => updateWordDraft(word.id, 'category', event.target.value)} />
                         </label>
                       </div>
+                      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+                        <label>
+                          <span className={labelClass}>Klasse</span>
+                          <input className={inputClass} value={draft.grade} onChange={event => updateWordDraft(word.id, 'grade', event.target.value)} />
+                        </label>
+                        <label>
+                          <span className={labelClass}>Lektion</span>
+                          <input className={inputClass} value={draft.unit} onChange={event => updateWordDraft(word.id, 'unit', event.target.value)} />
+                        </label>
+                        <label>
+                          <span className={labelClass}>Schwierigkeit</span>
+                          <select className={inputClass} value={draft.difficulty} onChange={event => updateWordDraft(word.id, 'difficulty', event.target.value)}>
+                            <option value="1">1 · leicht</option>
+                            <option value="2">2 · mittel</option>
+                            <option value="3">3 · knifflig</option>
+                          </select>
+                        </label>
+                      </div>
                       {draft.type === 'irregular' && (
                         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
                           <label>
@@ -1327,6 +1410,10 @@ gehen,go,irregular,verbs,went,gone,3`}
                           </label>
                         </div>
                       )}
+                      <label>
+                        <span className={labelClass}>Notizen</span>
+                        <textarea className={`${inputClass} min-h-20 resize-y`} value={draft.notes} onChange={event => updateWordDraft(word.id, 'notes', event.target.value)} />
+                      </label>
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2">

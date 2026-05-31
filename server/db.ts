@@ -24,8 +24,12 @@ db.exec(`
     english TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'vocab',
     category TEXT,
+    grade TEXT,
+    unit TEXT,
+    difficulty INTEGER NOT NULL DEFAULT 1,
     past TEXT,
     participle TEXT,
+    notes TEXT,
     createdAt TEXT NOT NULL
   );
 
@@ -143,6 +147,20 @@ if (!questColumns.some(column => column.name === 'sortOrder')) {
 const addedGameTypeColumn = !questColumns.some(column => column.name === 'gameType');
 if (addedGameTypeColumn) {
   db.prepare("ALTER TABLE quests ADD COLUMN gameType TEXT NOT NULL DEFAULT 'text-input'").run();
+}
+
+const wordColumns = db.prepare('PRAGMA table_info(words)').all() as { name: string }[];
+if (!wordColumns.some(column => column.name === 'grade')) {
+  db.prepare("ALTER TABLE words ADD COLUMN grade TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'unit')) {
+  db.prepare("ALTER TABLE words ADD COLUMN unit TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'difficulty')) {
+  db.prepare('ALTER TABLE words ADD COLUMN difficulty INTEGER NOT NULL DEFAULT 1').run();
+}
+if (!wordColumns.some(column => column.name === 'notes')) {
+  db.prepare("ALTER TABLE words ADD COLUMN notes TEXT").run();
 }
 
 // ─── Seed Demo-Daten ───

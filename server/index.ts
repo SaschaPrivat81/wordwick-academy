@@ -36,11 +36,15 @@ const QUEST_COMPLETION_PERCENT = 80;
 const importHeaderAliases = {
   german: ['german', 'deutsch', 'de'],
   english: ['english', 'englisch', 'en'],
-  type: ['type', 'typ', 'art'],
-  category: ['category', 'kategorie', 'thema'],
+  type: ['type', 'typ', 'art', 'wortart'],
+  category: ['category', 'kategorie', 'thema', 'topic'],
+  grade: ['grade', 'klasse', 'jahrgang', 'class'],
+  unit: ['unit', 'lektion', 'lesson', 'kapitelheft', 'buchkapitel'],
+  difficulty: ['difficulty', 'schwierigkeit', 'levelschwierigkeit'],
   past: ['past', 'pastsimple', 'simplepast', 'form2', '2form', 'zweiteform'],
   participle: ['participle', 'pastparticiple', 'form3', '3form', 'dritteform'],
   level: ['level', 'quest', 'questid', 'kapitel', 'kartenlevel'],
+  notes: ['notes', 'notizen', 'hinweis', 'kommentar'],
 };
 
 type ImportField = keyof typeof importHeaderAliases;
@@ -51,8 +55,12 @@ interface ImportPreviewRow {
   english: string;
   type: 'vocab' | 'irregular';
   category: string;
+  grade: string;
+  unit: string;
+  difficulty: number;
   past: string;
   participle: string;
+  notes: string;
   level: number | null;
   questTitle: string | null;
   existingWordId: number | null;
@@ -63,7 +71,7 @@ interface ImportPreviewRow {
 }
 
 function normalizeImportHeader(value: string) {
-  return value.trim().toLowerCase().replace(/[\s_-]/g, '');
+  return value.trim().replace(/^\uFEFF/, '').toLowerCase().replace(/[\s_-]/g, '');
 }
 
 function getImportValue(row: Record<string, unknown>, field: ImportField) {
@@ -78,7 +86,7 @@ function getImportValue(row: Record<string, unknown>, field: ImportField) {
 
 function normalizeImportType(value: string, past: string, participle: string): 'vocab' | 'irregular' {
   const normalized = normalizeImportHeader(value);
-  if (['irregular', 'verb', 'verbs', 'unregelmaessig', 'unregelmäßig'].includes(normalized)) return 'irregular';
+  if (['irregular', 'verb', 'verbs', 'unregelmaessig', 'unregelmäßig', 'unregelmaessigesverb', 'unregelmäßigesverb'].includes(normalized)) return 'irregular';
   if (past || participle) return 'irregular';
   return 'vocab';
 }
@@ -92,7 +100,7 @@ function buildWordImportPreview(csv: string) {
     header: true,
     skipEmptyLines: true,
   });
-  const parseErrors = parsed.errors.map(error => `Zeile ${error.row ? error.row + 1 : '?'}: ${error.message}`);
+  const parseErrors = parsed.errors.map(error => `Zeile ${error.row != null ? error.row + 1 : '?'}: ${error.message}`);
   const quests = db.prepare('SELECT id, title FROM quests ORDER BY sortOrder, id').all() as { id: number; title: string }[];
   const questsById = new Map(quests.map(quest => [quest.id, quest]));
   const existingWords = db.prepare('SELECT id, german, english FROM words').all() as { id: number; german: string; english: string }[];
@@ -103,8 +111,13 @@ function buildWordImportPreview(csv: string) {
     const german = getImportValue(row, 'german');
     const english = getImportValue(row, 'english');
     const category = getImportValue(row, 'category');
+    const grade = getImportValue(row, 'grade');
+    const unit = getImportValue(row, 'unit');
+    const difficultyRaw = getImportValue(row, 'difficulty');
+    const difficulty = difficultyRaw ? Number(difficultyRaw) : 1;
     const past = getImportValue(row, 'past');
     const participle = getImportValue(row, 'participle');
+    const notes = getImportValue(row, 'notes');
     const type = normalizeImportType(getImportValue(row, 'type'), past, participle);
     const levelRaw = getImportValue(row, 'level');
     const level = levelRaw ? Number(levelRaw) : null;
@@ -114,6 +127,9 @@ function buildWordImportPreview(csv: string) {
     if (!english) errors.push('Englisch fehlt');
     if (type === 'irregular' && (!past || !participle)) {
       errors.push('Unregelmäßiges Verb braucht Past Simple und Past Participle');
+    }
+    if (!Number.isInteger(difficulty) || difficulty < 1 || difficulty > 3) {
+      errors.push('Schwierigkeit muss 1, 2 oder 3 sein');
     }
     if (levelRaw && (!Number.isInteger(level) || !questsById.has(Number(level)))) {
       errors.push('Level wurde nicht gefunden');
@@ -134,8 +150,12 @@ function buildWordImportPreview(csv: string) {
       english,
       type,
       category,
+      grade,
+      unit,
+      difficulty: Number.isInteger(difficulty) ? difficulty : 1,
       past,
       participle,
+      notes,
       level: Number.isInteger(level) ? Number(level) : null,
       questTitle: Number.isInteger(level) ? questsById.get(Number(level))?.title ?? null : null,
       existingWordId,
@@ -445,8 +465,8 @@ app.post('/api/admin/words/import', requireAdmin, (req, res) => {
   }
 
   const insertWord = db.prepare(`
-    INSERT INTO words (german, english, type, category, past, participle, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO words (german, english, type, category, grade, unit, difficulty, past, participle, notes, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const insertQuestWord = db.prepare('INSERT OR IGNORE INTO quest_words (questId, wordId, sortOrder) VALUES (?, ?, ?)');
   const nextSortOrder = db.prepare('SELECT COALESCE(MAX(sortOrder), 0) + 1 as nextOrder FROM quest_words WHERE questId = ?');
@@ -467,8 +487,12 @@ app.post('/api/admin/words/import', requireAdmin, (req, res) => {
           row.english,
           row.type,
           row.category || null,
+          row.grade || null,
+          row.unit || null,
+          row.difficulty,
           row.type === 'irregular' ? row.past : null,
           row.type === 'irregular' ? row.participle : null,
+          row.notes || null,
           now,
         );
         wordId = Number(result.lastInsertRowid);
@@ -737,19 +761,23 @@ app.post('/api/admin/words', requireAdmin, (req, res) => {
 
   const now = new Date().toISOString();
   const result = db.prepare(`
-    INSERT INTO words (german, english, type, category, past, participle, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO words (german, english, type, category, grade, unit, difficulty, past, participle, notes, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     word.german,
     word.english,
     word.type,
     word.category,
+    word.grade,
+    word.unit,
+    word.difficulty,
     word.past,
     word.participle,
+    word.notes,
     now,
   );
 
-  const saved = db.prepare('SELECT id, german, english, type, category, past, participle FROM words WHERE id = ?')
+  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, notes FROM words WHERE id = ?')
     .get(Number(result.lastInsertRowid));
   res.status(201).json(saved);
 });
@@ -759,14 +787,21 @@ function sanitizeWordInput(body: any, existing?: any) {
   const english = typeof body.english === 'string' ? body.english.trim() : existing?.english;
   const type = body.type === 'irregular' || body.type === 'vocab' ? body.type : existing?.type ?? 'vocab';
   const category = typeof body.category === 'string' && body.category.trim() ? body.category.trim() : null;
+  const grade = typeof body.grade === 'string' && body.grade.trim() ? body.grade.trim() : null;
+  const unit = typeof body.unit === 'string' && body.unit.trim() ? body.unit.trim() : null;
+  const difficulty = Number.isInteger(Number(body.difficulty)) ? Number(body.difficulty) : Number(existing?.difficulty ?? 1);
   const past = typeof body.past === 'string' && body.past.trim() ? body.past.trim() : null;
   const participle = typeof body.participle === 'string' && body.participle.trim() ? body.participle.trim() : null;
+  const notes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null;
 
   if (!german || !english) {
     return { error: 'Deutsch und Englisch sind Pflichtfelder' };
   }
   if (type === 'irregular' && (!past || !participle)) {
     return { error: 'Unregelmäßige Verben brauchen Past Simple und Past Participle' };
+  }
+  if (difficulty < 1 || difficulty > 3) {
+    return { error: 'Die Schwierigkeit muss zwischen 1 und 3 liegen' };
   }
 
   return {
@@ -775,8 +810,12 @@ function sanitizeWordInput(body: any, existing?: any) {
       english,
       type,
       category,
+      grade,
+      unit,
+      difficulty,
       past: type === 'irregular' ? past : null,
       participle: type === 'irregular' ? participle : null,
+      notes,
     },
   };
 }
@@ -796,11 +835,11 @@ app.patch('/api/admin/words/:id', requireAdmin, (req, res) => {
 
   db.prepare(`
     UPDATE words
-    SET german = ?, english = ?, type = ?, category = ?, past = ?, participle = ?
+    SET german = ?, english = ?, type = ?, category = ?, grade = ?, unit = ?, difficulty = ?, past = ?, participle = ?, notes = ?
     WHERE id = ?
-  `).run(word.german, word.english, word.type, word.category, word.past, word.participle, wordId);
+  `).run(word.german, word.english, word.type, word.category, word.grade, word.unit, word.difficulty, word.past, word.participle, word.notes, wordId);
 
-  const saved = db.prepare('SELECT id, german, english, type, category, past, participle FROM words WHERE id = ?')
+  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, notes FROM words WHERE id = ?')
     .get(wordId);
   res.json(saved);
 });
@@ -864,7 +903,7 @@ app.delete('/api/admin/quests/:questId/words/:wordId', requireAdmin, (req, res) 
 
 app.get('/api/admin/content', requireAdmin, (_req, res) => {
   const quests = getQuests();
-  const words = db.prepare('SELECT id, german, english, type, category, past, participle FROM words ORDER BY id').all() as any[];
+  const words = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, notes FROM words ORDER BY id').all() as any[];
   const wordsById = new Map(words.map(word => [word.id, word]));
   res.json({
     quests: quests.map(quest => ({
