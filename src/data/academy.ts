@@ -176,8 +176,8 @@ export const storyScenes: StoryScene[] = [
     subtitle: 'Ein fremdes Wort wächst mitten auf der nächsten Route.',
     eyebrow: 'Zwischensequenz II',
     rewardLine: 'Die Akademie zeigt, dass neue Wörter nicht nur gesammelt, sondern gepflegt werden müssen.',
-    x: 75,
-    y: 33,
+    x: 73,
+    y: 78,
     pages: [
       {
         speaker: 'Portrait',
