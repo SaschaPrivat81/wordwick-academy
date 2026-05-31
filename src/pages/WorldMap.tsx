@@ -34,23 +34,6 @@ const sigils = {
   graduation: GraduationCap,
 };
 
-const futureSigils = {
-  hall: Castle,
-  library: LibraryBig,
-  brew: FlaskConical,
-  sky: CloudSun,
-  tower: Telescope,
-  garden: Sprout,
-  woods: Trees,
-  cave: Flame,
-  moonwell: Waves,
-  mastery: Trophy,
-  spark: Sparkles,
-  trees: Trees,
-  water: Waves,
-  graduation: GraduationCap,
-};
-
 const prologuePages = [
   {
     eyebrow: 'Prolog',
@@ -243,7 +226,7 @@ export default function WorldMap() {
           </span>
         </button>
 
-        {quests.filter(quest => quest.words.length > 0).map(quest => {
+        {quests.map(quest => {
           const questState = questStatus(quest);
           const Icon = sigils[quest.sigil as keyof typeof sigils] ?? Sparkles;
           const stepNumber = stepByQuestId.get(quest.id) ?? quest.id;
@@ -258,7 +241,7 @@ export default function WorldMap() {
               style={{ left: `${quest.x}%`, top: `${quest.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
               aria-label={quest.title}
             >
-              <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-amber-100 bg-amber-800 text-[11px] font-black text-amber-50 shadow-md">{stepNumber}</span>
+              <span className="quest-step-badge">{stepNumber}</span>
               <Icon className="h-6 w-6" />
               {questState === 'completed' && <Check className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-blue-950 p-1 text-amber-100" />}
               {questState === 'locked' && <LockKeyhole className="absolute h-7 w-7 text-stone-200" />}
@@ -268,27 +251,6 @@ export default function WorldMap() {
               </span>
             </button>
           );
-        })}
-
-        {quests.filter(quest => quest.words.length === 0).map(stop => {
-          const Icon = futureSigils[stop.sigil as keyof typeof futureSigils] ?? Sparkles;
-          const stepNumber = stepByQuestId.get(stop.id) ?? stop.id;
-          return (
-          <div
-            key={stop.id}
-            className="quest-node locked z-30 opacity-80"
-            style={{ left: `${stop.x}%`, top: `${stop.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
-            aria-hidden="true"
-          >
-            <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-stone-600 text-[11px] font-black text-stone-100 shadow-md">{stepNumber}</span>
-            <Icon className="h-6 w-6" />
-            <LockKeyhole className="absolute h-7 w-7 text-stone-200" />
-            <span className={selectedQuest.id === stop.id ? activeRibbonClass(stop.x, stop.y) : ribbonClass(stop.x, stop.y)}>
-              <span className="text-[9px] uppercase tracking-[0.14em] opacity-70">Schritt {stepNumber} · {stop.chapter}</span>
-              <span className="block">{stop.title}</span>
-            </span>
-          </div>
-        );
         })}
       </section>
 
