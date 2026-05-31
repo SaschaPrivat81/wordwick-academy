@@ -62,8 +62,8 @@ input {
     sepia(32%)
     saturate(1050%)
     hue-rotate(350deg)
-    brightness(84%)
-    contrast(92%)
+    brightness(68%)
+    contrast(104%)
     drop-shadow(0 2px 0 rgba(255, 248, 220, 0.85));
 }
 
