@@ -10,18 +10,26 @@ interface Reward {
   icon: string;
   kind: 'real' | 'game';
   unlockType: 'coins' | 'quest' | 'final';
+  requiresApproval: number;
+  visibility: 'visible' | 'unlocked';
   questTitle?: string;
   claimed: boolean;
-  claimStatus?: 'requested' | 'claimed' | 'fulfilled' | 'cancelled';
+  claimStatus?: 'requested' | 'approved' | 'claimed' | 'fulfilled' | 'cancelled';
   unlocked: boolean;
   lockedReason: string;
 }
 
 const claimLabels: Record<string, string> = {
-  requested: 'Angefordert',
+  requested: 'Bei Eltern',
+  approved: 'Liegt bereit',
   claimed: 'Erhalten',
   fulfilled: 'Ausgegeben',
-  cancelled: 'Storniert',
+  cancelled: 'Später',
+};
+
+const claimButtonLabel = (reward: Reward) => {
+  if (!reward.unlocked) return 'Gesperrt';
+  return reward.requiresApproval ? 'Anfragen' : 'Öffnen';
 };
 
 const cabinetSlots = [
@@ -58,7 +66,7 @@ export default function Profile() {
     if (response.ok) {
       setRewards(previous => previous.map(item => item.id === reward.id ? { ...item, claimed: true, claimStatus: data.status } : item));
       setSparkBalance(current => Math.max(0, current - reward.cost));
-      setMessage(data.status === 'requested' ? 'Pip hat die Belohnung in den Elternbereich gelegt.' : 'Das Fach ist geöffnet.');
+      setMessage(data.status === 'requested' ? 'Pip hat die Anfrage in den Elternbereich gelegt.' : 'Das Fach ist geöffnet.');
     } else {
       setMessage(data.error ?? 'Dieses Fach öffnet sich noch nicht.');
     }
@@ -140,6 +148,9 @@ export default function Profile() {
                       <div className={`mt-1 text-[10px] font-black uppercase tracking-[0.08em] ${reward.claimed ? 'text-amber-100/80' : reward.unlocked ? 'text-blue-950/70' : 'text-stone-200/70'}`}>
                         {reward.cost > 0 ? `${reward.cost} Funken` : reward.unlockType === 'coins' ? 'Frei' : reward.unlockType === 'final' ? 'Finallevel' : 'Level'}
                       </div>
+                      {reward.requiresApproval === 1 && reward.unlocked && !reward.claimed && (
+                        <div className="mt-1 text-[9px] font-black uppercase tracking-[0.08em] text-amber-800/80">Elternfreigabe</div>
+                      )}
                     </div>
 
                     {reward.claimed ? (
@@ -157,7 +168,7 @@ export default function Profile() {
                             : 'bg-stone-700 text-stone-200'
                         }`}
                       >
-                        {reward.unlocked ? 'Öffnen' : 'Gesperrt'}
+                        {claimButtonLabel(reward)}
                       </button>
                     )}
                   </div>

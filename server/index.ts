@@ -265,18 +265,20 @@ app.get('/api/rewards', requirePin, (req, res) => {
   `).all() as any[];
   const claimed = db.prepare('SELECT id, rewardId, status, claimedAt FROM claimed_rewards WHERE userId = ?').all(userId) as any[];
   const claimedByReward = new Map(claimed.map(row => [row.rewardId, row]));
-  res.json(rewards.map(reward => {
+  const visibleRewards = rewards.map(reward => {
     const claim = claimedByReward.get(reward.id);
     const access = rewardAccess(userId, reward, user.coins);
     return {
       ...reward,
+      parentNote: undefined,
       claimed: Boolean(claim),
       claimId: claim?.id ?? null,
       claimStatus: claim?.status ?? null,
       claimedAt: claim?.claimedAt ?? null,
       ...access,
     };
-  }));
+  }).filter(reward => reward.visibility !== 'unlocked' || reward.unlocked || reward.claimed);
+  res.json(visibleRewards);
 });
 
 app.post('/api/rewards/:id/claim', requirePin, (req, res) => {
@@ -293,7 +295,7 @@ app.post('/api/rewards/:id/claim', requirePin, (req, res) => {
   if (reward.cost > 0) {
     db.prepare('UPDATE users SET coins = coins - ? WHERE id = ?').run(reward.cost, userId);
   }
-  const status = reward.kind === 'real' ? 'requested' : 'claimed';
+  const status = reward.requiresApproval === 1 ? 'requested' : 'claimed';
   const result = db.prepare('INSERT INTO claimed_rewards (userId, rewardId, status, claimedAt) VALUES (?, ?, ?, ?)')
     .run(userId, reward.id, status, new Date().toISOString());
   res.json({ ok: true, claimId: Number(result.lastInsertRowid), status });
@@ -424,7 +426,8 @@ app.patch('/api/admin/users/:id', requireAdmin, (req, res) => {
 
 const allowedRewardKinds = new Set(['real', 'game']);
 const allowedUnlockTypes = new Set(['coins', 'quest', 'final']);
-const allowedClaimStatuses = new Set(['requested', 'claimed', 'fulfilled', 'cancelled']);
+const allowedRewardVisibility = new Set(['visible', 'unlocked']);
+const allowedClaimStatuses = new Set(['requested', 'approved', 'claimed', 'fulfilled', 'cancelled']);
 
 function sanitizeRewardInput(body: any, existing?: any) {
   const title = typeof body.title === 'string' ? body.title.trim() : existing?.title;
@@ -436,6 +439,11 @@ function sanitizeRewardInput(body: any, existing?: any) {
   const questId = body.questId === undefined || body.questId === '' ? null : Number(body.questId);
   const active = body.active === undefined ? existing?.active ?? 1 : body.active ? 1 : 0;
   const sortOrder = body.sortOrder === undefined || body.sortOrder === '' ? existing?.sortOrder ?? 0 : Number(body.sortOrder);
+  const requiresApproval = body.requiresApproval === undefined
+    ? existing?.requiresApproval ?? (kind === 'real' ? 1 : 0)
+    : body.requiresApproval ? 1 : 0;
+  const visibility = allowedRewardVisibility.has(body.visibility) ? body.visibility : existing?.visibility ?? 'visible';
+  const parentNote = typeof body.parentNote === 'string' ? body.parentNote.trim() : existing?.parentNote ?? '';
 
   if (!title || Number.isNaN(cost) || Number.isNaN(sortOrder) || (questId !== null && Number.isNaN(questId))) {
     return { error: 'Bitte Titel, Kosten und Sortierung prüfen' };
@@ -459,6 +467,9 @@ function sanitizeRewardInput(body: any, existing?: any) {
       questId,
       active,
       sortOrder: Math.floor(sortOrder),
+      requiresApproval,
+      visibility,
+      parentNote,
     },
   };
 }
@@ -471,12 +482,12 @@ app.get('/api/admin/rewards', requireAdmin, (_req, res) => {
     ORDER BY r.active DESC, r.sortOrder, r.id
   `).all() as any[];
   const claims = db.prepare(`
-    SELECT cr.id, cr.userId, cr.rewardId, cr.status, cr.claimedAt, u.name as userName, r.title as rewardTitle, r.icon, r.kind
+    SELECT cr.id, cr.userId, cr.rewardId, cr.status, cr.claimedAt, u.name as userName, r.title as rewardTitle, r.icon, r.kind, r.parentNote
     FROM claimed_rewards cr
     JOIN users u ON u.id = cr.userId
     JOIN rewards r ON r.id = cr.rewardId
     ORDER BY
-      CASE cr.status WHEN 'requested' THEN 0 WHEN 'claimed' THEN 1 WHEN 'fulfilled' THEN 2 ELSE 3 END,
+      CASE cr.status WHEN 'requested' THEN 0 WHEN 'approved' THEN 1 WHEN 'claimed' THEN 2 WHEN 'fulfilled' THEN 3 ELSE 4 END,
       cr.claimedAt DESC
   `).all() as any[];
   res.json({ rewards, claims });
@@ -487,8 +498,8 @@ app.post('/api/admin/rewards', requireAdmin, (req, res) => {
   if ('error' in parsed) return res.status(400).json({ error: parsed.error });
   const reward = parsed.reward;
   const result = db.prepare(`
-    INSERT INTO rewards (title, description, cost, icon, kind, unlockType, questId, active, sortOrder, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO rewards (title, description, cost, icon, kind, unlockType, questId, active, sortOrder, requiresApproval, visibility, parentNote, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     reward.title,
     reward.description,
@@ -499,6 +510,9 @@ app.post('/api/admin/rewards', requireAdmin, (req, res) => {
     reward.questId,
     reward.active,
     reward.sortOrder,
+    reward.requiresApproval,
+    reward.visibility,
+    reward.parentNote,
     new Date().toISOString(),
   );
   res.status(201).json(db.prepare('SELECT * FROM rewards WHERE id = ?').get(Number(result.lastInsertRowid)));
@@ -514,7 +528,7 @@ app.patch('/api/admin/rewards/:id', requireAdmin, (req, res) => {
 
   db.prepare(`
     UPDATE rewards
-    SET title = ?, description = ?, cost = ?, icon = ?, kind = ?, unlockType = ?, questId = ?, active = ?, sortOrder = ?
+    SET title = ?, description = ?, cost = ?, icon = ?, kind = ?, unlockType = ?, questId = ?, active = ?, sortOrder = ?, requiresApproval = ?, visibility = ?, parentNote = ?
     WHERE id = ?
   `).run(
     reward.title,
@@ -526,6 +540,9 @@ app.patch('/api/admin/rewards/:id', requireAdmin, (req, res) => {
     reward.questId,
     reward.active,
     reward.sortOrder,
+    reward.requiresApproval,
+    reward.visibility,
+    reward.parentNote,
     rewardId,
   );
   res.json(db.prepare('SELECT * FROM rewards WHERE id = ?').get(rewardId));

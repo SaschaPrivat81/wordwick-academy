@@ -57,7 +57,8 @@ interface UserDraft {
 
 type RewardKind = 'real' | 'game';
 type RewardUnlockType = 'coins' | 'quest' | 'final';
-type RewardClaimStatus = 'requested' | 'claimed' | 'fulfilled' | 'cancelled';
+type RewardVisibility = 'visible' | 'unlocked';
+type RewardClaimStatus = 'requested' | 'approved' | 'claimed' | 'fulfilled' | 'cancelled';
 
 interface AdminReward {
   id: number;
@@ -71,6 +72,9 @@ interface AdminReward {
   questTitle?: string | null;
   active: number;
   sortOrder: number;
+  requiresApproval: number;
+  visibility: RewardVisibility;
+  parentNote: string;
 }
 
 interface RewardDraft {
@@ -83,6 +87,9 @@ interface RewardDraft {
   questId: string;
   active: boolean;
   sortOrder: string;
+  requiresApproval: boolean;
+  visibility: RewardVisibility;
+  parentNote: string;
 }
 
 interface RewardClaim {
@@ -91,6 +98,7 @@ interface RewardClaim {
   rewardTitle: string;
   icon: string;
   kind: RewardKind;
+  parentNote?: string;
   status: RewardClaimStatus;
   claimedAt: string;
 }
@@ -129,6 +137,9 @@ const emptyRewardDraft: RewardDraft = {
   questId: '',
   active: true,
   sortOrder: '10',
+  requiresApproval: true,
+  visibility: 'visible',
+  parentNote: '',
 };
 
 const inputClass = 'w-full rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 text-sm font-bold outline-none ring-blue-800/25 focus:ring-4';
@@ -159,9 +170,10 @@ const unlockTypeLabels: Record<RewardUnlockType, string> = {
 
 const claimStatusLabels: Record<RewardClaimStatus, string> = {
   requested: 'Offen',
+  approved: 'Liegt bereit',
   claimed: 'Im Spiel erhalten',
   fulfilled: 'Ausgegeben',
-  cancelled: 'Storniert',
+  cancelled: 'Später',
 };
 
 const gameTypes = [
@@ -244,6 +256,9 @@ export default function Admin() {
     questId: reward.questId ? String(reward.questId) : '',
     active: reward.active === 1,
     sortOrder: String(reward.sortOrder ?? 0),
+    requiresApproval: reward.requiresApproval !== 0,
+    visibility: reward.visibility ?? 'visible',
+    parentNote: reward.parentNote ?? '',
   });
 
   const loadRewards = async () => {
@@ -316,6 +331,7 @@ export default function Admin() {
       ...current,
       [field]: value,
       ...(field === 'unlockType' && value === 'coins' ? { questId: '' } : {}),
+      ...(field === 'kind' && value === 'game' ? { requiresApproval: false } : {}),
     }));
   };
 
@@ -344,6 +360,7 @@ export default function Admin() {
         ...current[rewardId],
         [field]: value,
         ...(field === 'unlockType' && value === 'coins' ? { questId: '' } : {}),
+        ...(field === 'kind' && value === 'game' ? { requiresApproval: false } : {}),
       },
     }));
   };
@@ -653,6 +670,13 @@ export default function Admin() {
                       <span className={labelClass}>Sortierung</span>
                       <input className={inputClass} type="number" value={draft.sortOrder} onChange={event => updateRewardDraft(reward.id, 'sortOrder', event.target.value)} />
                     </label>
+                    <label>
+                      <span className={labelClass}>Sichtbarkeit</span>
+                      <select className={inputClass} value={draft.visibility} onChange={event => updateRewardDraft(reward.id, 'visibility', event.target.value as RewardVisibility)}>
+                        <option value="visible">Immer sichtbar</option>
+                        <option value="unlocked">Erst freigeschaltet</option>
+                      </select>
+                    </label>
                     {draft.unlockType !== 'coins' && (
                       <label className="sm:col-span-2">
                         <span className={labelClass}>Verbundenes Level</span>
@@ -669,11 +693,22 @@ export default function Admin() {
                     <textarea className={`${inputClass} min-h-20`} value={draft.description} onChange={event => updateRewardDraft(reward.id, 'description', event.target.value)} />
                   </label>
 
+                  <label className="mt-3 block">
+                    <span className={labelClass}>Elternnotiz</span>
+                    <textarea className={`${inputClass} min-h-16`} value={draft.parentNote} onChange={event => updateRewardDraft(reward.id, 'parentNote', event.target.value)} />
+                  </label>
+
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                    <label className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-blue-950/60">
-                      <input type="checkbox" checked={draft.active} onChange={event => updateRewardDraft(reward.id, 'active', event.target.checked)} />
-                      Im Schrank sichtbar
-                    </label>
+                    <div className="flex flex-wrap gap-3">
+                      <label className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-blue-950/60">
+                        <input type="checkbox" checked={draft.active} onChange={event => updateRewardDraft(reward.id, 'active', event.target.checked)} />
+                        Aktiv
+                      </label>
+                      <label className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-blue-950/60">
+                        <input type="checkbox" checked={draft.requiresApproval} onChange={event => updateRewardDraft(reward.id, 'requiresApproval', event.target.checked)} />
+                        Elternfreigabe
+                      </label>
+                    </div>
                     <button onClick={() => saveReward(reward.id)} className="gold-button px-4 py-2">
                       <Save className="h-4 w-4" />
                       Speichern
@@ -720,6 +755,13 @@ export default function Admin() {
                     <option value="final">Finallevel</option>
                   </select>
                 </label>
+                <label>
+                  <span className={labelClass}>Sichtbarkeit</span>
+                  <select className={inputClass} value={rewardForm.visibility} onChange={event => updateRewardForm('visibility', event.target.value as RewardVisibility)}>
+                    <option value="visible">Immer sichtbar</option>
+                    <option value="unlocked">Erst freigeschaltet</option>
+                  </select>
+                </label>
                 {rewardForm.unlockType !== 'coins' && (
                   <label>
                     <span className={labelClass}>Verbundenes Level</span>
@@ -732,6 +774,14 @@ export default function Admin() {
                 <label>
                   <span className={labelClass}>Beschreibung</span>
                   <textarea className={`${inputClass} min-h-24`} value={rewardForm.description} onChange={event => updateRewardForm('description', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Elternnotiz</span>
+                  <textarea className={`${inputClass} min-h-20`} value={rewardForm.parentNote} onChange={event => updateRewardForm('parentNote', event.target.value)} />
+                </label>
+                <label className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-[0.12em] text-blue-950/60">
+                  <input type="checkbox" checked={rewardForm.requiresApproval} onChange={event => updateRewardForm('requiresApproval', event.target.checked)} />
+                  Elternfreigabe nötig
                 </label>
               </div>
               <button onClick={createReward} className="magic-button mt-3 w-full">
@@ -753,6 +803,7 @@ export default function Admin() {
                       <div>
                         <div className="text-sm font-black text-slate-950">{claim.icon} {claim.rewardTitle}</div>
                         <div className="text-xs font-bold text-stone-500">{claim.userName} · {claimStatusLabels[claim.status]}</div>
+                        {claim.parentNote && <div className="mt-1 text-xs font-bold text-blue-950/60">{claim.parentNote}</div>}
                       </div>
                       <select
                         className="rounded-lg border border-amber-900/15 bg-white px-2 py-1 text-xs font-bold"
@@ -760,9 +811,10 @@ export default function Admin() {
                         onChange={event => updateClaimStatus(claim.id, event.target.value as RewardClaimStatus)}
                       >
                         <option value="requested">Offen</option>
+                        <option value="approved">Liegt bereit</option>
                         <option value="claimed">Im Spiel erhalten</option>
                         <option value="fulfilled">Ausgegeben</option>
-                        <option value="cancelled">Storniert</option>
+                        <option value="cancelled">Später</option>
                       </select>
                     </div>
                   </div>

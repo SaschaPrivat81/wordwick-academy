@@ -121,6 +121,15 @@ if (!rewardColumns.some(column => column.name === 'active')) {
 if (!rewardColumns.some(column => column.name === 'sortOrder')) {
   db.prepare('ALTER TABLE rewards ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0').run();
 }
+if (!rewardColumns.some(column => column.name === 'requiresApproval')) {
+  db.prepare('ALTER TABLE rewards ADD COLUMN requiresApproval INTEGER NOT NULL DEFAULT 1').run();
+}
+if (!rewardColumns.some(column => column.name === 'visibility')) {
+  db.prepare("ALTER TABLE rewards ADD COLUMN visibility TEXT NOT NULL DEFAULT 'visible'").run();
+}
+if (!rewardColumns.some(column => column.name === 'parentNote')) {
+  db.prepare("ALTER TABLE rewards ADD COLUMN parentNote TEXT NOT NULL DEFAULT ''").run();
+}
 
 const claimedRewardColumns = db.prepare('PRAGMA table_info(claimed_rewards)').all() as { name: string }[];
 if (!claimedRewardColumns.some(column => column.name === 'status')) {
@@ -342,9 +351,9 @@ if (!freshPlayStateMigration) {
 }
 
 const rewardDefaults = [
-  { title: '20 Min Minecraft', description: 'Ein echtes Eltern-Fach: 20 Minuten Spielzeit nach Absprache.', kind: 'real', unlockType: 'coins', cost: 30, icon: '🎮', sortOrder: 1 },
-  { title: 'Eis essen gehen', description: 'Eine größere echte Belohnung für fleißig gesammelte Wortfunken.', kind: 'real', unlockType: 'coins', cost: 50, icon: '🍦', sortOrder: 2 },
-  { title: 'Neues Buch', description: 'Ein besonderes Schrankfach für ein starkes Lernziel.', kind: 'real', unlockType: 'coins', cost: 100, icon: '📚', sortOrder: 3 },
+  { title: '20 Min Minecraft', description: 'Ein echtes Eltern-Fach: 20 Minuten Spielzeit nach Absprache.', kind: 'real', unlockType: 'coins', cost: 30, icon: '🎮', sortOrder: 1, requiresApproval: 1, visibility: 'visible' },
+  { title: 'Eis essen gehen', description: 'Eine größere echte Belohnung für fleißig gesammelte Wortfunken.', kind: 'real', unlockType: 'coins', cost: 50, icon: '🍦', sortOrder: 2, requiresApproval: 1, visibility: 'visible' },
+  { title: 'Neues Buch', description: 'Ein besonderes Schrankfach für ein starkes Lernziel.', kind: 'real', unlockType: 'coins', cost: 100, icon: '📚', sortOrder: 3, requiresApproval: 1, visibility: 'unlocked' },
 ];
 
 for (const reward of rewardDefaults) {
@@ -355,9 +364,11 @@ for (const reward of rewardDefaults) {
         unlockType = ?,
         cost = ?,
         icon = ?,
-        sortOrder = ?
+        sortOrder = ?,
+        requiresApproval = ?,
+        visibility = ?
     WHERE title = ?
-  `).run(reward.description, reward.kind, reward.unlockType, reward.cost, reward.icon, reward.sortOrder, reward.title);
+  `).run(reward.description, reward.kind, reward.unlockType, reward.cost, reward.icon, reward.sortOrder, reward.requiresApproval, reward.visibility, reward.title);
 }
 
 export { db };
