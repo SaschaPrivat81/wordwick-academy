@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, PlayCircle, RotateCcw, Sparkles, XCircle } from 'lucide-react';
-import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, normalizeAnswer } from '../data/academy';
+import { ArrowLeft, BookOpen, CheckCircle2, PlayCircle, RotateCcw, Sparkles, XCircle } from 'lucide-react';
+import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, getUnlockedStorySceneAfterQuest, normalizeAnswer } from '../data/academy';
 
 interface Word {
   id: number;
@@ -523,6 +523,7 @@ export default function Quest() {
   if (finished) {
     const finalPercent = Math.round((correctCount / totalTasks) * 100);
     const questCompleted = finalPercent >= 80;
+    const unlockedStoryScene = questCompleted ? getUnlockedStorySceneAfterQuest(quest.id) : undefined;
     return (
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl items-center px-4 py-6">
         <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
@@ -561,6 +562,19 @@ export default function Quest() {
               <div className={`mt-6 rounded-2xl border p-4 text-sm font-bold leading-6 ${questCompleted ? 'border-amber-900/10 bg-amber-100/70 text-slate-950' : 'border-blue-950/10 bg-blue-100/70 text-blue-950'}`}>
                 {questCompleted ? `Freigeschaltet: ${quest.reward}. ${story.rewardReveal}` : `Noch nicht freigeschaltet: ${quest.reward}. Versuch es gleich nochmal.`}
               </div>
+              {unlockedStoryScene && (
+                <button
+                  onClick={() => navigate(`/story/${unlockedStoryScene.id}`)}
+                  className="mt-4 flex w-full items-start gap-3 rounded-2xl border border-blue-950/10 bg-blue-950 p-4 text-left text-amber-50 shadow-lg shadow-slate-950/15 transition hover:bg-blue-900 active:scale-[0.99]"
+                >
+                  <BookOpen className="mt-1 h-5 w-5 shrink-0 text-amber-200" />
+                  <span>
+                    <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-amber-200/75">{unlockedStoryScene.eyebrow}</span>
+                    <span className="mt-1 block text-base font-black">{unlockedStoryScene.title}</span>
+                    <span className="mt-1 block text-sm font-semibold leading-6 text-amber-50/75">{unlockedStoryScene.subtitle}</span>
+                  </span>
+                </button>
+              )}
               {(weakWords.length > 0 || retrySolvedCount > 0) && (
                 <div className="mt-4 rounded-2xl border border-blue-950/10 bg-white/60 p-4">
                   <div className="flex items-center gap-2 text-sm font-black text-blue-950">

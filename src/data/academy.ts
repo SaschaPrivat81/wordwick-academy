@@ -26,6 +26,25 @@ export interface QuestStory {
   rewardReveal: string;
 }
 
+export interface StoryScenePage {
+  speaker: 'Pip' | 'Karte' | 'Portrait' | 'Erzähler';
+  title: string;
+  body: string;
+  aside?: string;
+}
+
+export interface StoryScene {
+  id: string;
+  unlockAfterQuestId: number;
+  title: string;
+  subtitle: string;
+  eyebrow: string;
+  rewardLine: string;
+  x: number;
+  y: number;
+  pages: StoryScenePage[];
+}
+
 export const questStories: Record<number, QuestStory> = {
   1: {
     arc: 'Kapitel I: Die verlorenen Wortfunken',
@@ -118,6 +137,135 @@ export const questStories: Record<number, QuestStory> = {
     rewardReveal: 'Dieses Abzeichen eignet sich später perfekt für eine echte Belohnung.',
   },
 };
+
+export const storyScenes: StoryScene[] = [
+  {
+    id: 'ink-mist',
+    unlockAfterQuestId: 3,
+    title: 'Der Tintennebel lacht',
+    subtitle: 'Eine Spur ist plötzlich sehr falsch beschriftet.',
+    eyebrow: 'Zwischensequenz I',
+    rewardLine: 'Pip findet heraus, dass die verschwundenen Wortfunken nicht einfach weggeweht wurden.',
+    x: 46,
+    y: 35,
+    pages: [
+      {
+        speaker: 'Erzähler',
+        title: 'Ein Schild zeigt Unsinn',
+        body: 'Nach dem Wordbrew Workshop zittert die Akademiekarte. Über dem Flur zur Bibliothek erscheint ein neues Schild: "Please do not feed the doors." Darunter steht auf Deutsch: "Bitte die Türen nicht mit Suppe füttern."',
+        aside: 'Pip starrt das Schild an und flüstert: "Ich wusste gar nicht, dass Türen Suppe mögen."',
+      },
+      {
+        speaker: 'Pip',
+        title: 'Pip wird misstrauisch',
+        body: 'Pip tippt mit einer Papierkralle gegen die Tinte. Die Buchstaben kichern, laufen auseinander und setzen sich neu zusammen. Für einen Moment steht dort ein Name: Tintennebel.',
+        aside: '"Aha", sagt Pip. "Das ist kein Wind. Das ist jemand mit sehr schlechtem Sinn für Grammatik."',
+      },
+      {
+        speaker: 'Karte',
+        title: 'Die Karte warnt',
+        body: 'Blaue Linien kriechen über das Pergament. Die Karte zeigt keinen neuen Raum, sondern eine Frage: Warum verstecken sich Wörter, wenn man sie zu schnell und zu schwer macht?',
+        aside: 'Pip klappt die Flügel zusammen. "Das klingt nach einer Prüfung. Oder nach Hausaufgaben mit dramatischer Beleuchtung."',
+      },
+    ],
+  },
+  {
+    id: 'greenhouse-whisper',
+    unlockAfterQuestId: 6,
+    title: 'Der Garten flüstert zurück',
+    subtitle: 'Im Glashaus wächst ein Wort, das niemand gepflanzt hat.',
+    eyebrow: 'Zwischensequenz II',
+    rewardLine: 'Die Akademie zeigt, dass neue Wörter nicht nur gesammelt, sondern gepflegt werden müssen.',
+    x: 32,
+    y: 55,
+    pages: [
+      {
+        speaker: 'Portrait',
+        title: 'Ein beleidigtes Portrait',
+        body: 'Im Glashaus hängt ein kleines Portrait einer früheren Wortgärtnerin. Sie schnaubt: "Endlich kommt jemand. Seit Tagen nennt mich dieser Nebel Mrs. Cucumber."',
+        aside: 'Pip nickt höflich. "Guten Tag, Mrs... äh... nicht Cucumber."',
+      },
+      {
+        speaker: 'Erzähler',
+        title: 'Ein wildes Wort sprießt',
+        body: 'Zwischen den Kristallsamen wächst ein fremdes Wort. Es leuchtet, dreht sich und versucht, sich selbst zu übersetzen. Erst steht dort "flower", dann "floor", dann "flour".',
+        aside: 'Pip setzt sich daneben. "Drei Wörter, ein Buchstabe Unterschied. Das ist entweder Magie oder ein sehr gemeiner Witz."',
+      },
+      {
+        speaker: 'Pip',
+        title: 'Die erste Regel',
+        body: 'Pip versteht: Manche Wortfunken sind nicht böse. Sie sind durcheinander. Wenn neue Wörter in die Akademie kommen, brauchen sie einen guten Platz, Wiederholung und jemanden, der nicht gleich seufzt.',
+        aside: '"Also dich", sagt Pip. "Ich seufze nämlich schon bei Treppen."',
+      },
+    ],
+  },
+  {
+    id: 'moonwell-truth',
+    unlockAfterQuestId: 9,
+    title: 'Die Wahrheit im Moonwell',
+    subtitle: 'Der See zeigt, warum der Tintennebel entstanden ist.',
+    eyebrow: 'Zwischensequenz III',
+    rewardLine: 'Vor dem Finale wird klar: Der Gegner ist eher ein Unfall als ein Bösewicht.',
+    x: 70,
+    y: 66,
+    pages: [
+      {
+        speaker: 'Erzähler',
+        title: 'Der See antwortet nicht sofort',
+        body: 'Am Moonwell Lake wirft Pip einen Wortfunken ins Wasser. Nichts passiert. Dann blubbert der See: "Loading..." Pip schaut dich an. "Selbst magische Seen brauchen manchmal einen Moment."',
+      },
+      {
+        speaker: 'Karte',
+        title: 'Ein altes Missgeschick',
+        body: 'Im Wasser erscheint die Erinnerung an eine frühere Prüfung. Jemand wollte alle schweren Wörter der Akademie auf einmal lernen. Die Wörter gerieten in Panik, versteckten sich und ließen den Tintennebel zurück.',
+        aside: 'Pip wird leise. "Dann ist der Nebel nicht einfach böse. Er ist ein Haufen überforderter Tinte."',
+      },
+      {
+        speaker: 'Pip',
+        title: 'Vor dem Turm',
+        body: 'Pip richtet seine Papierflügel. "Im Stargazer Tower müssen wir nicht kämpfen. Wir müssen Ordnung schaffen. Und vielleicht dem Nebel erklären, dass niemand alle unregelmäßigen Verben an einem Dienstag schaffen muss."',
+        aside: 'Er denkt kurz nach. "Mittwoch wäre auch sportlich."',
+      },
+    ],
+  },
+  {
+    id: 'chapter-one-finale',
+    unlockAfterQuestId: 5,
+    title: 'Das erste Sternbild',
+    subtitle: 'Die Akademie erkennt den ersten großen Fortschritt.',
+    eyebrow: 'Finalszene',
+    rewardLine: 'Kapitel I ist abgeschlossen und ein neuer Bereich der Akademie beginnt zu flimmern.',
+    x: 60,
+    y: 14,
+    pages: [
+      {
+        speaker: 'Erzähler',
+        title: 'Der Sternenturm öffnet sich',
+        body: 'Als die letzte Antwort im Stargazer Tower leuchtet, ordnen sich die Wortfunken am Himmel. Sie bilden kein normales Sternbild, sondern einen kleinen Papierdrachen mit viel zu stolzem Blick.',
+        aside: 'Pip räuspert sich. "Reine Zufälligkeit. Sehr geschmackvolle Zufälligkeit."',
+      },
+      {
+        speaker: 'Karte',
+        title: 'Ein neuer Rand erscheint',
+        body: 'Die Karte knistert. Hinter dem Glashaus und dem Flüsterwald erscheinen neue blasse Linien. Die Akademie ist größer, als sie bisher zugeben wollte.',
+      },
+      {
+        speaker: 'Pip',
+        title: 'Pips Versprechen',
+        body: 'Pip setzt sich auf den Rand der Karte. "Heute haben wir nicht nur Wörter gelernt. Wir haben ihnen gezeigt, dass sie hier sicher sind. Morgen finden wir heraus, was hinter dem nächsten Pfad wartet."',
+        aside: '"Und jetzt", sagt er, "brauche ich dringend einen Keks. Aus Papier. Oder normal. Ich bin flexibel."',
+      },
+    ],
+  },
+];
+
+export function getStoryScene(sceneId: string) {
+  return storyScenes.find(scene => scene.id === sceneId);
+}
+
+export function getUnlockedStorySceneAfterQuest(questId: number) {
+  return storyScenes.find(scene => scene.unlockAfterQuestId === questId);
+}
 
 export function getQuestStory(questId: number): QuestStory {
   return questStories[questId] ?? {

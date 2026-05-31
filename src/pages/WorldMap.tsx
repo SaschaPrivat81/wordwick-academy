@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Castle, Check, CloudSun, Flame, FlaskConical, GraduationCap, Home, LibraryBig, LockKeyhole, PawPrint, Sparkles, Sprout, Star, Telescope, Trees, Trophy, Waves } from 'lucide-react';
+import { Castle, Check, CloudSun, Flame, FlaskConical, GraduationCap, Home, LibraryBig, LockKeyhole, PawPrint, ScrollText, Sparkles, Sprout, Star, Telescope, Trees, Trophy, Waves } from 'lucide-react';
 import { useAuth } from '../App';
 import WordwickLogo from '../components/WordwickLogo';
-import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory } from '../data/academy';
+import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, storyScenes } from '../data/academy';
 
 interface ProgressRow {
   wordId: number;
@@ -91,10 +91,14 @@ export default function WorldMap() {
   const [selectedQuest, setSelectedQuest] = useState<AcademyQuest>(fallbackQuests[0]);
   const [prologueStep, setPrologueStep] = useState(0);
   const [showPrologue, setShowPrologue] = useState(false);
+  const [seenStoryScenes, setSeenStoryScenes] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (user) {
       setShowPrologue(localStorage.getItem(`wordwick-prologue-seen-${PROLOGUE_VERSION}-${user.id}`) !== 'yes');
+      setSeenStoryScenes(Object.fromEntries(
+        storyScenes.map(scene => [scene.id, localStorage.getItem(`wordwick-story-seen-${scene.id}-${user.id}`) === 'yes']),
+      ));
     }
 
     fetch('/api/quests', { credentials: 'include' })
@@ -144,6 +148,8 @@ export default function WorldMap() {
   const selectedPercent = Math.round((mastered / selectedQuest.words.length) * 100);
   const selectedStep = stepByQuestId.get(selectedQuest.id) ?? selectedQuest.id;
   const selectedStory = getQuestStory(selectedQuest.id);
+  const unlockedStoryScenes = storyScenes.filter(scene => questResults[scene.unlockAfterQuestId]?.completed);
+  const nextUnseenStoryScene = unlockedStoryScenes.find(scene => !seenStoryScenes[scene.id]);
   const chapterQuests = orderedQuests.filter(quest => quest.words.length > 0);
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
@@ -267,6 +273,30 @@ export default function WorldMap() {
             </button>
           );
         })}
+
+        {storyScenes.map(scene => {
+          const unlocked = Boolean(questResults[scene.unlockAfterQuestId]?.completed);
+          const seen = Boolean(seenStoryScenes[scene.id]);
+          return (
+            <button
+              key={scene.id}
+              onClick={() => {
+                if (unlocked) navigate(`/story/${scene.id}`);
+              }}
+              className={`quest-node z-30 ${unlocked ? seen ? 'completed' : 'prologue' : 'locked'}`}
+              style={{ left: `${scene.x}%`, top: `${scene.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
+              aria-label={scene.title}
+            >
+              <ScrollText className="h-6 w-6" />
+              {!seen && unlocked && <Sparkles className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-blue-950 p-1 text-amber-100" />}
+              {!unlocked && <LockKeyhole className="absolute h-7 w-7 text-stone-200" />}
+              <span className={unlocked && !seen ? activeRibbonClass(scene.x, scene.y) : ribbonClass(scene.x, scene.y)}>
+                <span className="text-[9px] uppercase tracking-[0.14em] opacity-70">{scene.eyebrow}</span>
+                <span className="block">{scene.title}</span>
+              </span>
+            </button>
+          );
+        })}
       </section>
 
       <aside className="grid content-start gap-4">
@@ -296,6 +326,19 @@ export default function WorldMap() {
               <div className="h-full rounded-full bg-amber-200" style={{ width: `${chapterPercent}%` }} />
             </div>
           </div>
+          {nextUnseenStoryScene && (
+            <button
+              onClick={() => navigate(`/story/${nextUnseenStoryScene.id}`)}
+              className="mt-4 flex w-full items-start gap-3 rounded-2xl border border-amber-100/20 bg-white/10 p-3 text-left transition hover:bg-white/15 active:scale-[0.99]"
+            >
+              <ScrollText className="mt-1 h-5 w-5 shrink-0 text-amber-200" />
+              <span>
+                <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-amber-200/70">{nextUnseenStoryScene.eyebrow}</span>
+                <span className="mt-1 block text-sm font-black text-amber-50">{nextUnseenStoryScene.title}</span>
+                <span className="mt-1 block text-xs font-semibold leading-5 text-amber-50/70">{nextUnseenStoryScene.subtitle}</span>
+              </span>
+            </button>
+          )}
         </section>
 
         <section className="parchment rounded-[28px] border border-amber-100/70 p-4 xl:p-5">

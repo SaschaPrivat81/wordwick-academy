@@ -7,6 +7,7 @@ import WorldMap from './pages/WorldMap';
 import Quest from './pages/Quest';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
+import StoryScene from './pages/StoryScene';
 
 interface User {
   id: number;
@@ -118,6 +119,7 @@ function App() {
           <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
           <Route path="/" element={user ? <WorldMap /> : <Navigate to="/login" />} />
           <Route path="/quest/:id" element={user ? <Quest /> : <Navigate to="/login" />} />
+          <Route path="/story/:id" element={user ? <StoryScene /> : <Navigate to="/login" />} />
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
           <Route path="/admin" element={user && (user.role === 'parent' || user.role === 'admin') ? <Admin /> : <Navigate to="/" />} />
         </Routes>
