@@ -91,6 +91,7 @@ export default function WorldMap() {
 
   const questOrder = (quest: AcademyQuest) => quest.sortOrder ?? quest.id;
   const orderedQuests = [...quests].sort((a, b) => questOrder(a) - questOrder(b));
+  const stepByQuestId = new Map(orderedQuests.map((quest, index) => [quest.id, index + 1]));
   const questMasteredCount = (quest: AcademyQuest) => quest.words.filter(wordId => progress[wordId]?.mastered).length;
 
   const questStatus = (quest: AcademyQuest) => {
@@ -98,8 +99,10 @@ export default function WorldMap() {
     const mastered = questMasteredCount(quest);
     if (mastered === quest.words.length) return 'completed';
     if (quest.id === 1) return 'unlocked';
-    const previousIndex = orderedQuests.findIndex(item => item.id === quest.id) - 1;
-    const previous = previousIndex >= 0 ? orderedQuests[previousIndex] : null;
+    const previousIndex = orderedQuests.findIndex(item => item.id === quest.id);
+    const previous = previousIndex > 0
+      ? [...orderedQuests.slice(0, previousIndex)].reverse().find(item => item.words.length > 0)
+      : null;
     if (!previous) return 'unlocked';
     return questMasteredCount(previous) === previous.words.length ? 'unlocked' : 'locked';
   };
@@ -108,7 +111,7 @@ export default function WorldMap() {
   const mastered = questMasteredCount(selectedQuest);
   const selectedPercent = Math.round((mastered / selectedQuest.words.length) * 100);
   const selectedStory = getQuestStory(selectedQuest.id);
-  const chapterQuests = orderedQuests.filter(quest => questOrder(quest) <= 5 && quest.words.length > 0);
+  const chapterQuests = orderedQuests.filter(quest => quest.words.length > 0);
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
   const currentPrologue = prologuePages[prologueStep];
@@ -189,6 +192,7 @@ export default function WorldMap() {
         {quests.filter(quest => quest.words.length > 0).map(quest => {
           const questState = questStatus(quest);
           const Icon = sigils[quest.sigil as keyof typeof sigils];
+          const stepNumber = stepByQuestId.get(quest.id) ?? quest.id;
           return (
             <button
               key={quest.id}
@@ -199,7 +203,7 @@ export default function WorldMap() {
               style={{ left: `${quest.x}%`, top: `${quest.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
               aria-label={quest.title}
             >
-              <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-amber-100 bg-amber-800 text-[11px] font-black text-amber-50 shadow-md">{quest.id}</span>
+              <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-amber-100 bg-amber-800 text-[11px] font-black text-amber-50 shadow-md">{stepNumber}</span>
               <Icon className="h-6 w-6" />
               {questState === 'completed' && <Check className="absolute -right-2 -top-2 h-6 w-6 rounded-full bg-blue-950 p-1 text-amber-100" />}
               {questState === 'locked' && <LockKeyhole className="absolute h-7 w-7 text-stone-200" />}
@@ -210,6 +214,7 @@ export default function WorldMap() {
 
         {quests.filter(quest => quest.words.length === 0).map(stop => {
           const Icon = futureSigils[stop.sigil as keyof typeof futureSigils] ?? Sparkles;
+          const stepNumber = stepByQuestId.get(stop.id) ?? stop.id;
           return (
           <div
             key={stop.id}
@@ -217,7 +222,7 @@ export default function WorldMap() {
             style={{ left: `${stop.x}%`, top: `${stop.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
             aria-hidden="true"
           >
-            <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-stone-600 text-[11px] font-black text-stone-100 shadow-md">{stop.id}</span>
+            <span className="absolute -left-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full border border-stone-200 bg-stone-600 text-[11px] font-black text-stone-100 shadow-md">{stepNumber}</span>
             <Icon className="h-6 w-6" />
             <LockKeyhole className="absolute h-7 w-7 text-stone-200" />
             <span className={ribbonClass(stop.x, stop.y)}>{stop.title}</span>

@@ -264,6 +264,27 @@ if (!progressionMigration) {
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('map-progression-v1', 'applied')").run();
 }
 
+const lightPathMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'map-progression-v2-light-path'").get();
+if (!lightPathMigration) {
+  const questProgressionOrder = [
+    { id: 1, sortOrder: 1 },
+    { id: 10, sortOrder: 2 },
+    { id: 2, sortOrder: 3 },
+    { id: 4, sortOrder: 4 },
+    { id: 6, sortOrder: 5 },
+    { id: 3, sortOrder: 6 },
+    { id: 9, sortOrder: 7 },
+    { id: 8, sortOrder: 8 },
+    { id: 7, sortOrder: 9 },
+    { id: 5, sortOrder: 10 },
+  ];
+
+  for (const quest of questProgressionOrder) {
+    db.prepare('UPDATE quests SET sortOrder = ? WHERE id = ?').run(quest.sortOrder, quest.id);
+  }
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('map-progression-v2-light-path', 'applied')").run();
+}
+
 const rewardDefaults = [
   { title: '20 Min Minecraft', description: 'Ein echtes Eltern-Fach: 20 Minuten Spielzeit nach Absprache.', kind: 'real', unlockType: 'coins', cost: 30, icon: '🎮', sortOrder: 1 },
   { title: 'Eis essen gehen', description: 'Eine größere echte Belohnung für fleißig gesammelte Wortfunken.', kind: 'real', unlockType: 'coins', cost: 50, icon: '🍦', sortOrder: 2 },
