@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { Link, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { LogOut, Shield, Sparkles, UserRound } from 'lucide-react';
+import { GraduationCap, LogOut, Sparkles, UserRound } from 'lucide-react';
 import WordwickLogo from './components/WordwickLogo';
 import Login from './pages/Login';
 import WorldMap from './pages/WorldMap';
@@ -104,7 +104,7 @@ function App() {
                 </Link>
                 {(user.role === 'parent' || user.role === 'admin') && (
                   <Link to="/admin" className="icon-button" aria-label="Akademieleitung">
-                    <Shield className="h-4 w-4" />
+                    <GraduationCap className="h-4 w-4" />
                   </Link>
                 )}
                 <button onClick={logout} className="icon-button" aria-label="Logout">
