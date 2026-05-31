@@ -1,0 +1,11 @@
+schritt,level_id,levelname,rolle,inhaltstyp,mini_game,mindestinhalt,empfehlung,beispiel_kategorie
+1,1,Wordwick Hall,Startlevel,vocab,spark-catcher,2 Vokabeln,6-10 einfache Vokabeln,animals
+2,10,Spark Practice Grounds,Wiederholung,mixed,text-input,2 gemischte Inhalte,4-8 leichte Wiederholungen,starter mix
+3,2,Moonlit Library,Sortierübung,vocab,library-sorter,4 Vokabeln,4-8 klare Nomen,home
+4,4,Sky Practice Yards,Verbtraining,verb,text-input,2 unregelmäßige Verben,4-8 Verben mit Past Simple und Participle,verbs
+5,6,Glasshouse Garden,Übungslevel,vocab,text-input,2 Vokabeln,6-10 Themenwörter,plants
+6,3,Wordbrew Workshop,Verbtraining,verb,verb-assembler,2 unregelmäßige Verben,4-8 Verben mit allen Formen,verbs
+7,9,Moonwell Lake,Wiederholung,mixed,text-input,2 gemischte Inhalte,6-12 schwierige Wörter und Verben,review
+8,8,Wyrm Cave,Verbprüfung,verb,text-input,2 unregelmäßige Verben,6-10 stärkere Verben,verbs
+9,7,Whispering Woods,Übungslevel,vocab,text-input,2 Vokabeln,6-10 Wörter nach Thema,sounds
+10,5,Stargazer Tower,Finallevel,mixed,text-input,2 gemischte Inhalte,8-14 gemischte Abschlussaufgaben,final review

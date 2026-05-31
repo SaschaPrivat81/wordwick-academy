@@ -22,6 +22,7 @@ interface AdminQuest {
   chapter: string;
   kind: string;
   gameType?: string;
+  sortOrder?: number;
   reward?: string;
   guide: string;
   words: number[];
@@ -238,6 +239,12 @@ const gameTypes = [
   ['text-input', 'Texteingabe'],
 ];
 
+const kindLabels: Record<string, string> = {
+  vocab: 'Vokabeln',
+  verb: 'Verben',
+  mixed: 'Gemischt',
+};
+
 const importActionLabels: Record<ImportPreviewRow['action'], string> = {
   create: 'Neu',
   link: 'Verknüpfen',
@@ -267,6 +274,21 @@ function contentStatusForQuest(quest: AdminQuest) {
     requirement: { label: 'Inhalte', minWords: 1, accepts: ['vocab', 'irregular'] },
     eligibleWordCount: quest.words.length,
   };
+}
+
+function questRole(quest: AdminQuest) {
+  if (quest.id === 1) return 'Startlevel';
+  if (quest.gameType === 'library-sorter') return 'Sortierübung';
+  if (quest.gameType === 'verb-assembler') return 'Verbtraining';
+  if (quest.kind === 'mixed' && quest.reward?.toLowerCase().includes('lesezeichen')) return 'Finallevel';
+  if (quest.kind === 'mixed') return 'Wiederholung';
+  return 'Übungslevel';
+}
+
+function questStepLabel(quest: AdminQuest, quests: AdminQuest[]) {
+  const mapOrder = [...quests].sort((a, b) => (a.sortOrder ?? a.id) - (b.sortOrder ?? b.id));
+  const mapStep = mapOrder.findIndex(item => item.id === quest.id) + 1;
+  return mapStep > 0 ? `Schritt ${mapStep}` : `ID ${quest.id}`;
 }
 
 export default function Admin() {
@@ -1041,6 +1063,65 @@ export default function Admin() {
             </div>
           </div>
 
+          <div className="mb-5 overflow-hidden rounded-2xl border border-blue-950/10 bg-white/65">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-blue-950/10 px-4 py-3">
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Content-Plan</div>
+                <h3 className="text-xl font-black text-slate-950">Was gehört in welches Level?</h3>
+              </div>
+              <a
+                href="/templates/wordwick-level-plan.csv"
+                download
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-950 px-3 py-2 text-xs font-black text-amber-50 transition hover:bg-blue-800"
+                title="Level-Übersicht herunterladen"
+              >
+                <Download className="h-4 w-4" />
+                Level-Plan
+              </a>
+            </div>
+            <div className="overflow-auto">
+              <table className="w-full min-w-[760px] text-left text-xs font-bold">
+                <thead className="bg-blue-950/5 text-[10px] uppercase tracking-[0.14em] text-blue-950/60">
+                  <tr>
+                    <th className="px-4 py-3">Schritt</th>
+                    <th className="px-4 py-3">Level</th>
+                    <th className="px-4 py-3">Rolle</th>
+                    <th className="px-4 py-3">Content</th>
+                    <th className="px-4 py-3">Mini-Game</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(content?.quests ?? []).map(quest => {
+                    const contentStatus = contentStatusForQuest(quest);
+                    return (
+                      <tr key={quest.id} className="border-t border-blue-950/10">
+                        <td className="px-4 py-3 font-black text-blue-950">{questStepLabel(quest, content?.quests ?? [])}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-black text-slate-950">ID {quest.id} · {quest.title}</div>
+                          <div className="mt-1 text-[11px] text-stone-500">{quest.chapter}</div>
+                        </td>
+                        <td className="px-4 py-3 text-stone-700">{questRole(quest)}</td>
+                        <td className="px-4 py-3">
+                          <div>{kindLabels[quest.kind] ?? quest.kind}</div>
+                          <div className="mt-1 text-[11px] text-stone-500">
+                            min. {contentStatus.requirement.minWords} · {contentStatus.requirement.label}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-stone-700">{gameTypes.find(([value]) => value === quest.gameType)?.[1] ?? 'Texteingabe'}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${contentStatus.ready ? 'bg-blue-100 text-blue-950' : 'bg-amber-100 text-amber-900'}`}>
+                            {contentStatus.ready ? 'Spielbereit' : `${contentStatus.eligibleWordCount}/${contentStatus.requirement.minWords}`}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <div className="grid gap-4">
             {(content?.quests ?? []).map(quest => {
               const draft = questDrafts[quest.id] ?? quest;
@@ -1228,6 +1309,8 @@ export default function Admin() {
                 ['/templates/wordwick-content-template.csv', 'Komplett'],
                 ['/templates/wordwick-vocabulary-template.csv', 'Vokabeln'],
                 ['/templates/wordwick-irregular-verbs-template.csv', 'Verben'],
+                ['/templates/wordwick-level-plan.csv', 'Level-Plan'],
+                ['/templates/wordwick-import-guide.txt', 'Anleitung'],
               ].map(([href, label]) => (
                 <a
                   key={href}

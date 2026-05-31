@@ -1,0 +1,29 @@
+Wordwick Academy - CSV-Import kurz erklärt
+
+1. Nutze am besten zuerst den Level-Plan.
+   Dort steht, welche Level-ID welchen Inhalt erwartet.
+
+2. Pflichtspalten:
+   deutsch, englisch, typ, level
+
+3. Empfohlene Spalten:
+   kategorie, klasse, lektion, schwierigkeit, notizen
+
+4. Typen:
+   vocab = normale Vokabel
+   irregular = unregelmäßiges Verb
+
+5. Unregelmäßige Verben brauchen zusätzlich:
+   past und participle
+
+6. Schwierigkeit:
+   1 = leicht
+   2 = mittel
+   3 = knifflig
+
+7. Level-Zuordnung:
+   In der Spalte level steht die Level-ID, nicht die Schritt-Nummer.
+   Beispiel: Spark Practice Grounds ist Schritt 2, hat aber level_id 10.
+
+8. Vor dem Import immer Vorschau prüfen.
+   Wordwick meldet Duplikate, fehlende Verbformen und falsche Level-Zuordnungen.
