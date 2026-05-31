@@ -52,10 +52,10 @@ const prologuePages = [
 ];
 
 function ribbonClass(x: number, y: number) {
-  if (y >= 70) return 'map-ribbon map-ribbon-above hidden xl:block';
-  if (x <= 24) return 'map-ribbon map-ribbon-right hidden xl:block';
-  if (x >= 76) return 'map-ribbon map-ribbon-left hidden xl:block';
-  return 'map-ribbon hidden xl:block';
+  if (y >= 70) return 'map-ribbon map-ribbon-above hidden 2xl:block';
+  if (x <= 24) return 'map-ribbon map-ribbon-right hidden 2xl:block';
+  if (x >= 76) return 'map-ribbon map-ribbon-left hidden 2xl:block';
+  return 'map-ribbon hidden 2xl:block';
 }
 
 export default function WorldMap() {
@@ -172,8 +172,8 @@ export default function WorldMap() {
   }
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-4 px-3 py-3 sm:px-5 sm:py-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
-      <section className="relative aspect-[16/9] min-h-[360px] w-full overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30 sm:min-h-[460px] lg:min-h-0">
+    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-4 px-3 py-3 sm:px-5 sm:py-4 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_430px]">
+      <section className="relative aspect-[16/9] min-h-[360px] w-full overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30 sm:min-h-[460px] lg:aspect-[4/3] lg:min-h-0 2xl:aspect-[16/10]">
         <img
           src="/assets/wordwick-map-v1.jpg"
           alt="Illustrated parchment map of Wordwick Academy"
@@ -260,22 +260,22 @@ export default function WorldMap() {
           </div>
         </section>
 
-        <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
+        <section className="parchment rounded-[28px] border border-amber-100/70 p-4 xl:p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{selectedQuest.chapter}</div>
-              <h2 className="mt-1 text-2xl font-black text-slate-950">{selectedQuest.title}</h2>
-              <p className="mt-2 text-sm font-semibold leading-6 text-stone-600">{selectedQuest.subtitle}</p>
+              <h2 className="mt-1 text-xl font-black leading-tight text-slate-950 xl:text-2xl">{selectedQuest.title}</h2>
+              <p className="mt-2 text-sm font-semibold leading-5 text-stone-600 xl:leading-6">{selectedQuest.subtitle}</p>
             </div>
             <Star className="mt-1 h-7 w-7 text-amber-500" />
           </div>
 
-          <div className="mt-5 rounded-2xl border border-blue-950/10 bg-white/55 p-4">
+          <div className="mt-4 rounded-2xl border border-blue-950/10 bg-white/55 p-3 xl:mt-5 xl:p-4">
             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/55">{selectedStory.arc}</div>
-            <p className="mt-2 text-sm font-bold leading-6 text-slate-800">{selectedQuest.guide}</p>
+            <p className="mt-2 text-sm font-bold leading-5 text-slate-800 xl:leading-6">{selectedQuest.guide}</p>
           </div>
 
-          <div className="mt-5">
+          <div className="mt-4 xl:mt-5">
             <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-[0.16em] text-blue-950/70">
               <span>Fortschritt</span>
               <span>{selectedPercent}%</span>
@@ -285,7 +285,7 @@ export default function WorldMap() {
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-2 gap-2">
+          <div className="mt-4 grid grid-cols-2 gap-2 xl:mt-5">
             <div className="rounded-2xl bg-white/60 p-3">
               <div className="text-xl font-black text-slate-950">{selectedQuest.words.length}</div>
               <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Worte</div>
