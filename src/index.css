@@ -143,12 +143,20 @@ input {
   @apply border-amber-100 bg-amber-300 text-slate-950;
 }
 
+.quest-node.prologue {
+  @apply cursor-pointer border-amber-100 bg-amber-50 text-blue-950 shadow-xl shadow-blue-950/20 hover:bg-white;
+}
+
 .map-ribbon {
   @apply pointer-events-none absolute left-1/2 top-[calc(100%+0.25rem)] min-w-max -translate-x-1/2 rounded-md border border-amber-900/35 bg-amber-100/90 px-2 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-amber-950 shadow-md backdrop-blur-sm;
 }
 
 .map-ribbon-active {
   @apply z-20 block max-w-[9.5rem] whitespace-normal rounded-lg border-blue-950/25 bg-amber-50/95 px-2.5 py-1.5 text-center leading-tight shadow-lg shadow-slate-950/25;
+}
+
+.map-ribbon-prologue {
+  @apply block whitespace-normal rounded-lg border-blue-950/20 bg-amber-50/95 px-2.5 py-1.5 text-center leading-tight shadow-lg shadow-slate-950/20;
 }
 
 .map-ribbon-above {

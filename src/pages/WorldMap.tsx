@@ -10,6 +10,12 @@ interface ProgressRow {
   mastered: number;
 }
 
+const PROLOGUE_VERSION = 'v2';
+const PROLOGUE_NODE = {
+  x: 51,
+  y: 45,
+};
+
 const sigils = {
   hall: Castle,
   library: LibraryBig,
@@ -97,7 +103,7 @@ export default function WorldMap() {
 
   useEffect(() => {
     if (user) {
-      setShowPrologue(localStorage.getItem(`wordwick-prologue-seen-${user.id}`) !== 'yes');
+      setShowPrologue(localStorage.getItem(`wordwick-prologue-seen-${PROLOGUE_VERSION}-${user.id}`) !== 'yes');
     }
 
     fetch('/api/quests', { credentials: 'include' })
@@ -144,8 +150,12 @@ export default function WorldMap() {
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
   const currentPrologue = prologuePages[prologueStep];
+  const openPrologue = () => {
+    setPrologueStep(0);
+    setShowPrologue(true);
+  };
   const finishPrologue = () => {
-    if (user) localStorage.setItem(`wordwick-prologue-seen-${user.id}`, 'yes');
+    if (user) localStorage.setItem(`wordwick-prologue-seen-${PROLOGUE_VERSION}-${user.id}`, 'yes');
     setShowPrologue(false);
   };
 
@@ -220,6 +230,19 @@ export default function WorldMap() {
             ...where words come alive.
           </div>
         </div>
+
+        <button
+          onClick={openPrologue}
+          className="quest-node prologue z-30"
+          style={{ left: `${PROLOGUE_NODE.x}%`, top: `${PROLOGUE_NODE.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
+          aria-label="Prolog noch einmal ansehen"
+        >
+          <Sparkles className="h-6 w-6" />
+          <span className="map-ribbon map-ribbon-prologue">
+            <span className="text-[9px] uppercase tracking-[0.14em] opacity-70">Obergeschoss</span>
+            <span className="block">Prolog</span>
+          </span>
+        </button>
 
         {quests.filter(quest => quest.words.length > 0).map(quest => {
           const questState = questStatus(quest);

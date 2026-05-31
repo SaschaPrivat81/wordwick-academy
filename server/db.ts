@@ -156,7 +156,7 @@ const questCount = db.prepare('SELECT COUNT(*) as c FROM quests').get() as { c: 
 if (questCount.c === 0) {
   const now = new Date().toISOString();
   const quests = [
-    [1, 'Wordwick Hall', 'Die ersten Zauberworte für Tiere', 'Haupthalle', 'vocab', 53, 53, 'hall', 'Bronzefeder', 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Wörtern.'],
+    [1, 'Wordwick Hall', 'Die ersten Zauberworte für Tiere', 'Haupthalle', 'vocab', 59, 55, 'hall', 'Bronzefeder', 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Wörtern.'],
     [2, 'Moonlit Library', 'Worte aus Zimmern und Fluren', 'Bibliothek', 'vocab', 29, 78, 'library', 'Silbertinte', 'Zwischen alten Regalen lernt jedes Ding seinen englischen Namen.'],
     [3, 'Wordbrew Workshop', 'go, went, gone und Freunde', 'Wortbrauerei', 'verb', 39, 41, 'brew', 'Sternenstempel', 'Unregelmäßige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.'],
     [4, 'Sky Practice Yards', 'sehen, trinken und merken', 'Flugplatz', 'verb', 18, 66, 'sky', 'Mondkristall', 'Auf dem Übungsplatz zählt Tempo: sehen, erkennen, richtig antworten.'],
@@ -304,6 +304,20 @@ if (!mapSigilsMigration) {
     db.prepare('UPDATE quests SET sigil = ? WHERE id = ?').run(quest.sigil, quest.id);
   }
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('map-sigils-v1', 'applied')").run();
+}
+
+const mapProloguePositionMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'map-prologue-position-v1'").get();
+if (!mapProloguePositionMigration) {
+  db.prepare('UPDATE quests SET x = 59, y = 55 WHERE id = 1').run();
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('map-prologue-position-v1', 'applied')").run();
+}
+
+const freshPlayStateMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'fresh-play-state-v1'").get();
+if (!freshPlayStateMigration) {
+  db.prepare('DELETE FROM progress').run();
+  db.prepare('DELETE FROM claimed_rewards').run();
+  db.prepare('UPDATE users SET coins = 0, streak = 0, lastPlayed = NULL').run();
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('fresh-play-state-v1', 'applied')").run();
 }
 
 const rewardDefaults = [
