@@ -3,10 +3,11 @@ import { Sparkles } from 'lucide-react';
 interface WordwickLogoProps {
   className?: string;
   compact?: boolean;
+  markOnly?: boolean;
   tone?: 'light' | 'dark' | 'map';
 }
 
-export default function WordwickLogo({ className = '', compact = false, tone = 'light' }: WordwickLogoProps) {
+export default function WordwickLogo({ className = '', compact = false, markOnly = false, tone = 'light' }: WordwickLogoProps) {
   const isDark = tone === 'dark';
   const isMap = tone === 'map';
   const titleColor = isDark ? 'text-slate-950' : isMap ? 'text-amber-950' : 'text-amber-50';
@@ -23,17 +24,19 @@ export default function WordwickLogo({ className = '', compact = false, tone = '
         <span className={`${compact ? 'text-sm' : 'text-xl'} font-black leading-none`}>WA</span>
         <Sparkles className={`absolute -right-1 -top-1 rounded-full bg-blue-800 p-0.5 text-amber-100 ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
       </div>
-      <div className="leading-none">
-        <div className={`wordwick-title-outline font-serif font-black tracking-normal ${compact ? 'text-xl' : 'text-4xl sm:text-5xl'} ${titleColor}`}>
-          Wordwick
+      {markOnly ? null : (
+        <div className="leading-none">
+          <div className={`wordwick-title-outline font-serif font-black tracking-normal ${compact ? 'text-xl' : 'text-4xl sm:text-5xl'} ${titleColor}`}>
+            Wordwick
+          </div>
+          <div className={`wordwick-title-outline font-serif font-black tracking-normal ${compact ? 'text-base' : 'text-3xl sm:text-4xl'} ${titleColor}`}>
+            Academy
+          </div>
+          <div className={`mt-1 font-black ${compact ? 'text-[9px]' : 'text-[11px]'} uppercase tracking-[0.16em] ${subtitleColor}`}>
+            ...where words come alive.
+          </div>
         </div>
-        <div className={`wordwick-title-outline font-serif font-black tracking-normal ${compact ? 'text-base' : 'text-3xl sm:text-4xl'} ${titleColor}`}>
-          Academy
-        </div>
-        <div className={`mt-1 font-black ${compact ? 'text-[9px]' : 'text-[11px]'} uppercase tracking-[0.16em] ${subtitleColor}`}>
-          ...where words come alive.
-        </div>
-      </div>
+      )}
     </div>
   );
 }

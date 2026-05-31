@@ -1,5 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react';
-import { Link, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { LogOut, Shield, Sparkles, UserRound } from 'lucide-react';
 import WordwickLogo from './components/WordwickLogo';
 import Login from './pages/Login';
@@ -30,7 +30,9 @@ export const useAuth = () => useContext(AuthContext)!;
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const location = useLocation();
   const navigate = useNavigate();
+  const isMapView = location.pathname === '/';
 
   useEffect(() => {
     fetch('/api/me', { credentials: 'include' })
@@ -80,7 +82,14 @@ function App() {
           <header className="sticky top-0 z-50 border-b border-blue-100/20 bg-blue-950/95 px-4 py-3 text-amber-50 shadow-lg shadow-slate-950/20 backdrop-blur-md">
             <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3">
               <Link to="/" aria-label="Zur Karte">
-                <WordwickLogo compact />
+                {isMapView ? (
+                  <WordwickLogo compact markOnly />
+                ) : (
+                  <>
+                    <WordwickLogo compact className="hidden sm:flex" />
+                    <WordwickLogo compact markOnly className="sm:hidden" />
+                  </>
+                )}
               </Link>
               <div className="flex items-center gap-2">
                 <div className="hidden items-center gap-1 rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:flex">
