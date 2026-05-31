@@ -76,6 +76,11 @@ db.exec(`
     sortOrder INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (questId, wordId)
   );
+
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 `);
 
 const userColumns = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
@@ -174,7 +179,7 @@ if (questCount.c === 0) {
     [1, 1], [1, 2],
     [2, 3],
     [3, 4], [3, 5], [3, 6],
-    [4, 7], [4, 8],
+    [9, 7], [9, 8],
     [5, 9], [5, 10],
   ];
   const insertQuestWord = db.prepare('INSERT INTO quest_words (questId, wordId, sortOrder) VALUES (?, ?, ?)');
@@ -231,6 +236,32 @@ if (addedGameTypeColumn) {
     db.prepare('UPDATE quests SET gameType = ? WHERE id = ?')
       .run(quest.gameType, quest.id);
   }
+}
+
+const progressionMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'map-progression-v1'").get();
+if (!progressionMigration) {
+  const questProgressionOrder = [
+    { id: 1, sortOrder: 1 },
+    { id: 2, sortOrder: 2 },
+    { id: 3, sortOrder: 3 },
+    { id: 9, sortOrder: 4 },
+    { id: 5, sortOrder: 5 },
+    { id: 4, sortOrder: 6 },
+    { id: 6, sortOrder: 7 },
+    { id: 7, sortOrder: 8 },
+    { id: 8, sortOrder: 9 },
+    { id: 10, sortOrder: 10 },
+  ];
+
+  for (const quest of questProgressionOrder) {
+    db.prepare('UPDATE quests SET sortOrder = ? WHERE id = ?').run(quest.sortOrder, quest.id);
+  }
+
+  db.prepare('DELETE FROM quest_words WHERE questId = 4 AND wordId IN (7, 8)').run();
+  const movePracticeWordsToMoonwell = db.prepare('INSERT OR IGNORE INTO quest_words (questId, wordId, sortOrder) VALUES (9, ?, ?)');
+  movePracticeWordsToMoonwell.run(7, 1);
+  movePracticeWordsToMoonwell.run(8, 2);
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('map-progression-v1', 'applied')").run();
 }
 
 const rewardDefaults = [

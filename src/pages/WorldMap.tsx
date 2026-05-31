@@ -89,6 +89,8 @@ export default function WorldMap() {
       });
   }, [user]);
 
+  const questOrder = (quest: AcademyQuest) => quest.sortOrder ?? quest.id;
+  const orderedQuests = [...quests].sort((a, b) => questOrder(a) - questOrder(b));
   const questMasteredCount = (quest: AcademyQuest) => quest.words.filter(wordId => progress[wordId]?.mastered).length;
 
   const questStatus = (quest: AcademyQuest) => {
@@ -96,8 +98,8 @@ export default function WorldMap() {
     const mastered = questMasteredCount(quest);
     if (mastered === quest.words.length) return 'completed';
     if (quest.id === 1) return 'unlocked';
-    const previousIndex = quests.findIndex(item => item.id === quest.id) - 1;
-    const previous = previousIndex >= 0 ? quests[previousIndex] : null;
+    const previousIndex = orderedQuests.findIndex(item => item.id === quest.id) - 1;
+    const previous = previousIndex >= 0 ? orderedQuests[previousIndex] : null;
     if (!previous) return 'unlocked';
     return questMasteredCount(previous) === previous.words.length ? 'unlocked' : 'locked';
   };
@@ -106,7 +108,7 @@ export default function WorldMap() {
   const mastered = questMasteredCount(selectedQuest);
   const selectedPercent = Math.round((mastered / selectedQuest.words.length) * 100);
   const selectedStory = getQuestStory(selectedQuest.id);
-  const chapterQuests = quests.filter(quest => quest.id <= 5 && quest.words.length > 0);
+  const chapterQuests = orderedQuests.filter(quest => questOrder(quest) <= 5 && quest.words.length > 0);
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
   const currentPrologue = prologuePages[prologueStep];
