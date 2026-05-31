@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Castle, Check, CloudSun, Flame, FlaskConical, GraduationCap, Home, LibraryBig, LockKeyhole, PawPrint, Sparkles, Sprout, Star, Telescope, Trees, Trophy, Waves } from 'lucide-react';
 import { useAuth } from '../App';
-import WordwickLogo from '../components/WordwickLogo';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory } from '../data/academy';
 
 interface ProgressRow {
@@ -210,7 +209,16 @@ export default function WorldMap() {
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/22 via-transparent to-slate-950/5" />
 
-        <WordwickLogo tone="map" className="absolute left-[6%] top-[5%] z-20 max-w-[280px]" />
+        <div className="absolute left-[5.5%] top-[5%] z-20 w-[24%] min-w-[170px] max-w-[310px]">
+          <img
+            src="/assets/wordwick-logo-edit.svg"
+            alt="Wordwick Academy"
+            className="h-auto w-full drop-shadow-[0_2px_0_rgba(255,248,220,0.85)]"
+          />
+          <div className="mt-1 inline-flex rounded-full border border-amber-950/30 bg-amber-100/60 px-3 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-amber-950/80 shadow-sm backdrop-blur-sm">
+            ...where words come alive.
+          </div>
+        </div>
 
         {quests.filter(quest => quest.words.length > 0).map(quest => {
           const questState = questStatus(quest);
