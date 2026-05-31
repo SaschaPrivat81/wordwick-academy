@@ -141,18 +141,18 @@ export const questStories: Record<number, QuestStory> = {
 export const storyScenes: StoryScene[] = [
   {
     id: 'ink-mist',
-    unlockAfterQuestId: 3,
+    unlockAfterQuestId: 2,
     title: 'Der Tintennebel lacht',
     subtitle: 'Eine Spur ist plötzlich sehr falsch beschriftet.',
     eyebrow: 'Zwischensequenz I',
     rewardLine: 'Pip findet heraus, dass die verschwundenen Wortfunken nicht einfach weggeweht wurden.',
-    x: 58,
-    y: 55,
+    x: 24,
+    y: 72,
     pages: [
       {
         speaker: 'Erzähler',
         title: 'Ein Schild zeigt Unsinn',
-        body: 'Nach dem Wordbrew Workshop zittert die Akademiekarte. Über dem Flur zur Bibliothek erscheint ein neues Schild: "Please do not feed the doors." Darunter steht auf Deutsch: "Bitte die Türen nicht mit Suppe füttern."',
+        body: 'Nach der Moonlit Library zittert die Akademiekarte. Über dem nächsten Flur erscheint ein neues Schild: "Please do not feed the doors." Darunter steht auf Deutsch: "Bitte die Türen nicht mit Suppe füttern."',
         aside: 'Pip starrt das Schild an und flüstert: "Ich wusste gar nicht, dass Türen Suppe mögen."',
       },
       {
@@ -171,13 +171,13 @@ export const storyScenes: StoryScene[] = [
   },
   {
     id: 'greenhouse-whisper',
-    unlockAfterQuestId: 6,
+    unlockAfterQuestId: 3,
     title: 'Der Garten flüstert zurück',
-    subtitle: 'Im Glashaus wächst ein Wort, das niemand gepflanzt hat.',
+    subtitle: 'Ein fremdes Wort wächst mitten auf der nächsten Route.',
     eyebrow: 'Zwischensequenz II',
     rewardLine: 'Die Akademie zeigt, dass neue Wörter nicht nur gesammelt, sondern gepflegt werden müssen.',
-    x: 33,
-    y: 47,
+    x: 58,
+    y: 56,
     pages: [
       {
         speaker: 'Portrait',
@@ -201,13 +201,13 @@ export const storyScenes: StoryScene[] = [
   },
   {
     id: 'moonwell-truth',
-    unlockAfterQuestId: 9,
+    unlockAfterQuestId: 7,
     title: 'Die Wahrheit im Moonwell',
     subtitle: 'Der See zeigt, warum der Tintennebel entstanden ist.',
     eyebrow: 'Zwischensequenz III',
     rewardLine: 'Vor dem Finale wird klar: Der Gegner ist eher ein Unfall als ein Bösewicht.',
-    x: 80,
-    y: 62,
+    x: 68,
+    y: 24,
     pages: [
       {
         speaker: 'Erzähler',
@@ -235,8 +235,8 @@ export const storyScenes: StoryScene[] = [
     subtitle: 'Die Akademie erkennt den ersten großen Fortschritt.',
     eyebrow: 'Finalszene',
     rewardLine: 'Kapitel I ist abgeschlossen und ein neuer Bereich der Akademie beginnt zu flimmern.',
-    x: 63,
-    y: 18,
+    x: 64,
+    y: 17,
     pages: [
       {
         speaker: 'Erzähler',
