@@ -26,6 +26,16 @@ interface AdminQuest {
   guide: string;
   words: number[];
   wordItems: AdminWord[];
+  contentStatus?: {
+    ready: boolean;
+    issues: string[];
+    requirement: {
+      label: string;
+      minWords: number;
+      accepts: ('vocab' | 'irregular')[];
+    };
+    eligibleWordCount: number;
+  };
 }
 
 type UserRole = 'child' | 'parent' | 'admin';
@@ -250,6 +260,15 @@ const adminTabs: { id: AdminTab; label: string; icon: typeof Users }[] = [
   { id: 'progress', label: 'Fortschritt', icon: LineChart },
 ];
 
+function contentStatusForQuest(quest: AdminQuest) {
+  return quest.contentStatus ?? {
+    ready: quest.words.length > 0,
+    issues: quest.words.length > 0 ? [] : ['Noch kein Inhalt zugeordnet'],
+    requirement: { label: 'Inhalte', minWords: 1, accepts: ['vocab', 'irregular'] },
+    eligibleWordCount: quest.words.length,
+  };
+}
+
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [csv, setCsv] = useState('');
@@ -273,7 +292,7 @@ export default function Admin() {
   const [wordResult, setWordResult] = useState('');
   const [questDrafts, setQuestDrafts] = useState<Record<number, Partial<AdminQuest>>>({});
   const [selectedWords, setSelectedWords] = useState<Record<number, string>>({});
-  const readyQuestCount = content?.quests.filter(quest => quest.words.length > 0).length ?? 0;
+  const readyQuestCount = content?.quests.filter(quest => contentStatusForQuest(quest).ready).length ?? 0;
   const totalQuestCount = content?.quests.length ?? 0;
   const wordBankCount = content?.words.length ?? 0;
   const openRewardClaims = rewardClaims.filter(claim => claim.status === 'requested').length;
@@ -1026,16 +1045,22 @@ export default function Admin() {
             {(content?.quests ?? []).map(quest => {
               const draft = questDrafts[quest.id] ?? quest;
               const availableWords = (content?.words ?? []).filter(word => !quest.words.includes(word.id));
+              const contentStatus = contentStatusForQuest(quest);
               return (
                 <div key={quest.id} className="rounded-2xl border border-amber-900/10 bg-white/60 p-4">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div className="text-xs font-black uppercase tracking-[0.14em] text-blue-950/55">
-                      {quest.wordItems.length} Inhalt{quest.wordItems.length === 1 ? '' : 'e'} · {gameTypes.find(([value]) => value === (draft.gameType ?? quest.gameType))?.[1] ?? 'Spieltyp'}
+                      {contentStatus.eligibleWordCount}/{contentStatus.requirement.minWords} passende Inhalte · {contentStatus.requirement.label} · {gameTypes.find(([value]) => value === (draft.gameType ?? quest.gameType))?.[1] ?? 'Spieltyp'}
                     </div>
-                    <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${quest.wordItems.length > 0 ? 'bg-blue-100 text-blue-950' : 'bg-amber-100 text-amber-900'}`}>
-                      {quest.wordItems.length > 0 ? 'Bereit' : 'Zu befüllen'}
+                    <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${contentStatus.ready ? 'bg-blue-100 text-blue-950' : 'bg-amber-100 text-amber-900'}`}>
+                      {contentStatus.ready ? 'Spielbereit' : 'Prüfen'}
                     </span>
                   </div>
+                  {!contentStatus.ready && (
+                    <div className="mb-3 rounded-2xl border border-amber-900/10 bg-amber-100/75 p-3 text-xs font-bold leading-5 text-amber-950">
+                      {contentStatus.issues.map(issue => <div key={issue}>{issue}</div>)}
+                    </div>
+                  )}
                   <div className="grid gap-3 md:grid-cols-2">
                     <label>
                       <span className={labelClass}>Titel</span>
@@ -1087,7 +1112,7 @@ export default function Admin() {
                       <option value="">Wort aus Wortbank wählen</option>
                       {availableWords.map(word => (
                         <option key={word.id} value={word.id}>
-                          {word.german} / {word.english}{word.type === 'irregular' ? ` / ${word.past} / ${word.participle}` : ''}
+                          {word.german} / {word.english}{word.type === 'irregular' ? ` / ${word.past} / ${word.participle}` : ''} · {word.type === 'irregular' ? 'Verb' : 'Vokabel'}
                         </option>
                       ))}
                     </select>
@@ -1106,7 +1131,9 @@ export default function Admin() {
                       <button
                         key={word.id}
                         onClick={() => removeWord(quest.id, word.id)}
-                        className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-950 transition hover:bg-red-100 hover:text-red-800"
+                        className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold transition hover:bg-red-100 hover:text-red-800 ${
+                          contentStatus.requirement.accepts.includes(word.type) ? 'bg-blue-100 text-blue-950' : 'bg-red-100 text-red-800'
+                        }`}
                       >
                         {word.german} / {word.english}
                         <Trash2 className="h-3 w-3" />

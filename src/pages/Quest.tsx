@@ -451,6 +451,41 @@ export default function Quest() {
 
   const story = getQuestStory(quest.id);
   const pipLine = result ? (result.correct ? story.correct : story.wrong) : story.missionIntro;
+  const contentBlocked = quest.contentStatus && !quest.contentStatus.ready;
+
+  if (contentBlocked) {
+    return (
+      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl items-center px-4 py-6">
+        <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
+          <div className="grid gap-0 lg:grid-cols-[0.85fr_1.15fr]">
+            <div className="ink-panel flex min-h-[320px] flex-col items-center justify-center p-8 text-center text-amber-50">
+              <img
+                src="/assets/pip-think.webp"
+                alt="Pip schaut auf die Karte"
+                className="h-56 w-56 object-contain drop-shadow-2xl"
+              />
+              <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Noch verschlossen</div>
+              <h1 className="mt-2 text-4xl font-black">{quest.title}</h1>
+            </div>
+            <div className="p-7 sm:p-9">
+              <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{story.arc}</div>
+              <h2 className="mt-2 text-3xl font-black text-slate-950">Hier fehlen noch Wortfunken.</h2>
+              <p className="mt-3 text-sm font-bold leading-6 text-stone-600">
+                Pip kann diesen Ort erst öffnen, wenn im Elternbereich genug passende Inhalte hinterlegt sind.
+              </p>
+              <div className="mt-5 rounded-2xl border border-amber-900/10 bg-amber-100/70 p-4 text-sm font-bold leading-6 text-amber-950">
+                {quest.contentStatus?.issues.map(issue => <div key={issue}>{issue}</div>)}
+              </div>
+              <button onClick={() => navigate('/')} className="magic-button mt-6 w-full">
+                <ArrowLeft className="h-4 w-4" />
+                Zur Karte
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   if (challenges.length === 0 || (isLibrarySorter && libraryWords.length === 0) || (isVerbAssembler && verbWords.length === 0)) {
     return (

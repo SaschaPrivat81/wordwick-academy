@@ -14,6 +14,16 @@ export interface AcademyQuest {
   words: number[];
   reward: string;
   guide: string;
+  contentStatus?: {
+    ready: boolean;
+    issues: string[];
+    requirement: {
+      label: string;
+      minWords: number;
+      accepts: ('vocab' | 'irregular')[];
+    };
+    eligibleWordCount: number;
+  };
 }
 
 export interface QuestStory {

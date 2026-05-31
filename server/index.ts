@@ -70,6 +70,19 @@ interface ImportPreviewRow {
   errors: string[];
 }
 
+interface QuestRequirement {
+  label: string;
+  minWords: number;
+  accepts: ('vocab' | 'irregular')[];
+}
+
+interface WordContentRow {
+  id: number;
+  type: 'vocab' | 'irregular';
+  past?: string | null;
+  participle?: string | null;
+}
+
 function normalizeImportHeader(value: string) {
   return value.trim().replace(/^\uFEFF/, '').toLowerCase().replace(/[\s_-]/g, '');
 }
@@ -95,13 +108,60 @@ function wordImportKey(german: string, english: string) {
   return `${german.trim().toLowerCase()}::${english.trim().toLowerCase()}`;
 }
 
+function getQuestRequirement(quest: { kind: string; gameType?: string | null }): QuestRequirement {
+  if (quest.gameType === 'verb-assembler' || quest.kind === 'verb') {
+    return { label: 'unregelmäßige Verben', minWords: 2, accepts: ['irregular'] };
+  }
+  if (quest.gameType === 'library-sorter') {
+    return { label: 'Vokabeln', minWords: 4, accepts: ['vocab'] };
+  }
+  if (quest.gameType === 'spark-catcher' || quest.kind === 'vocab') {
+    return { label: 'Vokabeln', minWords: 2, accepts: ['vocab'] };
+  }
+  return { label: 'gemischte Inhalte', minWords: 2, accepts: ['vocab', 'irregular'] };
+}
+
+function isEligibleQuestWord(word: WordContentRow, requirement: QuestRequirement) {
+  if (!requirement.accepts.includes(word.type)) return false;
+  return word.type !== 'irregular' || Boolean(word.past && word.participle);
+}
+
+function buildQuestContentStatus(quest: { kind: string; gameType?: string | null }, words: WordContentRow[]) {
+  const requirement = getQuestRequirement(quest);
+  const eligibleWords = words.filter(word => isEligibleQuestWord(word, requirement));
+  const incompatibleCount = words.filter(word => !requirement.accepts.includes(word.type)).length;
+  const incompleteVerbCount = words.filter(word => word.type === 'irregular' && (!word.past || !word.participle)).length;
+  const issues: string[] = [];
+
+  if (eligibleWords.length < requirement.minWords) {
+    issues.push(`Mindestens ${requirement.minWords} ${requirement.label} nötig (${eligibleWords.length}/${requirement.minWords})`);
+  }
+  if (incompatibleCount > 0) {
+    issues.push(`${incompatibleCount} Inhalt${incompatibleCount === 1 ? '' : 'e'} passt nicht zum Leveltyp`);
+  }
+  if (incompleteVerbCount > 0) {
+    issues.push(`${incompleteVerbCount} Verb${incompleteVerbCount === 1 ? '' : 'en'} fehlt Past Simple oder Past Participle`);
+  }
+
+  return {
+    ready: issues.length === 0,
+    issues,
+    requirement: {
+      label: requirement.label,
+      minWords: requirement.minWords,
+      accepts: requirement.accepts,
+    },
+    eligibleWordCount: eligibleWords.length,
+  };
+}
+
 function buildWordImportPreview(csv: string) {
   const parsed = Papa.parse<Record<string, unknown>>(csv, {
     header: true,
     skipEmptyLines: true,
   });
   const parseErrors = parsed.errors.map(error => `Zeile ${error.row != null ? error.row + 1 : '?'}: ${error.message}`);
-  const quests = db.prepare('SELECT id, title FROM quests ORDER BY sortOrder, id').all() as { id: number; title: string }[];
+  const quests = db.prepare('SELECT id, title, kind, gameType FROM quests ORDER BY sortOrder, id').all() as { id: number; title: string; kind: string; gameType?: string }[];
   const questsById = new Map(quests.map(quest => [quest.id, quest]));
   const existingWords = db.prepare('SELECT id, german, english FROM words').all() as { id: number; german: string; english: string }[];
   const existingByKey = new Map(existingWords.map(word => [wordImportKey(word.german, word.english), word.id]));
@@ -134,6 +194,14 @@ function buildWordImportPreview(csv: string) {
     if (levelRaw && (!Number.isInteger(level) || !questsById.has(Number(level)))) {
       errors.push('Level wurde nicht gefunden');
     }
+    const targetQuest = Number.isInteger(level) ? questsById.get(Number(level)) : null;
+    if (targetQuest) {
+      const requirement = getQuestRequirement(targetQuest);
+      const previewWord = { id: 0, type, past, participle };
+      if (!isEligibleQuestWord(previewWord, requirement)) {
+        errors.push(`Passt nicht zu Level ${targetQuest.id}: erwartet ${requirement.label}`);
+      }
+    }
 
     const key = wordImportKey(german, english);
     const duplicateInFile = Boolean(german && english && seen.has(key));
@@ -157,7 +225,7 @@ function buildWordImportPreview(csv: string) {
       participle,
       notes,
       level: Number.isInteger(level) ? Number(level) : null,
-      questTitle: Number.isInteger(level) ? questsById.get(Number(level))?.title ?? null : null,
+      questTitle: targetQuest?.title ?? null,
       existingWordId,
       duplicateInFile,
       action,
@@ -228,17 +296,28 @@ app.get('/api/words/:id', requirePin, (req, res) => {
 // ─── Quests / Level ───
 function getQuests() {
   const quests = db.prepare('SELECT * FROM quests ORDER BY sortOrder, id').all() as any[];
-  const rows = db.prepare('SELECT questId, wordId FROM quest_words ORDER BY sortOrder, wordId').all() as any[];
+  const rows = db.prepare(`
+    SELECT qw.questId, qw.wordId, w.type, w.past, w.participle
+    FROM quest_words qw
+    JOIN words w ON w.id = qw.wordId
+    ORDER BY qw.sortOrder, qw.wordId
+  `).all() as any[];
   const wordsByQuest = new Map<number, number[]>();
+  const wordDetailsByQuest = new Map<number, WordContentRow[]>();
   for (const row of rows) {
     const words = wordsByQuest.get(row.questId) ?? [];
     words.push(row.wordId);
     wordsByQuest.set(row.questId, words);
+
+    const wordDetails = wordDetailsByQuest.get(row.questId) ?? [];
+    wordDetails.push({ id: row.wordId, type: row.type, past: row.past, participle: row.participle });
+    wordDetailsByQuest.set(row.questId, wordDetails);
   }
 
   return quests.map(quest => ({
     ...quest,
     words: wordsByQuest.get(quest.id) ?? [],
+    contentStatus: buildQuestContentStatus(quest, wordDetailsByQuest.get(quest.id) ?? []),
   }));
 }
 

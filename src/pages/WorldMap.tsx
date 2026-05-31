@@ -82,6 +82,10 @@ function activeRibbonClass(x: number, y: number) {
   return 'map-ribbon map-ribbon-active';
 }
 
+function questContentReady(quest: AcademyQuest) {
+  return quest.contentStatus?.ready ?? quest.words.length > 0;
+}
+
 export default function WorldMap() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -132,12 +136,12 @@ export default function WorldMap() {
   const questMasteredCount = (quest: AcademyQuest) => quest.words.filter(wordId => progress[wordId]?.mastered).length;
 
   const questStatus = (quest: AcademyQuest) => {
-    if (quest.words.length === 0) return 'locked';
+    if (!questContentReady(quest)) return 'locked';
     if (questResults[quest.id]?.completed) return 'completed';
     if (quest.id === 1) return 'unlocked';
     const previousIndex = orderedQuests.findIndex(item => item.id === quest.id);
     const previous = previousIndex > 0
-      ? [...orderedQuests.slice(0, previousIndex)].reverse().find(item => item.words.length > 0)
+      ? [...orderedQuests.slice(0, previousIndex)].reverse().find(questContentReady)
       : null;
     if (!previous) return 'unlocked';
     return questResults[previous.id]?.completed ? 'unlocked' : 'locked';
@@ -145,12 +149,12 @@ export default function WorldMap() {
 
   const status = questStatus(selectedQuest);
   const mastered = questMasteredCount(selectedQuest);
-  const selectedPercent = Math.round((mastered / selectedQuest.words.length) * 100);
+  const selectedPercent = selectedQuest.words.length > 0 ? Math.round((mastered / selectedQuest.words.length) * 100) : 0;
   const selectedStep = stepByQuestId.get(selectedQuest.id) ?? selectedQuest.id;
   const selectedStory = getQuestStory(selectedQuest.id);
   const unlockedStoryScenes = storyScenes.filter(scene => questResults[scene.unlockAfterQuestId]?.completed);
   const nextUnseenStoryScene = unlockedStoryScenes.find(scene => !seenStoryScenes[scene.id]);
-  const chapterQuests = orderedQuests.filter(quest => quest.words.length > 0);
+  const chapterQuests = orderedQuests.filter(questContentReady);
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
   const currentPrologue = prologuePages[prologueStep];
@@ -358,7 +362,11 @@ export default function WorldMap() {
 
           <div className="mt-4 rounded-2xl border border-blue-950/10 bg-white/55 p-3 xl:mt-5 xl:p-4">
             <div className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/55">{selectedStory.arc}</div>
-            <p className="mt-2 text-sm font-bold leading-5 text-slate-800 xl:leading-6">{selectedQuest.guide}</p>
+            <p className="mt-2 text-sm font-bold leading-5 text-slate-800 xl:leading-6">
+              {status === 'locked' && !questContentReady(selectedQuest)
+                ? 'Dieser Ort wartet noch auf passende Wortfunken. Sobald er im Elternbereich befüllt ist, kann Pip die Spur öffnen.'
+                : selectedQuest.guide}
+            </p>
           </div>
 
           <div className="mt-4 xl:mt-5">
