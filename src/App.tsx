@@ -99,15 +99,15 @@ function App() {
                 <div className="hidden rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:block">
                   {user.streak} Tage
                 </div>
-                <Link to="/profile" className="icon-button" aria-label="Profil">
+                <Link to="/profile" className="icon-button tooltip-button" aria-label="Profil" data-tooltip="Profil">
                   <UserRound className="h-4 w-4" />
                 </Link>
                 {(user.role === 'parent' || user.role === 'admin') && (
-                  <Link to="/admin" className="icon-button" aria-label="Akademieleitung">
+                  <Link to="/admin" className="icon-button tooltip-button" aria-label="Akademieleitung" data-tooltip="Akademieleitung">
                     <GraduationCap className="h-4 w-4" />
                   </Link>
                 )}
-                <button onClick={logout} className="icon-button" aria-label="Logout">
+                <button onClick={logout} className="icon-button tooltip-button" aria-label="Abmelden" data-tooltip="Abmelden">
                   <LogOut className="h-4 w-4" />
                 </button>
               </div>
