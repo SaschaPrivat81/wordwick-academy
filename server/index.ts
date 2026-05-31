@@ -559,32 +559,93 @@ app.patch('/api/admin/reward-claims/:id', requireAdmin, (req, res) => {
 });
 
 app.post('/api/admin/words', requireAdmin, (req, res) => {
-  const { german, english, type, category, past, participle } = req.body;
-  const nextType = type === 'irregular' ? 'irregular' : 'vocab';
-  if (!german?.trim() || !english?.trim()) {
-    return res.status(400).json({ error: 'Deutsch und Englisch sind Pflichtfelder' });
-  }
-  if (nextType === 'irregular' && (!past?.trim() || !participle?.trim())) {
-    return res.status(400).json({ error: 'Unregelmäßige Verben brauchen Past Simple und Past Participle' });
-  }
+  const parsed = sanitizeWordInput(req.body);
+  if ('error' in parsed) return res.status(400).json({ error: parsed.error });
+  const word = parsed.word;
+
+  const duplicate = db.prepare('SELECT id FROM words WHERE lower(german) = lower(?) AND lower(english) = lower(?)')
+    .get(word.german, word.english);
+  if (duplicate) return res.status(400).json({ error: 'Dieses Wort ist bereits in der Wortbank' });
 
   const now = new Date().toISOString();
   const result = db.prepare(`
     INSERT INTO words (german, english, type, category, past, participle, createdAt)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `).run(
-    german.trim(),
-    english.trim(),
-    nextType,
-    category?.trim() || null,
-    nextType === 'irregular' ? past.trim() : null,
-    nextType === 'irregular' ? participle.trim() : null,
+    word.german,
+    word.english,
+    word.type,
+    word.category,
+    word.past,
+    word.participle,
     now,
   );
 
-  const word = db.prepare('SELECT id, german, english, type, category, past, participle FROM words WHERE id = ?')
+  const saved = db.prepare('SELECT id, german, english, type, category, past, participle FROM words WHERE id = ?')
     .get(Number(result.lastInsertRowid));
-  res.status(201).json(word);
+  res.status(201).json(saved);
+});
+
+function sanitizeWordInput(body: any, existing?: any) {
+  const german = typeof body.german === 'string' ? body.german.trim() : existing?.german;
+  const english = typeof body.english === 'string' ? body.english.trim() : existing?.english;
+  const type = body.type === 'irregular' || body.type === 'vocab' ? body.type : existing?.type ?? 'vocab';
+  const category = typeof body.category === 'string' && body.category.trim() ? body.category.trim() : null;
+  const past = typeof body.past === 'string' && body.past.trim() ? body.past.trim() : null;
+  const participle = typeof body.participle === 'string' && body.participle.trim() ? body.participle.trim() : null;
+
+  if (!german || !english) {
+    return { error: 'Deutsch und Englisch sind Pflichtfelder' };
+  }
+  if (type === 'irregular' && (!past || !participle)) {
+    return { error: 'Unregelmäßige Verben brauchen Past Simple und Past Participle' };
+  }
+
+  return {
+    word: {
+      german,
+      english,
+      type,
+      category,
+      past: type === 'irregular' ? past : null,
+      participle: type === 'irregular' ? participle : null,
+    },
+  };
+}
+
+app.patch('/api/admin/words/:id', requireAdmin, (req, res) => {
+  const wordId = Number(req.params.id);
+  const existing = db.prepare('SELECT * FROM words WHERE id = ?').get(wordId) as any;
+  if (!existing) return res.status(404).json({ error: 'Wort nicht gefunden' });
+
+  const parsed = sanitizeWordInput(req.body, existing);
+  if ('error' in parsed) return res.status(400).json({ error: parsed.error });
+  const word = parsed.word;
+
+  const duplicate = db.prepare('SELECT id FROM words WHERE lower(german) = lower(?) AND lower(english) = lower(?) AND id != ?')
+    .get(word.german, word.english, wordId);
+  if (duplicate) return res.status(400).json({ error: 'Dieses Wort ist bereits in der Wortbank' });
+
+  db.prepare(`
+    UPDATE words
+    SET german = ?, english = ?, type = ?, category = ?, past = ?, participle = ?
+    WHERE id = ?
+  `).run(word.german, word.english, word.type, word.category, word.past, word.participle, wordId);
+
+  const saved = db.prepare('SELECT id, german, english, type, category, past, participle FROM words WHERE id = ?')
+    .get(wordId);
+  res.json(saved);
+});
+
+app.delete('/api/admin/words/:id', requireAdmin, (req, res) => {
+  const wordId = Number(req.params.id);
+  const existing = db.prepare('SELECT id FROM words WHERE id = ?').get(wordId);
+  if (!existing) return res.status(404).json({ error: 'Wort nicht gefunden' });
+
+  db.prepare('DELETE FROM quest_words WHERE wordId = ?').run(wordId);
+  db.prepare('DELETE FROM progress WHERE wordId = ?').run(wordId);
+  db.prepare('DELETE FROM words WHERE id = ?').run(wordId);
+  res.json({ ok: true });
 });
 
 app.patch('/api/admin/quests/:id', requireAdmin, (req, res) => {

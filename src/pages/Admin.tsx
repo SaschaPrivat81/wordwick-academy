@@ -5,7 +5,7 @@ interface AdminWord {
   id: number;
   german: string;
   english: string;
-  type: string;
+  type: 'vocab' | 'irregular';
   category?: string;
   past?: string;
   participle?: string;
@@ -200,6 +200,7 @@ export default function Admin() {
   const [rewardForm, setRewardForm] = useState<RewardDraft>(emptyRewardDraft);
   const [rewardResult, setRewardResult] = useState('');
   const [wordForm, setWordForm] = useState<WordForm>(emptyWordForm);
+  const [wordDrafts, setWordDrafts] = useState<Record<number, WordForm>>({});
   const [wordResult, setWordResult] = useState('');
   const [questDrafts, setQuestDrafts] = useState<Record<number, Partial<AdminQuest>>>({});
   const [selectedWords, setSelectedWords] = useState<Record<number, string>>({});
@@ -215,6 +216,14 @@ export default function Admin() {
     }
     const data = await response.json();
     setContent(data);
+    setWordDrafts(Object.fromEntries(data.words.map((word: AdminWord) => [word.id, {
+      german: word.german,
+      english: word.english,
+      type: word.type,
+      category: word.category ?? '',
+      past: word.past ?? '',
+      participle: word.participle ?? '',
+    }])));
     setQuestDrafts(Object.fromEntries(data.quests.map((quest: AdminQuest) => [quest.id, {
       title: quest.title,
       subtitle: quest.subtitle,
@@ -393,7 +402,22 @@ export default function Admin() {
   };
 
   const updateWordForm = <K extends keyof WordForm>(field: K, value: WordForm[K]) => {
-    setWordForm(current => ({ ...current, [field]: value }));
+    setWordForm(current => ({
+      ...current,
+      [field]: value,
+      ...(field === 'type' && value === 'vocab' ? { past: '', participle: '' } : {}),
+    }));
+  };
+
+  const updateWordDraft = <K extends keyof WordForm>(wordId: number, field: K, value: WordForm[K]) => {
+    setWordDrafts(current => ({
+      ...current,
+      [wordId]: {
+        ...current[wordId],
+        [field]: value,
+        ...(field === 'type' && value === 'vocab' ? { past: '', participle: '' } : {}),
+      },
+    }));
   };
 
   const createWord = async () => {
@@ -411,6 +435,39 @@ export default function Admin() {
     }
     setWordResult(`${data.german} / ${data.english} angelegt.`);
     setWordForm(emptyWordForm);
+    await loadContent();
+  };
+
+  const saveWord = async (wordId: number) => {
+    setWordResult('');
+    const response = await fetch(`/api/admin/words/${wordId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(wordDrafts[wordId]),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setWordResult(data.error ?? 'Wort konnte nicht gespeichert werden.');
+      return;
+    }
+    setWordResult(`${data.german} / ${data.english} wurde gespeichert.`);
+    await loadContent();
+  };
+
+  const deleteWord = async (wordId: number) => {
+    setWordResult('');
+    const word = content?.words.find(item => item.id === wordId);
+    const response = await fetch(`/api/admin/words/${wordId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      const data = await response.json();
+      setWordResult(data.error ?? 'Wort konnte nicht gelöscht werden.');
+      return;
+    }
+    setWordResult(`${word?.german ?? 'Das Wort'} wurde aus der Wortbank entfernt.`);
     await loadContent();
   };
 
@@ -1007,16 +1064,97 @@ gehen,go,irregular,verben,went,gone`}
           <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
             <div className="mb-4 flex items-center gap-3">
               <Database className="h-6 w-6 text-blue-950" />
-              <h2 className="text-xl font-black text-slate-950">Wortbank</h2>
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{wordBankCount} Einträge</div>
+                <h2 className="text-xl font-black text-slate-950">Wortbank bearbeiten</h2>
+              </div>
             </div>
-            <div className="max-h-64 space-y-2 overflow-auto pr-1">
-              {(content?.words ?? []).map(word => (
-                <div key={word.id} className="rounded-xl bg-white/60 px-3 py-2 text-sm">
-                  <span className="font-black text-slate-950">{word.german}</span>
-                  <span className="text-stone-500"> / {word.english}</span>
-                  {word.type === 'irregular' && <span className="text-stone-500"> / {word.past} / {word.participle}</span>}
+            <div className="max-h-[30rem] space-y-3 overflow-auto pr-1">
+              {(content?.words ?? []).map(word => {
+                const draft = wordDrafts[word.id] ?? {
+                  german: word.german,
+                  english: word.english,
+                  type: word.type,
+                  category: word.category ?? '',
+                  past: word.past ?? '',
+                  participle: word.participle ?? '',
+                };
+                const usedInQuests = content?.quests
+                  .filter(quest => quest.words.includes(word.id))
+                  .map(quest => quest.id)
+                  .join(', ');
+                return (
+                  <div key={word.id} className="rounded-2xl border border-amber-900/10 bg-white/60 p-3">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <span className="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-blue-950">
+                        {draft.type === 'irregular' ? 'Verb' : 'Vokabel'}
+                      </span>
+                      {usedInQuests && (
+                        <span className="text-[10px] font-black uppercase tracking-[0.12em] text-stone-500">
+                          Level {usedInQuests}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="grid gap-2">
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                        <label>
+                          <span className={labelClass}>Deutsch</span>
+                          <input className={inputClass} value={draft.german} onChange={event => updateWordDraft(word.id, 'german', event.target.value)} />
+                        </label>
+                        <label>
+                          <span className={labelClass}>Englisch</span>
+                          <input className={inputClass} value={draft.english} onChange={event => updateWordDraft(word.id, 'english', event.target.value)} />
+                        </label>
+                      </div>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                        <label>
+                          <span className={labelClass}>Typ</span>
+                          <select className={inputClass} value={draft.type} onChange={event => updateWordDraft(word.id, 'type', event.target.value as WordForm['type'])}>
+                            <option value="vocab">Vokabel</option>
+                            <option value="irregular">Unregelmäßiges Verb</option>
+                          </select>
+                        </label>
+                        <label>
+                          <span className={labelClass}>Kategorie</span>
+                          <input className={inputClass} value={draft.category} onChange={event => updateWordDraft(word.id, 'category', event.target.value)} />
+                        </label>
+                      </div>
+                      {draft.type === 'irregular' && (
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+                          <label>
+                            <span className={labelClass}>Past Simple</span>
+                            <input className={inputClass} value={draft.past} onChange={event => updateWordDraft(word.id, 'past', event.target.value)} />
+                          </label>
+                          <label>
+                            <span className={labelClass}>Past Participle</span>
+                            <input className={inputClass} value={draft.participle} onChange={event => updateWordDraft(word.id, 'participle', event.target.value)} />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      <button onClick={() => saveWord(word.id)} className="gold-button px-3 py-2">
+                        <Save className="h-4 w-4" />
+                        Speichern
+                      </button>
+                      <button
+                        onClick={() => deleteWord(word.id)}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-100 px-3 py-2 text-sm font-black text-red-800 transition hover:bg-red-200 active:scale-[0.98]"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Löschen
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {(content?.words ?? []).length === 0 && (
+                <div className="rounded-xl bg-white/60 px-3 py-2 text-sm font-bold text-stone-600">
+                  Noch keine Wörter angelegt.
                 </div>
-              ))}
+              )}
             </div>
           </section>
 
