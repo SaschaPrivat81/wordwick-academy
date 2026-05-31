@@ -40,8 +40,8 @@ const kidNavItems = [
 
 function KidQuickNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-3 z-50 mx-auto w-[min(94vw,42rem)] rounded-2xl border border-amber-100/25 bg-blue-950/94 p-2 text-amber-50 shadow-2xl shadow-slate-950/35 backdrop-blur-md">
-      <div className="grid grid-cols-4 gap-1">
+    <nav className="border-b border-blue-100/15 bg-blue-950/75 px-3 py-2 text-amber-50 shadow-lg shadow-slate-950/10 backdrop-blur-sm">
+      <div className="mx-auto grid max-w-[42rem] grid-cols-4 gap-1">
         {kidNavItems.map(item => {
           const Icon = item.Icon;
           return (
@@ -49,11 +49,11 @@ function KidQuickNav() {
               key={item.to}
               to={item.to}
               end={item.to === '/'}
-              className={({ isActive }) => `flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-black transition active:scale-[0.98] ${
+              className={({ isActive }) => `flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-black transition active:scale-[0.98] ${
                 isActive ? 'bg-amber-200 text-slate-950' : 'text-amber-100/85 hover:bg-white/10'
               }`}
             >
-              <Icon className="h-5 w-5" />
+              <Icon className="h-4 w-4" />
               <span className="leading-none">{item.label}</span>
             </NavLink>
           );
@@ -114,7 +114,7 @@ function App() {
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout }}>
-      <div className={`min-h-screen academy-shell text-stone-950 ${showKidQuickNav ? 'pb-24' : ''}`}>
+      <div className="min-h-screen academy-shell text-stone-950">
         {user && (
           <header className="sticky top-0 z-50 border-b border-blue-100/20 bg-blue-950/95 px-3 py-2 text-amber-50 shadow-lg shadow-slate-950/20 backdrop-blur-md sm:px-4">
             <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3">
@@ -151,6 +151,7 @@ function App() {
             </div>
           </header>
         )}
+        {showKidQuickNav && <KidQuickNav />}
         <Routes>
           <Route path="/login" element={user ? <Navigate to="/" /> : <Login />} />
           <Route path="/" element={user ? <WorldMap /> : <Navigate to="/login" />} />
@@ -162,7 +163,6 @@ function App() {
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
           <Route path="/admin" element={user && (user.role === 'parent' || user.role === 'admin') ? <Admin /> : <Navigate to="/" />} />
         </Routes>
-        {showKidQuickNav && <KidQuickNav />}
       </div>
     </AuthContext.Provider>
   );
