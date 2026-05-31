@@ -65,7 +65,7 @@ export default function Profile() {
   };
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-5 px-4 py-5 lg:grid-cols-[320px_1fr]">
+    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-5 px-4 py-5 xl:grid-cols-[320px_1fr]">
       <section className="ink-panel rounded-[28px] border border-amber-100/20 p-6 text-amber-50">
         <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-amber-200 text-slate-950">
           <UserRound className="h-12 w-12" />

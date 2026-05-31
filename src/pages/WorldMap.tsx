@@ -110,6 +110,10 @@ export default function WorldMap() {
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
   const currentPrologue = prologuePages[prologueStep];
+  const routePoints = [...quests]
+    .sort((a, b) => a.id - b.id)
+    .map(quest => `${quest.x},${quest.y}`)
+    .join(' ');
   const finishPrologue = () => {
     if (user) localStorage.setItem(`wordwick-prologue-seen-${user.id}`, 'yes');
     setShowPrologue(false);
@@ -167,14 +171,41 @@ export default function WorldMap() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-[1500px] flex-col gap-5 px-3 py-4 sm:px-5 sm:py-5">
-      <section className="relative aspect-[16/9] min-h-[500px] w-full overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30 lg:min-h-[640px] 2xl:min-h-[760px]">
+    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-4 px-3 py-3 sm:px-5 sm:py-4 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+      <section className="relative aspect-[16/9] min-h-[360px] w-full overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30 sm:min-h-[460px] lg:min-h-0">
         <img
           src="/assets/wordwick-map-v1.jpg"
           alt="Illustrated parchment map of Wordwick Academy"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/22 via-transparent to-slate-950/5" />
+        <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <polyline
+            points={routePoints}
+            fill="none"
+            stroke="rgba(96, 165, 250, 0.42)"
+            strokeWidth="2.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <polyline
+            points={routePoints}
+            fill="none"
+            stroke="rgba(15, 23, 42, 0.55)"
+            strokeWidth="1.65"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <polyline
+            points={routePoints}
+            fill="none"
+            stroke="rgba(255, 229, 145, 0.95)"
+            strokeWidth="0.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray="1.2 1.1"
+          />
+        </svg>
 
         <div className="absolute left-[7%] top-[6%] z-20 max-w-[260px] text-amber-950">
           <div className="wordwick-title-outline font-serif text-4xl font-black leading-none tracking-normal sm:text-5xl">Wordwick</div>
@@ -213,7 +244,7 @@ export default function WorldMap() {
               onClick={() => {
                 if (questState !== 'locked') setSelectedQuest(quest);
               }}
-              className={`quest-node ${questState}`}
+              className={`quest-node z-30 ${questState}`}
               style={{ left: `${quest.x}%`, top: `${quest.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
               aria-label={quest.title}
             >
@@ -231,7 +262,7 @@ export default function WorldMap() {
           return (
           <div
             key={stop.id}
-            className="quest-node locked opacity-80"
+            className="quest-node locked z-30 opacity-80"
             style={{ left: `${stop.x}%`, top: `${stop.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
             aria-hidden="true"
           >
@@ -244,14 +275,14 @@ export default function WorldMap() {
         })}
       </section>
 
-      <aside className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(380px,0.65fr)]">
-        <section className="ink-panel rounded-[28px] border border-amber-100/20 p-5 text-amber-50">
+      <aside className="grid content-start gap-4">
+        <section className="ink-panel rounded-[28px] border border-amber-100/20 p-4 text-amber-50 xl:p-5">
           <div className="flex items-start gap-4">
-            <div className="relative flex h-32 w-32 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-amber-100/10">
+            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-amber-100/10 xl:h-32 xl:w-32">
               <img
                 src="/assets/pip-neutral.webp"
                 alt="Pip, der Papierdrache"
-                className="h-40 w-40 object-contain drop-shadow-2xl"
+                className="h-36 w-36 object-contain drop-shadow-2xl xl:h-40 xl:w-40"
               />
             </div>
             <div>
