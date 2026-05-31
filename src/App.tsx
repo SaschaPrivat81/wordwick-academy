@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { Link, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { GraduationCap, LogOut, Sparkles, UserRound } from 'lucide-react';
+import { BookMarked, GraduationCap, House, LogOut, Sparkles, UserRound } from 'lucide-react';
 import WordwickLogo from './components/WordwickLogo';
 import Login from './pages/Login';
 import WorldMap from './pages/WorldMap';
@@ -8,6 +8,8 @@ import Quest from './pages/Quest';
 import Profile from './pages/Profile';
 import Admin from './pages/Admin';
 import StoryScene from './pages/StoryScene';
+import PipHome from './pages/PipHome';
+import SparkBook from './pages/SparkBook';
 
 interface User {
   id: number;
@@ -100,6 +102,12 @@ function App() {
                 <div className="hidden rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:block">
                   {user.streak} Tage
                 </div>
+                <Link to="/pip-home" className="icon-button tooltip-button" aria-label="Pips Zuhause" data-tooltip="Pips Zuhause">
+                  <House className="h-4 w-4" />
+                </Link>
+                <Link to="/sparkbook" className="icon-button tooltip-button" aria-label="Funkenbuch" data-tooltip="Funkenbuch">
+                  <BookMarked className="h-4 w-4" />
+                </Link>
                 <Link to="/profile" className="icon-button tooltip-button" aria-label="Profil" data-tooltip="Profil">
                   <UserRound className="h-4 w-4" />
                 </Link>
@@ -120,6 +128,8 @@ function App() {
           <Route path="/" element={user ? <WorldMap /> : <Navigate to="/login" />} />
           <Route path="/quest/:id" element={user ? <Quest /> : <Navigate to="/login" />} />
           <Route path="/story/:id" element={user ? <StoryScene /> : <Navigate to="/login" />} />
+          <Route path="/pip-home" element={user ? <PipHome /> : <Navigate to="/login" />} />
+          <Route path="/sparkbook" element={user ? <SparkBook /> : <Navigate to="/login" />} />
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
           <Route path="/admin" element={user && (user.role === 'parent' || user.role === 'admin') ? <Admin /> : <Navigate to="/" />} />
         </Routes>
