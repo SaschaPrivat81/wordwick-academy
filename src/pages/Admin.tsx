@@ -25,6 +25,7 @@ interface AdminQuest {
 }
 
 type UserRole = 'child' | 'parent' | 'admin';
+type AdminTab = 'users' | 'rewards' | 'levels' | 'import' | 'progress';
 
 interface AdminUser {
   id: number;
@@ -225,7 +226,16 @@ const importActionClasses: Record<ImportPreviewRow['action'], string> = {
   error: 'bg-red-100 text-red-800',
 };
 
+const adminTabs: { id: AdminTab; label: string; icon: typeof Users }[] = [
+  { id: 'users', label: 'Benutzer', icon: Users },
+  { id: 'rewards', label: 'Belohnungen', icon: Gift },
+  { id: 'levels', label: 'Level', icon: BookOpen },
+  { id: 'import', label: 'Wörter & Import', icon: FileText },
+  { id: 'progress', label: 'Fortschritt', icon: LineChart },
+];
+
 export default function Admin() {
+  const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [csv, setCsv] = useState('');
   const [result, setResult] = useState('');
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null);
@@ -250,6 +260,7 @@ export default function Admin() {
   const readyQuestCount = content?.quests.filter(quest => quest.words.length > 0).length ?? 0;
   const totalQuestCount = content?.quests.length ?? 0;
   const wordBankCount = content?.words.length ?? 0;
+  const openRewardClaims = rewardClaims.filter(claim => claim.status === 'requested').length;
 
   const loadContent = async () => {
     const response = await fetch('/api/admin/content', { credentials: 'include' });
@@ -619,7 +630,32 @@ export default function Admin() {
         </section>
       )}
 
-      <section className="parchment mb-5 rounded-[28px] border border-amber-100/70 p-5">
+      <section className="parchment mb-5 rounded-[28px] border border-amber-100/70 p-4">
+        <div className="mb-3 grid gap-2 text-center text-xs font-black text-blue-950/70 sm:grid-cols-4">
+          <div className="rounded-xl bg-white/60 px-3 py-2">{users.length} Zugänge</div>
+          <div className="rounded-xl bg-white/60 px-3 py-2">{readyQuestCount}/{totalQuestCount} Level befüllt</div>
+          <div className="rounded-xl bg-white/60 px-3 py-2">{wordBankCount} Wörter</div>
+          <div className="rounded-xl bg-white/60 px-3 py-2">{openRewardClaims} offene Anfragen</div>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {adminTabs.map(tab => {
+            const Icon = tab.icon;
+            const active = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`inline-flex shrink-0 items-center gap-2 rounded-xl px-4 py-3 text-sm font-black transition active:scale-[0.98] ${active ? 'bg-blue-950 text-amber-50 shadow-lg shadow-blue-950/15' : 'bg-white/65 text-blue-950 hover:bg-white'}`}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className={`${activeTab === 'users' ? '' : 'hidden'} parchment mb-5 rounded-[28px] border border-amber-100/70 p-5`}>
         <div className="mb-4 flex items-center gap-3">
           <Users className="h-6 w-6 text-blue-950" />
           <div>
@@ -735,7 +771,7 @@ export default function Admin() {
         </div>
       </section>
 
-      <section className="parchment mb-5 rounded-[28px] border border-amber-100/70 p-5">
+      <section className={`${activeTab === 'rewards' ? '' : 'hidden'} parchment mb-5 rounded-[28px] border border-amber-100/70 p-5`}>
         <div className="mb-4 flex items-center gap-3">
           <Gift className="h-6 w-6 text-blue-950" />
           <div>
@@ -952,8 +988,8 @@ export default function Admin() {
         </div>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_400px]">
-        <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
+      <div className={activeTab === 'levels' || activeTab === 'import' || activeTab === 'progress' ? 'grid gap-5' : 'hidden'}>
+        <section className={`${activeTab === 'levels' ? '' : 'hidden'} parchment rounded-[28px] border border-amber-100/70 p-5`}>
           <div className="mb-4 flex items-center gap-3">
             <BookOpen className="h-6 w-6 text-blue-950" />
             <div className="min-w-0 flex-1">
@@ -1065,8 +1101,8 @@ export default function Admin() {
           </div>
         </section>
 
-        <aside className="grid content-start gap-5">
-          <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
+        <aside className={activeTab === 'import' || activeTab === 'progress' ? 'grid content-start gap-5' : 'hidden'}>
+          <section className={`${activeTab === 'import' ? '' : 'hidden'} parchment rounded-[28px] border border-amber-100/70 p-5`}>
             <div className="mb-4 flex items-center gap-3">
               <PlusCircle className="h-6 w-6 text-blue-950" />
               <h2 className="text-xl font-black text-slate-950">Wort anlegen</h2>
@@ -1110,7 +1146,7 @@ export default function Admin() {
             {wordResult && <p className="mt-2 text-sm font-black text-blue-800">{wordResult}</p>}
           </section>
 
-          <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
+          <section className={`${activeTab === 'import' ? '' : 'hidden'} parchment rounded-[28px] border border-amber-100/70 p-5`}>
             <div className="mb-4 flex items-center gap-3">
               <FileText className="h-6 w-6 text-blue-950" />
               <div className="min-w-0 flex-1">
@@ -1220,7 +1256,7 @@ gehen,go,irregular,verbs,went,gone,3`}
             )}
           </section>
 
-          <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
+          <section className={`${activeTab === 'import' ? '' : 'hidden'} parchment rounded-[28px] border border-amber-100/70 p-5`}>
             <div className="mb-4 flex items-center gap-3">
               <Database className="h-6 w-6 text-blue-950" />
               <div>
@@ -1317,7 +1353,7 @@ gehen,go,irregular,verbs,went,gone,3`}
             </div>
           </section>
 
-          <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
+          <section className={`${activeTab === 'progress' ? '' : 'hidden'} parchment rounded-[28px] border border-amber-100/70 p-5`}>
             <div className="mb-4 flex items-center gap-3">
               <LineChart className="h-6 w-6 text-blue-950" />
               <h2 className="text-xl font-black text-slate-950">Fortschritt</h2>
