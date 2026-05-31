@@ -54,6 +54,19 @@ input {
     0 3px 10px rgba(255, 248, 220, 0.5);
 }
 
+.wordwick-map-logo {
+  filter:
+    brightness(0)
+    saturate(100%)
+    invert(21%)
+    sepia(32%)
+    saturate(1050%)
+    hue-rotate(350deg)
+    brightness(84%)
+    contrast(92%)
+    drop-shadow(0 2px 0 rgba(255, 248, 220, 0.85));
+}
+
 .answer-card {
   @apply relative min-h-28 rounded-2xl border border-blue-950/10 bg-white/75 px-5 py-5 text-left shadow-lg shadow-slate-950/10 outline-none ring-blue-800/25 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-xl focus:ring-4 active:scale-[0.98] disabled:cursor-default disabled:hover:translate-y-0;
 }

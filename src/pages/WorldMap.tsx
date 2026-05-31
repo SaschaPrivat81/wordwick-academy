@@ -214,7 +214,7 @@ export default function WorldMap() {
           <img
             src="/assets/wordwick-logo-edit.svg"
             alt="Wordwick Academy"
-            className="h-auto w-full drop-shadow-[0_2px_0_rgba(255,248,220,0.85)]"
+            className="wordwick-map-logo h-auto w-full"
           />
           <div className="mt-1 inline-flex rounded-full border border-amber-950/30 bg-amber-100/60 px-3 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-amber-950/80 shadow-sm backdrop-blur-sm">
             ...where words come alive.
