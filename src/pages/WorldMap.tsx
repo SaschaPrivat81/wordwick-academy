@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Castle, Check, CloudSun, Flame, FlaskConical, GraduationCap, Home, LibraryBig, LockKeyhole, PawPrint, Sparkles, Sprout, Star, Telescope, Trees, Trophy, Waves } from 'lucide-react';
 import { useAuth } from '../App';
+import WordwickLogo from '../components/WordwickLogo';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory } from '../data/academy';
 
 interface ProgressRow {
@@ -161,7 +162,7 @@ export default function WorldMap() {
                 className="h-72 w-72 object-contain drop-shadow-2xl sm:h-80 sm:w-80"
               />
               <div className="mt-4 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Pip wartet auf dich</div>
-              <h1 className="mt-2 text-4xl font-black leading-tight sm:text-5xl">Wordwick Academy</h1>
+              <WordwickLogo className="mt-3" />
             </div>
 
             <div className="p-7 sm:p-10">
