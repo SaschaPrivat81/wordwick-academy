@@ -52,10 +52,10 @@ const prologuePages = [
 ];
 
 function ribbonClass(x: number, y: number) {
-  if (y >= 70) return 'map-ribbon map-ribbon-above hidden sm:block';
-  if (x <= 24) return 'map-ribbon map-ribbon-right hidden sm:block';
-  if (x >= 76) return 'map-ribbon map-ribbon-left hidden sm:block';
-  return 'map-ribbon hidden sm:block';
+  if (y >= 70) return 'map-ribbon map-ribbon-above hidden xl:block';
+  if (x <= 24) return 'map-ribbon map-ribbon-right hidden xl:block';
+  if (x >= 76) return 'map-ribbon map-ribbon-left hidden xl:block';
+  return 'map-ribbon hidden xl:block';
 }
 
 export default function WorldMap() {
@@ -110,10 +110,6 @@ export default function WorldMap() {
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
   const currentPrologue = prologuePages[prologueStep];
-  const routePoints = [...quests]
-    .sort((a, b) => a.id - b.id)
-    .map(quest => `${quest.x},${quest.y}`)
-    .join(' ');
   const finishPrologue = () => {
     if (user) localStorage.setItem(`wordwick-prologue-seen-${user.id}`, 'yes');
     setShowPrologue(false);
@@ -179,59 +175,12 @@ export default function WorldMap() {
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/22 via-transparent to-slate-950/5" />
-        <svg className="pointer-events-none absolute inset-0 z-10 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          <polyline
-            points={routePoints}
-            fill="none"
-            stroke="rgba(96, 165, 250, 0.42)"
-            strokeWidth="2.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <polyline
-            points={routePoints}
-            fill="none"
-            stroke="rgba(15, 23, 42, 0.55)"
-            strokeWidth="1.65"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <polyline
-            points={routePoints}
-            fill="none"
-            stroke="rgba(255, 229, 145, 0.95)"
-            strokeWidth="0.7"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeDasharray="1.2 1.1"
-          />
-        </svg>
 
         <div className="absolute left-[7%] top-[6%] z-20 max-w-[260px] text-amber-950">
           <div className="wordwick-title-outline font-serif text-4xl font-black leading-none tracking-normal sm:text-5xl">Wordwick</div>
           <div className="wordwick-title-outline font-serif text-3xl font-black leading-none tracking-normal sm:text-4xl">Academy</div>
           <div className="mt-2 inline-flex rounded-full border border-amber-950/30 bg-amber-100/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-amber-950/80 backdrop-blur-sm">
             Learn magic words
-          </div>
-        </div>
-
-        <div className="absolute right-[5%] top-[6%] z-20 hidden w-[300px] rounded-2xl border border-amber-100/35 bg-slate-950/62 p-4 text-amber-50 shadow-2xl shadow-slate-950/25 backdrop-blur-md md:block">
-          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-200/70">
-            <Sparkles className="h-3.5 w-3.5" />
-            Kapitelstatus
-          </div>
-          <h2 className="mt-2 text-lg font-black leading-tight">{selectedStory.arc}</h2>
-          <p className="mt-2 text-xs font-bold leading-5 text-amber-50/75">
-            Pip sucht die verlorenen Wortfunken. Jede bestandene Station bringt eine Spur zurück auf die Karte.
-          </p>
-          <div className="mt-4">
-            <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-amber-200/70">
-              <span>Spuren gefunden</span>
-              <span>{completedChapterQuests}/{chapterQuests.length}</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-white/15">
-              <div className="h-full rounded-full bg-amber-200" style={{ width: `${chapterPercent}%` }} />
-            </div>
           </div>
         </div>
 
@@ -293,6 +242,15 @@ export default function WorldMap() {
               </p>
             </div>
           </div>
+          <div className="mt-4">
+            <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-amber-200/70">
+              <span>{selectedStory.arc}</span>
+              <span>{completedChapterQuests}/{chapterQuests.length}</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/15">
+              <div className="h-full rounded-full bg-amber-200" style={{ width: `${chapterPercent}%` }} />
+            </div>
+          </div>
         </section>
 
         <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
@@ -320,7 +278,7 @@ export default function WorldMap() {
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-3 gap-2">
+          <div className="mt-5 grid grid-cols-2 gap-2">
             <div className="rounded-2xl bg-white/60 p-3">
               <div className="text-xl font-black text-slate-950">{selectedQuest.words.length}</div>
               <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Worte</div>
@@ -329,9 +287,9 @@ export default function WorldMap() {
               <div className="text-xl font-black text-slate-950">{mastered}</div>
               <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Gelernt</div>
             </div>
-            <div className="rounded-2xl bg-white/60 p-3">
-              <div className="text-xl font-black text-slate-950">{selectedQuest.reward}</div>
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Preis</div>
+            <div className="col-span-2 rounded-2xl bg-white/60 p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Belohnung</div>
+              <div className="mt-1 break-words text-lg font-black leading-tight text-slate-950">{selectedQuest.reward}</div>
             </div>
           </div>
 
