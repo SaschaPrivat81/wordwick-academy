@@ -72,42 +72,42 @@ export default function SparkBook() {
   });
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-5 px-4 py-5 xl:grid-cols-[330px_1fr]">
-      <section className="ink-panel rounded-[28px] border border-amber-100/20 p-6 text-amber-50">
-        <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-amber-200 text-slate-950">
-          <BookMarked className="h-12 w-12" />
+    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-4 px-3 py-3 sm:px-4 sm:py-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+      <section className="ink-panel rounded-[24px] border border-amber-100/20 p-4 text-amber-50 xl:rounded-[28px] xl:p-6">
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-amber-200 text-slate-950 xl:h-24 xl:w-24 xl:rounded-[28px]">
+          <BookMarked className="h-9 w-9 xl:h-12 xl:w-12" />
         </div>
         <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Sammlung</div>
-        <h1 className="mt-2 text-3xl font-black">Funkenbuch</h1>
-        <p className="mt-4 text-sm font-semibold leading-6 text-amber-50/75">
+        <h1 className="mt-2 text-2xl font-black xl:text-3xl">Funkenbuch</h1>
+        <p className="mt-3 text-sm font-semibold leading-6 text-amber-50/75 xl:mt-4">
           Hier sammelt Pip alle Wörter, die auf der Karte auftauchen. Schwierige Wörter flackern, gemeisterte Wörter bekommen einen goldenen Rand.
         </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-4">
-            <div className="text-3xl font-black text-amber-200">{masteredCount}</div>
+        <div className="mt-4 grid grid-cols-2 gap-2 xl:mt-6 xl:gap-3">
+          <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-3 xl:p-4">
+            <div className="text-2xl font-black text-amber-200 xl:text-3xl">{masteredCount}</div>
             <div className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-amber-100/60">gemeistert</div>
           </div>
-          <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-4">
-            <div className="text-3xl font-black text-amber-200">{practicedCount}</div>
+          <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-3 xl:p-4">
+            <div className="text-2xl font-black text-amber-200 xl:text-3xl">{practicedCount}</div>
             <div className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-amber-100/60">gesehen</div>
           </div>
-          <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-4">
-            <div className="text-3xl font-black text-amber-200">{difficultCount}</div>
+          <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-3 xl:p-4">
+            <div className="text-2xl font-black text-amber-200 xl:text-3xl">{difficultCount}</div>
             <div className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-amber-100/60">flackern</div>
           </div>
-          <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-4">
-            <div className="text-3xl font-black text-amber-200">{words.length}</div>
+          <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-3 xl:p-4">
+            <div className="text-2xl font-black text-amber-200 xl:text-3xl">{words.length}</div>
             <div className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-amber-100/60">gesamt</div>
           </div>
         </div>
       </section>
 
-      <section className="parchment rounded-[28px] border border-amber-100/70 p-5">
+      <section className="parchment rounded-[24px] border border-amber-100/70 p-4 xl:rounded-[28px] xl:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Magisches Register</div>
-            <h2 className="text-2xl font-black text-slate-950">Wortfunken-Sammlung</h2>
+            <h2 className="text-xl font-black text-slate-950 xl:text-2xl">Wortfunken-Sammlung</h2>
           </div>
           <div className="relative min-w-[220px]">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-950/45" />
@@ -147,7 +147,7 @@ export default function SparkBook() {
           </select>
         </div>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-3">
           {visibleWords.map(word => {
             const progress = progressByWordId.get(word.id);
             const status = wordStatus(word, progress);

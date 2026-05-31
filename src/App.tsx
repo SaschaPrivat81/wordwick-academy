@@ -82,7 +82,7 @@ function App() {
     <AuthContext.Provider value={{ user, login, register, logout }}>
       <div className="min-h-screen academy-shell text-stone-950">
         {user && (
-          <header className="sticky top-0 z-50 border-b border-blue-100/20 bg-blue-950/95 px-4 py-3 text-amber-50 shadow-lg shadow-slate-950/20 backdrop-blur-md">
+          <header className="sticky top-0 z-50 border-b border-blue-100/20 bg-blue-950/95 px-3 py-2 text-amber-50 shadow-lg shadow-slate-950/20 backdrop-blur-md sm:px-4">
             <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3">
               <Link to="/" aria-label="Zur Karte">
                 {isMapView ? (

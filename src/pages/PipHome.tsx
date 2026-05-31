@@ -113,18 +113,18 @@ export default function PipHome() {
   const unlockedCount = homeItems.filter(item => item.unlocked).length;
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-5 px-4 py-5 xl:grid-cols-[330px_1fr]">
-      <section className="ink-panel rounded-[28px] border border-amber-100/20 p-6 text-amber-50">
-        <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-amber-200 text-slate-950">
-          <Telescope className="h-12 w-12" />
+    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-4 px-3 py-3 sm:px-4 sm:py-4 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+      <section className="ink-panel rounded-[24px] border border-amber-100/20 p-4 text-amber-50 xl:rounded-[28px] xl:p-6">
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-amber-200 text-slate-950 xl:h-24 xl:w-24 xl:rounded-[28px]">
+          <Telescope className="h-9 w-9 xl:h-12 xl:w-12" />
         </div>
         <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Obergeschoss</div>
-        <h1 className="mt-2 text-3xl font-black">Pips Zuhause</h1>
-        <p className="mt-4 text-sm font-semibold leading-6 text-amber-50/75">
+        <h1 className="mt-2 text-2xl font-black xl:text-3xl">Pips Zuhause</h1>
+        <p className="mt-3 text-sm font-semibold leading-6 text-amber-50/75 xl:mt-4">
           Jeder Fortschritt macht Pips kleinen Horst gemütlicher. Manche Dinge erscheinen durch Level, andere durch Übung und Wortfunken.
         </p>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-2 xl:mt-6 xl:gap-3">
           <div className="rounded-2xl border border-amber-100/20 bg-white/10 p-4">
             <div className="text-3xl font-black text-amber-200">{unlockedCount}/{homeItems.length}</div>
             <div className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-amber-100/60">Deko</div>
@@ -137,7 +137,7 @@ export default function PipHome() {
       </section>
 
       <section className="rounded-[28px] border border-amber-100/25 bg-slate-950/40 p-4 shadow-2xl shadow-slate-950/25">
-        <div className="relative aspect-[16/9] min-h-[520px] overflow-hidden rounded-[26px] border border-amber-100/20 bg-[#172033] shadow-2xl shadow-slate-950/30">
+        <div className="relative aspect-[16/9] min-h-[420px] overflow-hidden rounded-[26px] border border-amber-100/20 bg-[#172033] shadow-2xl shadow-slate-950/30 sm:min-h-[500px] lg:min-h-0">
           <img
             src="/assets/pip-home-v1.jpg"
             alt="Gemütlicher magischer Horst von Pip"
@@ -162,35 +162,35 @@ export default function PipHome() {
             return (
               <div
                 key={item.id}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-3 shadow-xl backdrop-blur-sm transition ${
+                className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-xl border p-2 shadow-xl backdrop-blur-sm transition xl:rounded-2xl xl:p-3 ${
                   item.unlocked
                     ? `border-amber-100/50 ${item.colorClass}`
                     : 'border-stone-300/25 bg-slate-950/55 text-stone-300'
                 }`}
-                style={{ left: item.x, top: item.y, width: 'clamp(8.5rem, 12vw, 12rem)' }}
+                style={{ left: item.x, top: item.y, width: 'clamp(6.75rem, 10vw, 12rem)' }}
               >
                 <div className="flex items-start gap-2">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.unlocked ? 'bg-blue-950 text-amber-100' : 'bg-stone-700 text-stone-300'}`}>
-                    {item.unlocked ? <Icon className="h-5 w-5" /> : <LockKeyhole className="h-5 w-5" />}
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg xl:h-10 xl:w-10 xl:rounded-xl ${item.unlocked ? 'bg-blue-950 text-amber-100' : 'bg-stone-700 text-stone-300'}`}>
+                    {item.unlocked ? <Icon className="h-4 w-4 xl:h-5 xl:w-5" /> : <LockKeyhole className="h-4 w-4 xl:h-5 xl:w-5" />}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-black leading-tight">{item.title}</div>
-                    <div className={`mt-1 text-[10px] font-black uppercase tracking-[0.1em] ${item.unlocked ? 'text-slate-900/60' : 'text-stone-300/65'}`}>
+                    <div className="text-xs font-black leading-tight xl:text-sm">{item.title}</div>
+                    <div className={`mt-1 hidden text-[10px] font-black uppercase tracking-[0.1em] xl:block ${item.unlocked ? 'text-slate-900/60' : 'text-stone-300/65'}`}>
                       {item.unlocked ? 'Im Zimmer' : 'Noch versteckt'}
                     </div>
                   </div>
                 </div>
-                <p className={`mt-2 text-xs font-bold leading-4 ${item.unlocked ? 'text-slate-900/70' : 'text-stone-300/70'}`}>
+                <p className={`mt-2 hidden text-xs font-bold leading-4 xl:block ${item.unlocked ? 'text-slate-900/70' : 'text-stone-300/70'}`}>
                   {item.description}
                 </p>
               </div>
             );
           })}
 
-          <div className="absolute bottom-4 right-4 rounded-2xl border border-amber-100/20 bg-slate-950/55 p-4 text-amber-50 backdrop-blur-sm">
+          <div className="absolute bottom-3 right-3 rounded-xl border border-amber-100/20 bg-slate-950/55 p-3 text-amber-50 backdrop-blur-sm xl:bottom-4 xl:right-4 xl:rounded-2xl xl:p-4">
             <div className="flex items-center gap-2 text-amber-200">
-              <Star className="h-5 w-5" />
-              <span className="text-2xl font-black">{masteredCount}</span>
+              <Star className="h-4 w-4 xl:h-5 xl:w-5" />
+              <span className="text-xl font-black xl:text-2xl">{masteredCount}</span>
             </div>
             <div className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-amber-100/65">gemeisterte Wörter</div>
           </div>

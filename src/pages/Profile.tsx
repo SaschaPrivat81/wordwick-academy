@@ -73,8 +73,8 @@ export default function Profile() {
   };
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-5 px-4 py-5 xl:grid-cols-[320px_1fr]">
-      <section className="ink-panel rounded-[28px] border border-amber-100/20 p-6 text-amber-50">
+    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-4 px-3 py-3 sm:px-4 sm:py-4 xl:grid-cols-[320px_1fr]">
+      <section className="ink-panel rounded-[24px] border border-amber-100/20 p-4 text-amber-50 xl:rounded-[28px] xl:p-6">
         <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-amber-200 text-slate-950">
           <UserRound className="h-12 w-12" />
         </div>
@@ -111,7 +111,7 @@ export default function Profile() {
         </div>
 
         <div className="mt-4 overflow-x-auto pb-2">
-          <div className="relative aspect-[16/9] min-w-[920px] overflow-hidden rounded-[24px] border border-amber-100/20 bg-slate-950 shadow-2xl shadow-slate-950/30">
+          <div className="relative aspect-[16/9] min-w-[860px] overflow-hidden rounded-[24px] border border-amber-100/20 bg-slate-950 shadow-2xl shadow-slate-950/30 xl:min-w-[920px]">
             <img
               src="/assets/reward-cabinet-v1.png"
               alt="Magischer Belohnungsschrank"
