@@ -188,7 +188,7 @@ if (questCount.c === 0) {
     [7, 'Whispering Woods', 'Laute, Tiere und Waldwörter', 'Flüsterwald', 'vocab', 78, 28, 'woods', 'Silberblatt', 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird später gefüllt.'],
     [8, 'Wyrm Cave', 'Mutprobe für starke Verben', 'Drachenhöhle', 'verb', 82, 52, 'cave', 'Drachenmarke', 'Die Höhle wird ein Hauptlevel mit einer größeren Prüfung.'],
     [9, 'Moonwell Lake', 'Wiederholen und festigen', 'Mondsee', 'mixed', 77, 72, 'moonwell', 'Mondperle', 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.'],
-    [10, 'Mastery Grounds', 'Finale des ersten Kapitels', 'Abschlussplatz', 'mixed', 55, 83, 'mastery', 'Meisterabzeichen', 'Hier kann später eine echte Belohnung freigeschaltet werden.'],
+    [10, 'Spark Practice Grounds', 'Erste Übungsrunde für sichere Wortfunken', 'Übungshof', 'mixed', 55, 83, 'spark', 'Funkenkompass', 'Auf dem Übungshof lernt Pip mit dir, wie Wortfunken ruhig bleiben, bevor der Pfad weiterleuchtet.'],
   ];
   const insertQuest = db.prepare(`
     INSERT INTO quests (id, title, subtitle, chapter, kind, x, y, sigil, reward, guide, sortOrder, createdAt)
@@ -320,7 +320,7 @@ if (!mapSigilsMigration) {
     { id: 7, sigil: 'woods' },
     { id: 8, sigil: 'cave' },
     { id: 9, sigil: 'moonwell' },
-    { id: 10, sigil: 'mastery' },
+    { id: 10, sigil: 'spark' },
   ];
 
   for (const quest of questSigils) {
@@ -348,6 +348,28 @@ if (!freshPlayStateMigration) {
   db.prepare('DELETE FROM quest_results').run();
   db.prepare('UPDATE users SET coins = 0, streak = 0, lastPlayed = NULL').run();
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('fresh-play-state-v1', 'applied')").run();
+}
+
+const sparkPracticeMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'spark-practice-grounds-v1'").get();
+if (!sparkPracticeMigration) {
+  db.prepare(`
+    UPDATE quests
+    SET title = ?,
+        subtitle = ?,
+        chapter = ?,
+        sigil = ?,
+        reward = ?,
+        guide = ?
+    WHERE id = 10
+  `).run(
+    'Spark Practice Grounds',
+    'Erste Übungsrunde für sichere Wortfunken',
+    'Übungshof',
+    'spark',
+    'Funkenkompass',
+    'Auf dem Übungshof lernt Pip mit dir, wie Wortfunken ruhig bleiben, bevor der Pfad weiterleuchtet.',
+  );
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('spark-practice-grounds-v1', 'applied')").run();
 }
 
 const rewardDefaults = [
