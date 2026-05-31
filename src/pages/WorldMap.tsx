@@ -165,7 +165,6 @@ export default function WorldMap() {
         <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
           <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
             <div className="ink-panel relative flex min-h-[520px] flex-col items-center justify-center overflow-hidden p-7 text-center text-amber-50 sm:p-10">
-              <div className="absolute left-8 right-8 top-8 h-px bg-amber-100/20" />
               <img
                 src="/assets/pip-guide.webp"
                 alt="Pip, der Papierdrache"

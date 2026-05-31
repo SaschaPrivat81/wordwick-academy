@@ -323,7 +323,6 @@ export default function Quest() {
         <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
           <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="ink-panel relative flex min-h-[420px] flex-col items-center justify-center overflow-hidden p-8 text-center text-amber-50">
-              <div className="absolute inset-x-8 top-8 h-px bg-amber-100/20" />
               <img
                 src="/assets/pip-guide.webp"
                 alt="Pip zeigt den nächsten Auftrag"
