@@ -230,7 +230,7 @@ export default function Quest() {
 
   const activeChallenges = useMemo(() => [...challenges, ...retryChallenges], [challenges, retryChallenges]);
   const current = activeChallenges[currentIndex];
-  const activeGameType = quest?.gameType ?? (quest?.id === 1 ? 'spark-catcher' : quest?.id === 2 ? 'library-sorter' : quest?.id === 3 ? 'verb-assembler' : 'text-input');
+  const activeGameType = quest?.gameType ?? (quest?.id === 1 ? 'spark-catcher' : quest?.id === 2 ? 'library-sorter' : 'text-input');
   const isLibrarySorter = activeGameType === 'library-sorter';
   const isVerbAssembler = activeGameType === 'verb-assembler';
   const verbWords = useMemo(

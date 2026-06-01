@@ -81,7 +81,7 @@ export default function PipHome() {
     {
       id: 'cauldron',
       title: 'Mini-Kessel',
-      description: 'Für Verben, die erst blubbern und dann Sinn ergeben.',
+      description: 'Für Satzbausteine, die erst blubbern und dann Sinn ergeben.',
       x: '47%',
       y: '78%',
       unlocked: completedQuestIds.has(3),

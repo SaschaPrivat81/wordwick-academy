@@ -170,14 +170,14 @@ if (wordCount.c === 0) {
   const words = [
     ['Hund', 'dog', 'vocab', 'tiere'],
     ['Katze', 'cat', 'vocab', 'tiere'],
-    ['Haus', 'house', 'vocab', 'wohnen'],
-    ['gehen', 'go', 'irregular', 'verben', 'went', 'gone'],
-    ['laufen', 'run', 'irregular', 'verben', 'ran', 'run'],
-    ['essen', 'eat', 'irregular', 'verben', 'ate', 'eaten'],
-    ['sehen', 'see', 'irregular', 'verben', 'saw', 'seen'],
-    ['trinken', 'drink', 'irregular', 'verben', 'drank', 'drunk'],
-    ['schlafen', 'sleep', 'irregular', 'verben', 'slept', 'slept'],
-    ['schreiben', 'write', 'irregular', 'verben', 'wrote', 'written'],
+    ['Buch', 'book', 'vocab', 'schule'],
+    ['Hand', 'hand', 'vocab', 'körper'],
+    ['Auge', 'eye', 'vocab', 'körper'],
+    ['Wasser', 'water', 'vocab', 'getränke'],
+    ['Milch', 'milk', 'vocab', 'getränke'],
+    ['glücklich', 'happy', 'vocab', 'gefühle'],
+    ['müde', 'tired', 'vocab', 'gefühle'],
+    ['klatsche in die Hände', 'clap your hands', 'vocab', 'bewegung'],
   ];
   const insert = db.prepare('INSERT INTO words (german, english, type, category, past, participle, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?)');
   for (const w of words) {
@@ -199,12 +199,12 @@ if (questCount.c === 0) {
   const quests = [
     [1, 'Wordwick Hall', 'Die ersten Zauberworte für Tiere', 'Haupthalle', 'vocab', 64, 49, 'hall', 'Bronzefeder', 'In der Haupthalle beginnt jedes Abenteuer mit den ersten starken Wörtern.'],
     [2, 'Moonlit Library', 'Worte aus Zimmern und Fluren', 'Bibliothek', 'vocab', 29, 78, 'library', 'Silbertinte', 'Zwischen alten Regalen lernt jedes Ding seinen englischen Namen.'],
-    [3, 'Wordbrew Workshop', 'go, went, gone und Freunde', 'Wortbrauerei', 'verb', 39, 41, 'brew', 'Sternenstempel', 'Unregelmäßige Verben sind eigensinnig. Im Workshop mischen wir ihre drei Formen.'],
-    [4, 'Sky Practice Yards', 'sehen, trinken und merken', 'Flugplatz', 'verb', 18, 66, 'sky', 'Mondkristall', 'Auf dem Übungsplatz zählt Tempo: sehen, erkennen, richtig antworten.'],
+    [3, 'Wordbrew Workshop', 'Satzbausteine und Alltagswörter mischen', 'Wortbrauerei', 'mixed', 39, 41, 'brew', 'Sternenstempel', 'Im Workshop braut Pip kurze Satzbausteine und Phrasen, die in der Schule wirklich vorkommen.'],
+    [4, 'Sky Practice Yards', 'Bewegungswörter schnell erkennen', 'Flugplatz', 'vocab', 18, 66, 'sky', 'Mondkristall', 'Auf dem Übungsplatz zählt Tempo: hören, erkennen, richtig antworten.'],
     [5, 'Stargazer Tower', 'ruhige Worte, starke Formen', 'Sternenturm', 'mixed', 58, 20, 'tower', 'Goldenes Lesezeichen', 'Im Sternenturm sammelt sich alles, was du bisher gelernt hast.'],
     [6, 'Glasshouse Garden', 'Pflanzen, Farben und kleine Dinge', 'Glashaus', 'vocab', 26, 51, 'garden', 'Kristallsamen', 'Das Glashaus wartet auf neue Vokabeln aus deinem Eltern-Dashboard.'],
     [7, 'Whispering Woods', 'Laute, Tiere und Waldwörter', 'Flüsterwald', 'vocab', 78, 28, 'woods', 'Silberblatt', 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird später gefüllt.'],
-    [8, 'Wyrm Cave', 'Mutprobe für starke Verben', 'Drachenhöhle', 'verb', 82, 52, 'cave', 'Drachenmarke', 'Die Höhle wird ein Hauptlevel mit einer größeren Prüfung.'],
+    [8, 'Wyrm Cave', 'Mutprobe für lange Phrasen', 'Drachenhöhle', 'mixed', 82, 52, 'cave', 'Drachenmarke', 'Die Höhle prüft längere Wörter und Phrasen, aber noch keine unregelmäßigen Verben.'],
     [9, 'Moonwell Lake', 'Wiederholen und festigen', 'Mondsee', 'mixed', 77, 72, 'moonwell', 'Mondperle', 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.'],
     [10, 'Spark Practice Grounds', 'Erste Übungsrunde für sichere Wortfunken', 'Übungshof', 'mixed', 55, 83, 'spark', 'Funkenkompass', 'Auf dem Übungshof lernt Pip mit dir, wie Wortfunken ruhig bleiben, bevor der Pfad weiterleuchtet.'],
   ];
@@ -267,7 +267,7 @@ for (const [index, word] of libraryWords.entries()) {
 const questGameTypes = [
   { id: 1, gameType: 'spark-catcher' },
   { id: 2, gameType: 'library-sorter' },
-  { id: 3, gameType: 'verb-assembler' },
+  { id: 3, gameType: 'text-input' },
   { id: 4, gameType: 'text-input' },
   { id: 5, gameType: 'text-input' },
 ];
@@ -388,6 +388,87 @@ if (!sparkPracticeMigration) {
     'Auf dem Übungshof lernt Pip mit dir, wie Wortfunken ruhig bleiben, bevor der Pfad weiterleuchtet.',
   );
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('spark-practice-grounds-v1', 'applied')").run();
+}
+
+const classThreePhraseLevelsMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'class-three-phrase-levels-v1'").get();
+if (!classThreePhraseLevelsMigration) {
+  const questUpdates = [
+    {
+      id: 3,
+      subtitle: 'Satzbausteine und Alltagswörter mischen',
+      chapter: 'Wortbrauerei',
+      kind: 'mixed',
+      gameType: 'text-input',
+      guide: 'Im Workshop braut Pip kurze Satzbausteine und Phrasen, die in der Schule wirklich vorkommen.',
+    },
+    {
+      id: 4,
+      subtitle: 'Bewegungswörter schnell erkennen',
+      chapter: 'Flugplatz',
+      kind: 'vocab',
+      gameType: 'text-input',
+      guide: 'Auf dem Übungsplatz zählt Tempo: hören, erkennen, richtig antworten.',
+    },
+    {
+      id: 8,
+      subtitle: 'Mutprobe für lange Phrasen',
+      chapter: 'Drachenhöhle',
+      kind: 'mixed',
+      gameType: 'text-input',
+      guide: 'Die Höhle prüft längere Wörter und Phrasen, aber noch keine unregelmäßigen Verben.',
+    },
+  ];
+
+  for (const quest of questUpdates) {
+    db.prepare(`
+      UPDATE quests
+      SET subtitle = ?, chapter = ?, kind = ?, gameType = ?, guide = ?
+      WHERE id = ?
+    `).run(quest.subtitle, quest.chapter, quest.kind, quest.gameType, quest.guide, quest.id);
+  }
+
+  const phraseBuckets = [
+    { questId: 3, categories: ['morning routine', 'food', 'drinks'] },
+    { questId: 4, categories: ['body actions', 'body'] },
+    { questId: 8, categories: ['beach', 'comparisons'] },
+  ];
+  const insertQuestWord = db.prepare('INSERT OR IGNORE INTO quest_words (questId, wordId, sortOrder) VALUES (?, ?, ?)');
+
+  for (const bucket of phraseBuckets) {
+    const findWordsByCategory = db.prepare(`
+      SELECT id
+      FROM words
+      WHERE type = 'vocab'
+        AND lower(COALESCE(category, '')) IN (${bucket.categories.map(() => '?').join(', ')})
+      ORDER BY difficulty DESC, id
+      LIMIT 12
+    `);
+    const rows = findWordsByCategory.all(...bucket.categories) as { id: number }[];
+    for (const [index, row] of rows.entries()) {
+      insertQuestWord.run(bucket.questId, row.id, 200 + index);
+    }
+  }
+
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('class-three-phrase-levels-v1', 'applied')").run();
+}
+
+const classThreeSeedVerbCleanup = db.prepare("SELECT value FROM app_settings WHERE key = 'class-three-seed-verb-cleanup-v1'").get();
+if (!classThreeSeedVerbCleanup) {
+  db.prepare(`
+    UPDATE words
+    SET type = 'vocab',
+        category = 'actions',
+        past = NULL,
+        participle = NULL,
+        notes = CASE
+          WHEN notes IS NULL OR notes = '' THEN 'Als normales Aktionswort für Klasse 3 genutzt.'
+          ELSE notes
+        END
+    WHERE type = 'irregular'
+      AND lower(COALESCE(category, '')) = 'verben'
+      AND lower(english) IN ('go', 'run', 'eat', 'see', 'drink', 'sleep', 'write')
+  `).run();
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('class-three-seed-verb-cleanup-v1', 'applied')").run();
 }
 
 const rewardDefaults = [

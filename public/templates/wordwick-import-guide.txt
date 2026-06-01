@@ -17,10 +17,11 @@ Wordwick Academy - CSV-Import kurz erklärt
 
 6. Typen:
    vocab = normale Vokabel
-   irregular = unregelmäßiges Verb
+   irregular = unregelmäßiges Verb, aktuell eher für später gedacht
 
 7. Unregelmäßige Verben brauchen zusätzlich:
    past und participle
+   Für den aktuellen Klasse-3-Content kannst du diese Spalten leer lassen.
 
 8. Schwierigkeit:
    1 = leicht
@@ -34,6 +35,10 @@ Wordwick Academy - CSV-Import kurz erklärt
 10. Vor dem Import immer Vorschau prüfen.
    Wordwick meldet Duplikate, fehlende Verbformen und falsche Level-Zuordnungen.
 
-11. Importstrategie:
-   Am einfachsten ist eine Datei pro Lernpaket, zum Beispiel Unit 1, Unit 2 oder Irregulars A.
+11. Phrasen:
+   Kurze Satzbausteine wie "brush my teeth" oder "fly a kite" werden aktuell als vocab importiert.
+   Das ist für die Minispiele stabil und passt zum Schulbuchstand.
+
+12. Importstrategie:
+   Am einfachsten ist eine Datei pro Lernpaket, zum Beispiel Unit 1, Unit 2 oder Phrases A.
    Du kannst Inhalte später erneut importieren. Bereits vorhandene Wörter werden übersprungen.

@@ -22,7 +22,7 @@ interface ProgressRow {
   mastered: number;
 }
 
-type BookFilter = 'all' | 'mastered' | 'difficult' | 'verbs';
+type BookFilter = 'all' | 'mastered' | 'difficult' | 'phrases';
 
 function wordStatus(word: Word, progress?: ProgressRow) {
   if (progress?.mastered) return { label: 'Gemeistert', className: 'border-amber-300 bg-amber-100 text-amber-950', Icon: Star };
@@ -67,7 +67,7 @@ export default function SparkBook() {
     if (category !== 'all' && (word.category || 'ohne Kategorie') !== category) return false;
     if (filter === 'mastered') return Boolean(progress?.mastered);
     if (filter === 'difficult') return Boolean(progress && progress.wrongCount > progress.correctCount);
-    if (filter === 'verbs') return word.type === 'irregular';
+    if (filter === 'phrases') return word.english.trim().includes(' ');
     return true;
   });
 
@@ -125,7 +125,7 @@ export default function SparkBook() {
             ['all', 'Alle'],
             ['mastered', 'Gemeistert'],
             ['difficult', 'Flackern'],
-            ['verbs', 'Verben'],
+            ['phrases', 'Phrasen'],
           ].map(([value, label]) => (
             <button
               key={value}

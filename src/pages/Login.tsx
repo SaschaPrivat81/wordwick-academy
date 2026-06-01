@@ -41,12 +41,12 @@ export default function Login() {
             </div>
             <WordwickLogo className="drop-shadow-2xl" />
             <p className="mt-5 max-w-lg text-lg font-semibold leading-8 text-amber-100 drop-shadow">
-              Eine magische Lernschule für englische Wörter, wilde Verben und kleine Siege nach jeder bestandenen Quest.
+              Eine magische Lernschule für englische Wörter, Satztricks und kleine Siege nach jeder bestandenen Quest.
             </p>
             <div className="mt-8 grid max-w-xl gap-3 sm:grid-cols-3">
               {[
                 ['Wortzauber', 'Vokabeln'],
-                ['Verbenturm', 'Past forms'],
+                ['Satztricks', 'Phrasen'],
                 ['Belohnungen', 'Elternplan'],
               ].map(([title, label]) => (
                 <div key={title} className="rounded-2xl border border-amber-100/20 bg-white/10 p-4 backdrop-blur">

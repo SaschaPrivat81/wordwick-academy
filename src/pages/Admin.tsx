@@ -235,13 +235,13 @@ const claimStatusLabels: Record<RewardClaimStatus, string> = {
 const gameTypes = [
   ['spark-catcher', 'Wortfunken fangen'],
   ['library-sorter', 'Bücherregal sortieren'],
-  ['verb-assembler', 'Verbsteine ordnen'],
+  ['verb-assembler', 'Verbsteine ordnen (später)'],
   ['text-input', 'Texteingabe'],
 ];
 
 const kindLabels: Record<string, string> = {
   vocab: 'Vokabeln',
-  verb: 'Verben',
+  verb: 'Verben (später)',
   mixed: 'Gemischt',
 };
 
@@ -279,7 +279,10 @@ function contentStatusForQuest(quest: AdminQuest) {
 function questRole(quest: AdminQuest) {
   if (quest.id === 1) return 'Startlevel';
   if (quest.gameType === 'library-sorter') return 'Sortierübung';
-  if (quest.gameType === 'verb-assembler') return 'Verbtraining';
+  if (quest.gameType === 'verb-assembler') return 'Verbtraining (später)';
+  if (quest.id === 3) return 'Satzbausteine';
+  if (quest.id === 4) return 'Bewegungsübung';
+  if (quest.id === 8) return 'Phrasenprüfung';
   if (quest.kind === 'mixed' && quest.reward?.toLowerCase().includes('lesezeichen')) return 'Finallevel';
   if (quest.kind === 'mixed') return 'Wiederholung';
   return 'Übungslevel';
@@ -1171,7 +1174,7 @@ export default function Admin() {
                       <span className={labelClass}>Inhaltstyp</span>
                       <select className={inputClass} value={draft.kind ?? 'vocab'} onChange={event => updateQuestDraft(quest.id, 'kind', event.target.value)}>
                         <option value="vocab">Vokabeln</option>
-                        <option value="verb">Verben</option>
+                        <option value="verb">Verben (später)</option>
                         <option value="mixed">Gemischt</option>
                       </select>
                     </label>
@@ -1335,7 +1338,7 @@ export default function Admin() {
                 ['/templates/wordwick-starter-pack.csv', 'Starter-Pack'],
                 ['/templates/wordwick-content-template.csv', 'Komplett'],
                 ['/templates/wordwick-vocabulary-template.csv', 'Vokabeln'],
-                ['/templates/wordwick-irregular-verbs-template.csv', 'Verben'],
+                ['/templates/wordwick-phrases-template.csv', 'Phrasen'],
                 ['/templates/wordwick-level-plan.csv', 'Level-Plan'],
                 ['/templates/wordwick-import-guide.txt', 'Anleitung'],
               ].map(([href, label]) => (
@@ -1375,7 +1378,7 @@ export default function Admin() {
               className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 font-mono text-sm outline-none ring-blue-800/25 focus:ring-4"
               placeholder={`deutsch,englisch,typ,kategorie,klasse,lektion,schwierigkeit,past,participle,level,notizen
 Hund,dog,vocab,animals,3,Unit 1,1,,,1,Tierwort
-gehen,go,irregular,verbs,3,Irregulars A,2,went,gone,3,Grundverb`}
+klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,4,Bewegungsphrase`}
             />
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <button onClick={previewImport} className="magic-button w-full">
