@@ -1,6 +1,6 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, createContext, useContext, useRef } from 'react';
 import { Link, NavLink, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { BookMarked, Gift, GraduationCap, House, LogOut, Map as MapIcon, Sparkles, UserRound } from 'lucide-react';
+import { BookMarked, Gift, GraduationCap, House, LogOut, Map as MapIcon, Sparkles, UserRound, Volume2, VolumeX } from 'lucide-react';
 import WordwickLogo from './components/WordwickLogo';
 import Login from './pages/Login';
 import WorldMap from './pages/WorldMap';
@@ -30,6 +30,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 export const useAuth = () => useContext(AuthContext)!;
+
+const MUSIC_STORAGE_KEY = 'wordwick-music-enabled';
+const MUSIC_LOOP_RESTART_BEFORE_END = 1.2;
 
 const kidNavItems = [
   { to: '/', label: 'Karte', Icon: MapIcon },
@@ -66,6 +69,9 @@ function KidQuickNav() {
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [musicEnabled, setMusicEnabled] = useState(() => localStorage.getItem(MUSIC_STORAGE_KEY) !== 'off');
+  const [musicBlocked, setMusicBlocked] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const isMapView = location.pathname === '/';
@@ -77,6 +83,57 @@ function App() {
       .then(u => setUser(u))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    localStorage.setItem(MUSIC_STORAGE_KEY, musicEnabled ? 'on' : 'off');
+  }, [musicEnabled]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (!user || !musicEnabled) {
+      audio.pause();
+      setMusicBlocked(false);
+      return;
+    }
+
+    audio.volume = 0.28;
+    const playPromise = audio.play();
+    if (playPromise) {
+      playPromise
+        .then(() => setMusicBlocked(false))
+        .catch(() => setMusicBlocked(true));
+    }
+  }, [user, musicEnabled]);
+
+  useEffect(() => {
+    if (!user || !musicEnabled || !musicBlocked) return;
+
+    const retryPlay = () => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      audio.play()
+        .then(() => setMusicBlocked(false))
+        .catch(() => undefined);
+    };
+
+    window.addEventListener('pointerdown', retryPlay, { once: true });
+    window.addEventListener('keydown', retryPlay, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', retryPlay);
+      window.removeEventListener('keydown', retryPlay);
+    };
+  }, [user, musicEnabled, musicBlocked]);
+
+  const handleMusicTimeUpdate = () => {
+    const audio = audioRef.current;
+    if (!audio || !Number.isFinite(audio.duration)) return;
+    if (audio.duration - audio.currentTime <= MUSIC_LOOP_RESTART_BEFORE_END) {
+      audio.currentTime = 0;
+      void audio.play();
+    }
+  };
 
   const login = async (name: string, pin: string) => {
     const res = await fetch('/api/login', {
@@ -106,6 +163,7 @@ function App() {
 
   const logout = () => {
     fetch('/api/logout', { method: 'POST', credentials: 'include' });
+    audioRef.current?.pause();
     setUser(null);
     navigate('/login');
   };
@@ -115,6 +173,12 @@ function App() {
   return (
     <AuthContext.Provider value={{ user, login, register, logout }}>
       <div className="min-h-screen academy-shell text-stone-950">
+        <audio
+          ref={audioRef}
+          src="/assets/wordwick-academy-theme.mp3"
+          preload="auto"
+          onTimeUpdate={handleMusicTimeUpdate}
+        />
         {user && (
           <header className="sticky top-0 z-50 border-b border-blue-100/20 bg-blue-950/95 px-3 py-2 text-amber-50 shadow-lg shadow-slate-950/20 backdrop-blur-md sm:px-4">
             <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3">
@@ -136,6 +200,15 @@ function App() {
                 <div className="hidden rounded-full border border-amber-200/20 bg-white/10 px-3 py-1 text-xs font-bold text-amber-100 sm:block">
                   {user.streak} Tage
                 </div>
+                <button
+                  onClick={() => setMusicEnabled(value => !value)}
+                  className="icon-button tooltip-button"
+                  aria-label={musicEnabled ? 'Musik ausschalten' : 'Musik einschalten'}
+                  aria-pressed={musicEnabled}
+                  data-tooltip={musicEnabled ? (musicBlocked ? 'Musik starten' : 'Musik aus') : 'Musik an'}
+                >
+                  {musicEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+                </button>
                 <Link to="/profile" className="icon-button tooltip-button" aria-label="Profil" data-tooltip="Profil">
                   <UserRound className="h-4 w-4" />
                 </Link>
