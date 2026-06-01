@@ -1,29 +1,39 @@
 Wordwick Academy - CSV-Import kurz erklärt
 
-1. Nutze am besten zuerst den Level-Plan.
+1. Vor größeren Imports zuerst ein Backup exportieren.
+   Das Backup enthält Wörter, Level-Zuordnungen, Quests und Belohnungen als JSON.
+
+2. Nutze danach am besten zuerst den Level-Plan.
    Dort steht, welche Level-ID welchen Inhalt erwartet.
 
-2. Pflichtspalten:
+3. Für einen schnellen Test gibt es das Starter-Pack.
+   Diese CSV befüllt alle aktuellen Level mit Beispielinhalten und zeigt das richtige Format.
+
+4. Pflichtspalten:
    deutsch, englisch, typ, level
 
-3. Empfohlene Spalten:
+5. Empfohlene Spalten:
    kategorie, klasse, lektion, schwierigkeit, notizen
 
-4. Typen:
+6. Typen:
    vocab = normale Vokabel
    irregular = unregelmäßiges Verb
 
-5. Unregelmäßige Verben brauchen zusätzlich:
+7. Unregelmäßige Verben brauchen zusätzlich:
    past und participle
 
-6. Schwierigkeit:
+8. Schwierigkeit:
    1 = leicht
    2 = mittel
    3 = knifflig
 
-7. Level-Zuordnung:
+9. Level-Zuordnung:
    In der Spalte level steht die Level-ID, nicht die Schritt-Nummer.
    Beispiel: Spark Practice Grounds ist Schritt 2, hat aber level_id 10.
 
-8. Vor dem Import immer Vorschau prüfen.
+10. Vor dem Import immer Vorschau prüfen.
    Wordwick meldet Duplikate, fehlende Verbformen und falsche Level-Zuordnungen.
+
+11. Importstrategie:
+   Am einfachsten ist eine Datei pro Lernpaket, zum Beispiel Unit 1, Unit 2 oder Irregulars A.
+   Du kannst Inhalte später erneut importieren. Bereits vorhandene Wörter werden übersprungen.

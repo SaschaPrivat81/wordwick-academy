@@ -993,6 +993,26 @@ app.get('/api/admin/content', requireAdmin, (_req, res) => {
   });
 });
 
+app.get('/api/admin/content/export', requireAdmin, (_req, res) => {
+  const exportedAt = new Date().toISOString();
+  const words = db.prepare('SELECT * FROM words ORDER BY id').all();
+  const quests = getQuests();
+  const questWords = db.prepare('SELECT questId, wordId, sortOrder FROM quest_words ORDER BY questId, sortOrder, wordId').all();
+  const rewards = db.prepare('SELECT * FROM rewards ORDER BY sortOrder, id').all();
+
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="wordwick-content-backup-${exportedAt.slice(0, 10)}.json"`);
+  res.json({
+    app: 'Wordwick Academy',
+    exportedAt,
+    version: 1,
+    words,
+    quests,
+    questWords,
+    rewards,
+  });
+});
+
 // ─── Static files ───
 app.use(express.static(path.join(__dirname, '../dist')));
 app.get('*', (_req, res) => {

@@ -586,6 +586,14 @@ export default function Admin() {
     await loadContent();
   };
 
+  const loadCsvFile = async (file?: File | null) => {
+    if (!file) return;
+    const text = await file.text();
+    setCsv(text);
+    setImportPreview(null);
+    setResult(`CSV geladen: ${file.name}`);
+  };
+
   const previewImport = async () => {
     setResult('');
     setImportPreview(null);
@@ -1304,8 +1312,27 @@ export default function Admin() {
                 <h2 className="text-xl font-black text-slate-950">CSV-Import</h2>
               </div>
             </div>
+            <div className="mb-4 rounded-2xl border border-blue-950/10 bg-white/55 p-3 text-xs font-bold text-slate-700">
+              <div className="mb-2 text-sm font-black text-blue-950">Empfohlene Reihenfolge</div>
+              <ol className="grid gap-2 sm:grid-cols-4">
+                <li className="rounded-xl bg-blue-50 p-2"><span className="font-black text-blue-950">1.</span> Backup exportieren.</li>
+                <li className="rounded-xl bg-blue-50 p-2"><span className="font-black text-blue-950">2.</span> Starter-Pack oder eigene CSV laden.</li>
+                <li className="rounded-xl bg-blue-50 p-2"><span className="font-black text-blue-950">3.</span> Vorschau prüfen.</li>
+                <li className="rounded-xl bg-blue-50 p-2"><span className="font-black text-blue-950">4.</span> Import übernehmen.</li>
+              </ol>
+            </div>
             <div className="mb-3 grid gap-2 sm:grid-cols-3">
+              <a
+                href="/api/admin/content/export"
+                download
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-600"
+                title="Aktuelle Inhalte als JSON-Backup herunterladen"
+              >
+                <Download className="h-4 w-4" />
+                Backup
+              </a>
               {[
+                ['/templates/wordwick-starter-pack.csv', 'Starter-Pack'],
                 ['/templates/wordwick-content-template.csv', 'Komplett'],
                 ['/templates/wordwick-vocabulary-template.csv', 'Vokabeln'],
                 ['/templates/wordwick-irregular-verbs-template.csv', 'Verben'],
@@ -1325,6 +1352,19 @@ export default function Admin() {
               ))}
             </div>
             <p className="mb-2 text-xs font-bold text-stone-500">Spalten: deutsch, englisch, typ, kategorie, klasse, lektion, schwierigkeit, past, participle, level, notizen</p>
+            <label className="mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-blue-950/20 bg-white/55 px-4 py-5 text-center text-sm font-black text-blue-950 transition hover:border-blue-700 hover:bg-blue-50/70 sm:flex-row">
+              <UploadCloud className="h-5 w-5" />
+              <span>CSV-Datei auswählen oder unten direkt Text einfügen</span>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                className="sr-only"
+                onChange={event => {
+                  void loadCsvFile(event.target.files?.[0]);
+                  event.target.value = '';
+                }}
+              />
+            </label>
             <textarea
               value={csv}
               onChange={event => {
