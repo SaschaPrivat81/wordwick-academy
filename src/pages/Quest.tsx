@@ -40,6 +40,33 @@ interface AnswerLogItem {
 }
 
 const MIN_STANDARD_TASKS = 6;
+const QUEST_TASK_LIMITS: Record<number, number> = {
+  1: 12,
+  2: 4,
+  3: 10,
+  4: 10,
+  5: 14,
+  6: 10,
+  7: 10,
+  8: 10,
+  9: 12,
+  10: 10,
+};
+
+function rotateItems<T>(items: T[], seed: number) {
+  if (items.length === 0) return items;
+  const offset = seed % items.length;
+  return [...items.slice(offset), ...items.slice(0, offset)];
+}
+
+function dailyQuestSeed(questId: number) {
+  const today = new Date().toISOString().slice(0, 10).replace(/\D/g, '');
+  return Number(today) + questId * 17;
+}
+
+function questTaskLimit(quest: AcademyQuest) {
+  return QUEST_TASK_LIMITS[quest.id] ?? (quest.kind === 'mixed' ? 12 : 10);
+}
 
 function buildChoiceOptions(expected: string, candidates: string[], seed: number) {
   const normalizedExpected = normalizeAnswer(expected);
@@ -74,9 +101,15 @@ function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challen
 }
 
 function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
-  const baseChallenges = words.flatMap((word): Challenge[] => {
+  const rotatedWords = rotateItems(words, dailyQuestSeed(quest.id));
+  const verbChallenges: Challenge[] = [];
+  const deEnChallenges: Challenge[] = [];
+  const enDeChallenges: Challenge[] = [];
+  const writeChallenges: Challenge[] = [];
+
+  for (const word of rotatedWords) {
     if (word.type === 'irregular' && (quest.kind === 'verb' || quest.kind === 'mixed')) {
-      const verbChallenges: Challenge[] = [
+      verbChallenges.push(...[
         {
           id: `${word.id}-base`,
           wordId: word.id,
@@ -110,47 +143,49 @@ function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
           answerPool: 'verb',
           mode: 'text',
         },
-      ];
+      ].filter(challenge => challenge.expected));
 
-      return verbChallenges.filter(challenge => challenge.expected);
+      continue;
     }
 
-    return [
-      {
-        id: `${word.id}-de-en`,
-        wordId: word.id,
-        eyebrow: 'Wortfunke',
-        prompt: `Wie heisst "${word.german}" auf Englisch?`,
-        helper: 'Fang den richtigen englischen Wortfunken.',
-        expected: word.english,
-        acceptable: [word.english],
-        answerPool: 'english',
-        mode: 'choice',
-      },
-      {
-        id: `${word.id}-en-de`,
-        wordId: word.id,
-        eyebrow: 'Rückzauber',
-        prompt: `Was bedeutet "${word.english}" auf Deutsch?`,
-        helper: 'Schreibe die deutsche Bedeutung.',
-        expected: word.german,
-        acceptable: [word.german],
-        answerPool: 'german',
-        mode: 'text',
-      },
-      {
-        id: `${word.id}-write`,
-        wordId: word.id,
-        eyebrow: 'Schreibzauber',
-        prompt: `Schreibe "${word.german}" auf Englisch.`,
-        helper: 'Diesmal muss der Wortfunke genau geschrieben werden.',
-        expected: word.english,
-        acceptable: [word.english],
-        answerPool: 'english',
-        mode: 'text',
-      },
-    ];
-  });
+    deEnChallenges.push({
+      id: `${word.id}-de-en`,
+      wordId: word.id,
+      eyebrow: 'Wortfunke',
+      prompt: `Wie heisst "${word.german}" auf Englisch?`,
+      helper: 'Fang den richtigen englischen Wortfunken.',
+      expected: word.english,
+      acceptable: [word.english],
+      answerPool: 'english',
+      mode: 'choice',
+    });
+
+    enDeChallenges.push({
+      id: `${word.id}-en-de`,
+      wordId: word.id,
+      eyebrow: 'Rückzauber',
+      prompt: `Was bedeutet "${word.english}" auf Deutsch?`,
+      helper: 'Schreibe die deutsche Bedeutung.',
+      expected: word.german,
+      acceptable: [word.german],
+      answerPool: 'german',
+      mode: 'text',
+    });
+
+    writeChallenges.push({
+      id: `${word.id}-write`,
+      wordId: word.id,
+      eyebrow: 'Schreibzauber',
+      prompt: `Schreibe "${word.german}" auf Englisch.`,
+      helper: 'Diesmal muss der Wortfunke genau geschrieben werden.',
+      expected: word.english,
+      acceptable: [word.english],
+      answerPool: 'english',
+      mode: 'text',
+    });
+  }
+
+  const baseChallenges = [...deEnChallenges, ...enDeChallenges, ...writeChallenges, ...verbChallenges];
 
   if (baseChallenges.length === 0) return [];
 
@@ -167,7 +202,7 @@ function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
     index++;
   }
 
-  return expanded;
+  return expanded.slice(0, questTaskLimit(quest));
 }
 
 export default function Quest() {
