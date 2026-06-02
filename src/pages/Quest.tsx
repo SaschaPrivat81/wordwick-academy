@@ -25,7 +25,7 @@ interface Challenge {
   imagePath?: string;
   imageAlt?: string;
   answerPool: 'english' | 'german' | 'verb';
-  mode: 'choice' | 'text' | 'builder';
+  mode: 'choice' | 'text' | 'builder' | 'phrase';
   retry?: boolean;
 }
 
@@ -112,13 +112,29 @@ function buildLetterTiles(expected: string, seed: number) {
   return tiles;
 }
 
+function buildPhraseTiles(expected: string, seed: number) {
+  const words = expected.trim().split(/\s+/);
+  const tiles = words.map((word, index) => ({ word, originalIndex: index }));
+  let nextSeed = seed || 1;
+  for (let index = tiles.length - 1; index > 0; index--) {
+    nextSeed = (nextSeed * 9301 + 49297) % 233280;
+    const swapIndex = nextSeed % (index + 1);
+    [tiles[index], tiles[swapIndex]] = [tiles[swapIndex], tiles[index]];
+  }
+  if (tiles.map(tile => tile.word).join(' ') === expected.trim() && tiles.length > 1) {
+    const first = tiles.shift();
+    if (first) tiles.push(first);
+  }
+  return tiles;
+}
+
 function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challenge {
   return {
     ...challenge,
     id: `${challenge.id}-retry-${retryNumber}`,
     eyebrow: 'Wiederholung',
     helper: 'Dieses Wort war eben schwierig. Pip legt es noch einmal auf die Karte.',
-    mode: challenge.mode === 'builder' ? 'builder' : 'text',
+    mode: challenge.mode === 'builder' || challenge.mode === 'phrase' ? challenge.mode : 'text',
     retry: true,
   };
 }
@@ -127,12 +143,32 @@ function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
   const rotatedWords = rotateItems(words, dailyQuestSeed(quest.id));
   const isImageChoice = quest.gameType === 'image-choice';
   const isWordBuilder = quest.gameType === 'word-builder';
+  const isSpellOrder = quest.gameType === 'spell-order';
   const verbChallenges: Challenge[] = [];
   const deEnChallenges: Challenge[] = [];
   const enDeChallenges: Challenge[] = [];
   const writeChallenges: Challenge[] = [];
 
   for (const word of rotatedWords) {
+    if (isSpellOrder) {
+      const phraseParts = word.english.trim().split(/\s+/);
+      if (word.type !== 'vocab' || phraseParts.length < 2) continue;
+      deEnChallenges.push({
+        id: `${word.id}-spell-order`,
+        wordId: word.id,
+        eyebrow: 'Zauberspruch',
+        prompt: `Ordne den Zauberspruch für "${word.german}".`,
+        helper: 'Tippe die Wort-Kacheln in der richtigen Reihenfolge an.',
+        expected: phraseParts.join(' '),
+        acceptable: [word.english],
+        imagePath: word.imagePath,
+        imageAlt: word.imageAlt || `${word.german} / ${word.english}`,
+        answerPool: 'english',
+        mode: 'phrase',
+      });
+      continue;
+    }
+
     if (isWordBuilder) {
       if (word.type !== 'vocab' || !/^[a-zA-Z]+$/.test(word.english)) continue;
       deEnChallenges.push({
@@ -333,6 +369,7 @@ export default function Quest() {
   const isVerbAssembler = activeGameType === 'verb-assembler';
   const isImageChoice = activeGameType === 'image-choice' && current?.mode === 'choice';
   const isWordBuilder = activeGameType === 'word-builder' && current?.mode === 'builder';
+  const isSpellOrder = activeGameType === 'spell-order' && current?.mode === 'phrase';
   const verbWords = useMemo(
     () => words.filter(word => word.type === 'irregular' && word.past && word.participle),
     [words],
@@ -380,7 +417,12 @@ export default function Quest() {
     () => current && isWordBuilder ? buildLetterTiles(current.expected, current.wordId + currentIndex + questId * 3) : [],
     [current, currentIndex, isWordBuilder, questId],
   );
+  const phraseTiles = useMemo(
+    () => current && isSpellOrder ? buildPhraseTiles(current.expected, current.wordId + currentIndex + questId * 5) : [],
+    [current, currentIndex, isSpellOrder, questId],
+  );
   const builderAnswer = selectedLetterIndexes.map(index => letterTiles[index]?.letter ?? '').join('');
+  const phraseAnswer = selectedLetterIndexes.map(index => phraseTiles[index]?.word ?? '').join(' ');
   const weakWordIds = useMemo(() => Array.from(new Set(answerLog.filter(item => !item.correct).map(item => item.wordId))), [answerLog]);
   const retrySolvedCount = answerLog.filter(item => item.retry && item.correct).length;
   const weakWords = useMemo(
@@ -461,11 +503,24 @@ export default function Quest() {
     }
   };
 
+  const choosePhraseTile = async (tileIndex: number) => {
+    if (!current || result || selectedLetterIndexes.includes(tileIndex)) return;
+    const nextIndexes = [...selectedLetterIndexes, tileIndex];
+    const nextAnswer = nextIndexes.map(index => phraseTiles[index]?.word ?? '').join(' ');
+    setSelectedLetterIndexes(nextIndexes);
+    setAnswer(nextAnswer);
+    if (nextIndexes.length >= phraseTiles.length) {
+      await checkAnswer(nextAnswer);
+    }
+  };
+
   const undoLetterTile = () => {
     if (result) return;
     const nextIndexes = selectedLetterIndexes.slice(0, -1);
     setSelectedLetterIndexes(nextIndexes);
-    setAnswer(nextIndexes.map(index => letterTiles[index]?.letter ?? '').join(''));
+    setAnswer(isSpellOrder
+      ? nextIndexes.map(index => phraseTiles[index]?.word ?? '').join(' ')
+      : nextIndexes.map(index => letterTiles[index]?.letter ?? '').join(''));
   };
 
   const clearLetterTiles = () => {
@@ -820,9 +875,9 @@ export default function Quest() {
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
             <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
-              {isWordBuilder ? 'Wort-Bausteine' : isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
+              {isSpellOrder ? 'Zauberspruch ordnen' : isWordBuilder ? 'Wort-Bausteine' : isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
             </div>
-            {(isImageChoice || isWordBuilder) && current.imagePath && (
+            {(isImageChoice || isWordBuilder || isSpellOrder) && current.imagePath && (
               <div className={`mx-auto mt-5 aspect-square w-full overflow-hidden rounded-[28px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10 ${isWordBuilder ? 'max-w-[11rem]' : 'max-w-[18rem]'}`}>
                 <img
                   src={current.imagePath}
@@ -963,6 +1018,55 @@ export default function Quest() {
                 </button>
               </div>
             </div>
+          ) : isSpellOrder ? (
+            <div className="space-y-5">
+              <div className="flex min-h-24 flex-wrap items-center justify-center gap-2 rounded-[28px] border border-blue-950/10 bg-white/60 p-4 shadow-inner">
+                {current.expected.split(/\s+/).map((_, index) => (
+                  <div
+                    key={`${current.id}-phrase-slot-${index}`}
+                    className={`flex min-h-14 min-w-[5.5rem] items-center justify-center rounded-2xl border px-4 py-2 text-xl font-black shadow-inner ${phraseAnswer.split(/\s+/).filter(Boolean)[index] ? 'border-amber-500 bg-amber-100/80 text-slate-950' : 'border-blue-950/10 bg-white/60 text-blue-950/25'}`}
+                  >
+                    {phraseAnswer.split(/\s+/).filter(Boolean)[index] ?? '?'}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-3">
+                {phraseTiles.map((tile, tileIndex) => {
+                  const used = selectedLetterIndexes.includes(tileIndex);
+                  return (
+                    <button
+                      key={`${tile.word}-${tile.originalIndex}-${tileIndex}`}
+                      type="button"
+                      onClick={() => choosePhraseTile(tileIndex)}
+                      disabled={used || Boolean(result)}
+                      className={`min-h-16 rounded-2xl border px-5 py-3 text-xl font-black shadow-lg outline-none ring-blue-800/25 transition focus:ring-4 active:scale-[0.98] ${used ? 'border-blue-950/10 bg-white/40 text-blue-950/25 shadow-none' : 'border-amber-100/20 bg-blue-950 text-amber-50 shadow-blue-950/20 hover:bg-blue-900'}`}
+                    >
+                      {tile.word}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={undoLetterTile}
+                  disabled={selectedLetterIndexes.length === 0 || Boolean(result)}
+                  className="inline-flex items-center justify-center rounded-xl bg-white/70 px-4 py-3 text-sm font-black text-blue-950 transition hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Letzten Baustein zurück
+                </button>
+                <button
+                  type="button"
+                  onClick={clearLetterTiles}
+                  disabled={selectedLetterIndexes.length === 0 || Boolean(result)}
+                  className="inline-flex items-center justify-center rounded-xl bg-white/70 px-4 py-3 text-sm font-black text-blue-950 transition hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Neu legen
+                </button>
+              </div>
+            </div>
           ) : isSparkCatcher || isImageChoice ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {choiceOptions.map((option, optionIndex) => {
@@ -1038,8 +1142,18 @@ export default function Quest() {
                   {selectedLetterIndexes.length < letterTiles.length ? 'Lege die Buchstaben in die richtige Reihenfolge.' : 'Pip prüft die Bausteine.'}
                 </div>
               )
+            ) : isSpellOrder ? (
+              result ? (
+                <button type="button" onClick={next} className="gold-button w-full">
+                  Weiter
+                </button>
+              ) : (
+                <div className="w-full rounded-2xl bg-white/45 px-4 py-3 text-center text-sm font-black text-blue-950/70">
+                  {selectedLetterIndexes.length < phraseTiles.length ? 'Lege den Zauberspruch in die richtige Reihenfolge.' : 'Pip prüft den Zauberspruch.'}
+                </div>
+              )
             ) : !result ? (
-              <button type="submit" disabled={isSparkCatcher || isImageChoice || isWordBuilder || !answer.trim()} className={isSparkCatcher || isImageChoice || isWordBuilder ? 'hidden' : 'magic-button w-full'}>
+              <button type="submit" disabled={isSparkCatcher || isImageChoice || isWordBuilder || isSpellOrder || !answer.trim()} className={isSparkCatcher || isImageChoice || isWordBuilder || isSpellOrder ? 'hidden' : 'magic-button w-full'}>
                 Antwort prüfen
               </button>
             ) : (

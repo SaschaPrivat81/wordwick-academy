@@ -121,6 +121,7 @@ interface QuestRequirement {
   accepts: ('vocab' | 'irregular')[];
   requiresImage?: boolean;
   requiresSingleWord?: boolean;
+  requiresPhrase?: boolean;
 }
 
 interface WordContentRow {
@@ -167,6 +168,9 @@ function getQuestRequirement(quest: { kind: string; gameType?: string | null }):
   if (quest.gameType === 'word-builder') {
     return { label: 'einzelne Vokabeln', minWords: 2, accepts: ['vocab'], requiresSingleWord: true };
   }
+  if (quest.gameType === 'spell-order') {
+    return { label: 'Satzbausteine', minWords: 2, accepts: ['vocab'], requiresPhrase: true };
+  }
   if (quest.gameType === 'library-sorter') {
     return { label: 'Vokabeln', minWords: 4, accepts: ['vocab'] };
   }
@@ -180,6 +184,7 @@ function isEligibleQuestWord(word: WordContentRow, requirement: QuestRequirement
   if (!requirement.accepts.includes(word.type)) return false;
   if (requirement.requiresImage && !word.imagePath) return false;
   if (requirement.requiresSingleWord && !/^[a-zA-Z]+$/.test(word.english)) return false;
+  if (requirement.requiresPhrase && word.english.trim().split(/\s+/).length < 2) return false;
   return word.type !== 'irregular' || Boolean(word.past && word.participle);
 }
 
@@ -208,6 +213,7 @@ function buildQuestContentStatus(quest: { kind: string; gameType?: string | null
       accepts: requirement.accepts,
       requiresImage: requirement.requiresImage,
       requiresSingleWord: requirement.requiresSingleWord,
+      requiresPhrase: requirement.requiresPhrase,
     },
     eligibleWordCount: eligibleWords.length,
   };
@@ -1101,7 +1107,7 @@ app.delete('/api/admin/words/:id', requireAdmin, (req, res) => {
 
 app.patch('/api/admin/quests/:id', requireAdmin, (req, res) => {
   const questId = Number(req.params.id);
-  const allowedGameTypes = new Set(['spark-catcher', 'library-sorter', 'image-choice', 'word-builder', 'verb-assembler', 'text-input']);
+  const allowedGameTypes = new Set(['spark-catcher', 'library-sorter', 'image-choice', 'word-builder', 'spell-order', 'verb-assembler', 'text-input']);
   const allowedKinds = new Set(['vocab', 'verb', 'mixed']);
   const existing = db.prepare('SELECT * FROM quests WHERE id = ?').get(questId) as any;
   if (!existing) return res.status(404).json({ error: 'Quest nicht gefunden' });
