@@ -4,10 +4,11 @@ import path from 'path';
 import { db } from './db';
 import { fileURLToPath } from 'url'; 
 import Papa from 'papaparse';
+import fs from 'fs/promises';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));   
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '8mb' }));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'wordwick-academy-dev-secret',
   resave: false,
@@ -32,6 +33,13 @@ const allowedRoles = new Set(['child', 'parent', 'admin']);
 const canManageAcademy = (role: string) => role === 'parent' || role === 'admin';
 const isValidPin = (pin: unknown) => typeof pin === 'string' && /^\d{4}$/.test(pin);
 const QUEST_COMPLETION_PERCENT = 80;
+const WORD_IMAGE_DIR = path.join(__dirname, '../public/assets/word-images');
+const WORD_IMAGE_PUBLIC_PATH = '/assets/word-images';
+const allowedWordImageTypes: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+};
 const DEFAULT_QUEST_TASK_LIMITS: Record<number, number> = {
   1: 12,
   2: 4,
@@ -47,6 +55,21 @@ const DEFAULT_QUEST_TASK_LIMITS: Record<number, number> = {
 
 function defaultQuestTaskLimit(quest: { id: number; kind?: string }) {
   return DEFAULT_QUEST_TASK_LIMITS[quest.id] ?? (quest.kind === 'mixed' ? 12 : 10);
+}
+
+function slugifyFilePart(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 48) || 'word';
+}
+
+function localWordImagePath(imagePath?: string | null) {
+  if (!imagePath?.startsWith(`${WORD_IMAGE_PUBLIC_PATH}/`)) return null;
+  return path.join(WORD_IMAGE_DIR, path.basename(imagePath));
 }
 
 const importHeaderAliases = {
@@ -984,11 +1007,79 @@ app.patch('/api/admin/words/:id', requireAdmin, (req, res) => {
   res.json(saved);
 });
 
-app.delete('/api/admin/words/:id', requireAdmin, (req, res) => {
+app.post('/api/admin/words/:id/image', requireAdmin, async (req, res) => {
   const wordId = Number(req.params.id);
-  const existing = db.prepare('SELECT id FROM words WHERE id = ?').get(wordId);
+  const existing = db.prepare('SELECT * FROM words WHERE id = ?').get(wordId) as any;
   if (!existing) return res.status(404).json({ error: 'Wort nicht gefunden' });
 
+  const mimeType = typeof req.body.mimeType === 'string' ? req.body.mimeType : '';
+  const extension = allowedWordImageTypes[mimeType];
+  const rawData = typeof req.body.data === 'string' ? req.body.data : '';
+  const alt = typeof req.body.alt === 'string' && req.body.alt.trim()
+    ? req.body.alt.trim()
+    : existing.imageAlt || `${existing.german} / ${existing.english}`;
+
+  if (!extension) {
+    return res.status(400).json({ error: 'Bitte PNG, JPG oder WebP hochladen' });
+  }
+
+  const base64 = rawData.includes(',') ? rawData.split(',').pop() ?? '' : rawData;
+  if (!base64) {
+    return res.status(400).json({ error: 'Bilddaten fehlen' });
+  }
+
+  const buffer = Buffer.from(base64, 'base64');
+  if (buffer.length === 0 || buffer.length > 4 * 1024 * 1024) {
+    return res.status(400).json({ error: 'Das Bild darf maximal 4 MB groß sein' });
+  }
+
+  await fs.mkdir(WORD_IMAGE_DIR, { recursive: true });
+  const fileName = `${wordId}-${slugifyFilePart(existing.english)}-${Date.now()}.${extension}`;
+  const filePath = path.join(WORD_IMAGE_DIR, fileName);
+  await fs.writeFile(filePath, buffer);
+
+  const oldLocalPath = localWordImagePath(existing.imagePath);
+  if (oldLocalPath) {
+    await fs.unlink(oldLocalPath).catch(() => undefined);
+  }
+
+  const imagePath = `${WORD_IMAGE_PUBLIC_PATH}/${fileName}`;
+  db.prepare(`
+    UPDATE words
+    SET imagePath = ?, imageAlt = ?, imageSource = ?
+    WHERE id = ?
+  `).run(imagePath, alt, 'Admin-Upload', wordId);
+
+  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, notes FROM words WHERE id = ?')
+    .get(wordId);
+  res.json(saved);
+});
+
+app.delete('/api/admin/words/:id/image', requireAdmin, async (req, res) => {
+  const wordId = Number(req.params.id);
+  const existing = db.prepare('SELECT * FROM words WHERE id = ?').get(wordId) as any;
+  if (!existing) return res.status(404).json({ error: 'Wort nicht gefunden' });
+
+  const oldLocalPath = localWordImagePath(existing.imagePath);
+  if (oldLocalPath) {
+    await fs.unlink(oldLocalPath).catch(() => undefined);
+  }
+  db.prepare('UPDATE words SET imagePath = NULL, imageAlt = NULL, imageSource = NULL WHERE id = ?').run(wordId);
+
+  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, notes FROM words WHERE id = ?')
+    .get(wordId);
+  res.json(saved);
+});
+
+app.delete('/api/admin/words/:id', requireAdmin, (req, res) => {
+  const wordId = Number(req.params.id);
+  const existing = db.prepare('SELECT id, imagePath FROM words WHERE id = ?').get(wordId) as any;
+  if (!existing) return res.status(404).json({ error: 'Wort nicht gefunden' });
+
+  const oldLocalPath = localWordImagePath(existing.imagePath);
+  if (oldLocalPath) {
+    fs.unlink(oldLocalPath).catch(() => undefined);
+  }
   db.prepare('DELETE FROM quest_words WHERE wordId = ?').run(wordId);
   db.prepare('DELETE FROM progress WHERE wordId = ?').run(wordId);
   db.prepare('DELETE FROM words WHERE id = ?').run(wordId);
@@ -1081,6 +1172,7 @@ app.get('/api/admin/content/export', requireAdmin, (_req, res) => {
 });
 
 // ─── Static files ───
+app.use('/assets', express.static(path.join(__dirname, '../public/assets')));
 app.use(express.static(path.join(__dirname, '../dist')));
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, '../dist/index.html'));

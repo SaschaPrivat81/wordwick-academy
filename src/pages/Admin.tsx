@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Database, Download, FileText, Gift, LineChart, LockKeyhole, PackageCheck, PlusCircle, RotateCcw, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Wand2 } from 'lucide-react';
+import { BookOpen, Database, Download, FileText, Gift, Image as ImageIcon, LineChart, LockKeyhole, PackageCheck, PlusCircle, RotateCcw, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Wand2, XCircle } from 'lucide-react';
 
 interface AdminWord {
   id: number;
@@ -195,6 +195,13 @@ const emptyUserForm: UserForm = {
   pin: '',
   role: 'child',
 };
+
+const readFileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result ?? ''));
+  reader.onerror = () => reject(reader.error ?? new Error('Datei konnte nicht gelesen werden.'));
+  reader.readAsDataURL(file);
+});
 
 const emptyRewardDraft: RewardDraft = {
   title: '',
@@ -617,6 +624,54 @@ export default function Admin() {
       return;
     }
     setWordResult(`${data.german} / ${data.english} wurde gespeichert.`);
+    await loadContent();
+  };
+
+  const uploadWordImage = async (word: AdminWord, file?: File) => {
+    if (!file) return;
+    setWordResult('');
+    if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+      setWordResult('Bitte PNG, JPG oder WebP hochladen.');
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setWordResult('Das Bild darf maximal 4 MB groß sein.');
+      return;
+    }
+
+    const data = await readFileAsDataUrl(file);
+    const response = await fetch(`/api/admin/words/${word.id}/image`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        data,
+        mimeType: file.type,
+        fileName: file.name,
+        alt: word.imageAlt || `${word.german} / ${word.english}`,
+      }),
+    });
+    const saved = await response.json();
+    if (!response.ok) {
+      setWordResult(saved.error ?? 'Bild konnte nicht hochgeladen werden.');
+      return;
+    }
+    setWordResult(`Bild für ${saved.german} / ${saved.english} wurde gespeichert.`);
+    await loadContent();
+  };
+
+  const removeWordImage = async (word: AdminWord) => {
+    setWordResult('');
+    const response = await fetch(`/api/admin/words/${word.id}/image`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    const saved = await response.json();
+    if (!response.ok) {
+      setWordResult(saved.error ?? 'Bild konnte nicht entfernt werden.');
+      return;
+    }
+    setWordResult(`Bild für ${saved.german} / ${saved.english} wurde entfernt.`);
     await loadContent();
   };
 
@@ -1651,6 +1706,42 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,4
                           </label>
                         </div>
                       )}
+                      <div className="grid gap-3 rounded-2xl border border-blue-950/10 bg-blue-50/55 p-3 sm:grid-cols-[7rem_1fr] lg:grid-cols-1">
+                        <div className="flex aspect-square items-center justify-center overflow-hidden rounded-xl border border-blue-950/10 bg-white/70">
+                          {draft.imagePath ? (
+                            <img
+                              src={draft.imagePath}
+                              alt={draft.imageAlt || `${draft.german} / ${draft.english}`}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <ImageIcon className="h-8 w-8 text-blue-950/35" />
+                          )}
+                        </div>
+                        <div className="grid content-center gap-2">
+                          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-950 px-3 py-2 text-sm font-black text-amber-50 transition hover:bg-blue-800 active:scale-[0.98]">
+                            <UploadCloud className="h-4 w-4" />
+                            Bild hochladen
+                            <input
+                              type="file"
+                              accept="image/png,image/jpeg,image/webp"
+                              className="sr-only"
+                              onChange={event => {
+                                void uploadWordImage(word, event.target.files?.[0]);
+                                event.target.value = '';
+                              }}
+                            />
+                          </label>
+                          <button
+                            onClick={() => removeWordImage(word)}
+                            disabled={!draft.imagePath}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/80 px-3 py-2 text-sm font-black text-red-800 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Bild entfernen
+                          </button>
+                        </div>
+                      </div>
                       <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
                         <label>
                           <span className={labelClass}>Bildpfad</span>
