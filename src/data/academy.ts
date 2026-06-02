@@ -6,7 +6,7 @@ export interface AcademyQuest {
   subtitle: string;
   chapter: string;
   kind: QuestKind;
-  gameType?: 'spark-catcher' | 'library-sorter' | 'image-choice' | 'verb-assembler' | 'text-input';
+  gameType?: 'spark-catcher' | 'library-sorter' | 'image-choice' | 'word-builder' | 'verb-assembler' | 'text-input';
   sortOrder?: number;
   taskLimit?: number;
   x: number;

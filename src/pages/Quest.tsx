@@ -25,7 +25,7 @@ interface Challenge {
   imagePath?: string;
   imageAlt?: string;
   answerPool: 'english' | 'german' | 'verb';
-  mode: 'choice' | 'text';
+  mode: 'choice' | 'text' | 'builder';
   retry?: boolean;
 }
 
@@ -96,13 +96,29 @@ function buildChoiceOptions(expected: string, candidates: string[], seed: number
   return [...options.slice(rotation), ...options.slice(0, rotation)];
 }
 
+function buildLetterTiles(expected: string, seed: number) {
+  const letters = expected.toLowerCase().split('');
+  const tiles = letters.map((letter, index) => ({ letter, originalIndex: index }));
+  let nextSeed = seed || 1;
+  for (let index = tiles.length - 1; index > 0; index--) {
+    nextSeed = (nextSeed * 9301 + 49297) % 233280;
+    const swapIndex = nextSeed % (index + 1);
+    [tiles[index], tiles[swapIndex]] = [tiles[swapIndex], tiles[index]];
+  }
+  if (tiles.map(tile => tile.letter).join('') === expected.toLowerCase() && tiles.length > 1) {
+    const first = tiles.shift();
+    if (first) tiles.push(first);
+  }
+  return tiles;
+}
+
 function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challenge {
   return {
     ...challenge,
     id: `${challenge.id}-retry-${retryNumber}`,
     eyebrow: 'Wiederholung',
     helper: 'Dieses Wort war eben schwierig. Pip legt es noch einmal auf die Karte.',
-    mode: 'text',
+    mode: challenge.mode === 'builder' ? 'builder' : 'text',
     retry: true,
   };
 }
@@ -110,12 +126,31 @@ function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challen
 function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
   const rotatedWords = rotateItems(words, dailyQuestSeed(quest.id));
   const isImageChoice = quest.gameType === 'image-choice';
+  const isWordBuilder = quest.gameType === 'word-builder';
   const verbChallenges: Challenge[] = [];
   const deEnChallenges: Challenge[] = [];
   const enDeChallenges: Challenge[] = [];
   const writeChallenges: Challenge[] = [];
 
   for (const word of rotatedWords) {
+    if (isWordBuilder) {
+      if (word.type !== 'vocab' || !/^[a-zA-Z]+$/.test(word.english)) continue;
+      deEnChallenges.push({
+        id: `${word.id}-word-builder`,
+        wordId: word.id,
+        eyebrow: 'Wort-Bausteine',
+        prompt: `Baue das englische Wort für "${word.german}".`,
+        helper: 'Tippe die Buchstaben-Kacheln in der richtigen Reihenfolge an.',
+        expected: word.english.toLowerCase(),
+        acceptable: [word.english],
+        imagePath: word.imagePath,
+        imageAlt: word.imageAlt || `${word.german} / ${word.english}`,
+        answerPool: 'english',
+        mode: 'builder',
+      });
+      continue;
+    }
+
     if (isImageChoice) {
       if (word.type !== 'vocab' || !word.imagePath) continue;
       deEnChallenges.push({
@@ -250,6 +285,7 @@ export default function Quest() {
   const [matchedWordIds, setMatchedWordIds] = useState<number[]>([]);
   const [verbIndex, setVerbIndex] = useState(0);
   const [verbSlots, setVerbSlots] = useState<string[]>([]);
+  const [selectedLetterIndexes, setSelectedLetterIndexes] = useState<number[]>([]);
   const [completionSaved, setCompletionSaved] = useState(false);
   const [retryChallenges, setRetryChallenges] = useState<Challenge[]>([]);
   const [answerLog, setAnswerLog] = useState<AnswerLogItem[]>([]);
@@ -269,6 +305,7 @@ export default function Quest() {
     setMatchedWordIds([]);
     setVerbIndex(0);
     setVerbSlots([]);
+    setSelectedLetterIndexes([]);
     setCompletionSaved(false);
     setRetryChallenges([]);
     setAnswerLog([]);
@@ -295,6 +332,7 @@ export default function Quest() {
   const isLibrarySorter = activeGameType === 'library-sorter';
   const isVerbAssembler = activeGameType === 'verb-assembler';
   const isImageChoice = activeGameType === 'image-choice' && current?.mode === 'choice';
+  const isWordBuilder = activeGameType === 'word-builder' && current?.mode === 'builder';
   const verbWords = useMemo(
     () => words.filter(word => word.type === 'irregular' && word.past && word.participle),
     [words],
@@ -338,6 +376,11 @@ export default function Quest() {
       current.wordId + currentIndex + questId,
     );
   }, [allWords, current, currentIndex, isImageChoice, isSparkCatcher, questId, words]);
+  const letterTiles = useMemo(
+    () => current && isWordBuilder ? buildLetterTiles(current.expected, current.wordId + currentIndex + questId * 3) : [],
+    [current, currentIndex, isWordBuilder, questId],
+  );
+  const builderAnswer = selectedLetterIndexes.map(index => letterTiles[index]?.letter ?? '').join('');
   const weakWordIds = useMemo(() => Array.from(new Set(answerLog.filter(item => !item.correct).map(item => item.wordId))), [answerLog]);
   const retrySolvedCount = answerLog.filter(item => item.retry && item.correct).length;
   const weakWords = useMemo(
@@ -405,6 +448,30 @@ export default function Quest() {
     if (result) return;
     setAnswer(value);
     await checkAnswer(value);
+  };
+
+  const chooseLetterTile = async (tileIndex: number) => {
+    if (!current || result || selectedLetterIndexes.includes(tileIndex)) return;
+    const nextIndexes = [...selectedLetterIndexes, tileIndex];
+    const nextAnswer = nextIndexes.map(index => letterTiles[index]?.letter ?? '').join('');
+    setSelectedLetterIndexes(nextIndexes);
+    setAnswer(nextAnswer);
+    if (nextIndexes.length >= letterTiles.length) {
+      await checkAnswer(nextAnswer);
+    }
+  };
+
+  const undoLetterTile = () => {
+    if (result) return;
+    const nextIndexes = selectedLetterIndexes.slice(0, -1);
+    setSelectedLetterIndexes(nextIndexes);
+    setAnswer(nextIndexes.map(index => letterTiles[index]?.letter ?? '').join(''));
+  };
+
+  const clearLetterTiles = () => {
+    if (result) return;
+    setSelectedLetterIndexes([]);
+    setAnswer('');
   };
 
   const chooseLibraryGerman = (wordId: number) => {
@@ -502,6 +569,7 @@ export default function Quest() {
   const next = () => {
     setAnswer('');
     setResult(null);
+    setSelectedLetterIndexes([]);
     if (currentIndex + 1 >= activeChallenges.length) {
       completeQuest(correctCount);
     } else {
@@ -752,10 +820,10 @@ export default function Quest() {
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
             <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
-              {isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
+              {isWordBuilder ? 'Wort-Bausteine' : isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
             </div>
-            {isImageChoice && current.imagePath && (
-              <div className="mx-auto mt-5 aspect-square w-full max-w-[18rem] overflow-hidden rounded-[28px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10">
+            {(isImageChoice || isWordBuilder) && current.imagePath && (
+              <div className={`mx-auto mt-5 aspect-square w-full overflow-hidden rounded-[28px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10 ${isWordBuilder ? 'max-w-[11rem]' : 'max-w-[18rem]'}`}>
                 <img
                   src={current.imagePath}
                   alt={current.imageAlt || current.prompt}
@@ -849,6 +917,52 @@ export default function Quest() {
                 </div>
               </div>
             </div>
+          ) : isWordBuilder ? (
+            <div className="space-y-5">
+              <div className="grid grid-flow-col auto-cols-fr gap-2">
+                {current.expected.split('').map((_, index) => (
+                  <div key={`${current.id}-slot-${index}`} className={`flex min-h-20 items-center justify-center rounded-2xl border text-3xl font-black uppercase shadow-inner ${builderAnswer[index] ? 'border-amber-500 bg-amber-100/80 text-slate-950' : 'border-blue-950/10 bg-white/60 text-blue-950/25'}`}>
+                    {builderAnswer[index] ?? '?'}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
+                {letterTiles.map((tile, tileIndex) => {
+                  const used = selectedLetterIndexes.includes(tileIndex);
+                  return (
+                    <button
+                      key={`${tile.letter}-${tile.originalIndex}-${tileIndex}`}
+                      type="button"
+                      onClick={() => chooseLetterTile(tileIndex)}
+                      disabled={used || Boolean(result)}
+                      className={`min-h-16 rounded-2xl border px-3 py-3 text-3xl font-black uppercase shadow-lg outline-none ring-blue-800/25 transition focus:ring-4 active:scale-[0.98] ${used ? 'border-blue-950/10 bg-white/40 text-blue-950/25 shadow-none' : 'border-amber-100/20 bg-blue-950 text-amber-50 shadow-blue-950/20 hover:bg-blue-900'}`}
+                    >
+                      {tile.letter}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={undoLetterTile}
+                  disabled={selectedLetterIndexes.length === 0 || Boolean(result)}
+                  className="inline-flex items-center justify-center rounded-xl bg-white/70 px-4 py-3 text-sm font-black text-blue-950 transition hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Letzten Baustein zurück
+                </button>
+                <button
+                  type="button"
+                  onClick={clearLetterTiles}
+                  disabled={selectedLetterIndexes.length === 0 || Boolean(result)}
+                  className="inline-flex items-center justify-center rounded-xl bg-white/70 px-4 py-3 text-sm font-black text-blue-950 transition hover:bg-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Neu legen
+                </button>
+              </div>
+            </div>
           ) : isSparkCatcher || isImageChoice ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {choiceOptions.map((option, optionIndex) => {
@@ -914,8 +1028,18 @@ export default function Quest() {
               <div className="w-full rounded-2xl bg-white/45 px-4 py-3 text-center text-sm font-black text-blue-950/70">
                 {matchedWordIds.length >= totalTasks ? 'Alle Bücher sortiert.' : selectedGermanId ? 'Wähle jetzt den passenden englischen Buchrücken.' : 'Wähle eine deutsche Buchseite.'}
               </div>
+            ) : isWordBuilder ? (
+              result ? (
+                <button type="button" onClick={next} className="gold-button w-full">
+                  Weiter
+                </button>
+              ) : (
+                <div className="w-full rounded-2xl bg-white/45 px-4 py-3 text-center text-sm font-black text-blue-950/70">
+                  {selectedLetterIndexes.length < letterTiles.length ? 'Lege die Buchstaben in die richtige Reihenfolge.' : 'Pip prüft die Bausteine.'}
+                </div>
+              )
             ) : !result ? (
-              <button type="submit" disabled={isSparkCatcher || isImageChoice || !answer.trim()} className={isSparkCatcher || isImageChoice ? 'hidden' : 'magic-button w-full'}>
+              <button type="submit" disabled={isSparkCatcher || isImageChoice || isWordBuilder || !answer.trim()} className={isSparkCatcher || isImageChoice || isWordBuilder ? 'hidden' : 'magic-button w-full'}>
                 Antwort prüfen
               </button>
             ) : (
