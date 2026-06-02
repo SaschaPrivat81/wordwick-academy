@@ -59,6 +59,9 @@ const importHeaderAliases = {
   difficulty: ['difficulty', 'schwierigkeit', 'levelschwierigkeit'],
   past: ['past', 'pastsimple', 'simplepast', 'form2', '2form', 'zweiteform'],
   participle: ['participle', 'pastparticiple', 'form3', '3form', 'dritteform'],
+  imagePath: ['image', 'imagepath', 'imageurl', 'bild', 'bildpfad', 'bildurl', 'bild_url'],
+  imageAlt: ['imagealt', 'alttext', 'bildbeschreibung', 'beschreibungbild'],
+  imageSource: ['imagesource', 'bildquelle', 'quellebild', 'quelle'],
   level: ['level', 'quest', 'questid', 'kapitel', 'kartenlevel'],
   notes: ['notes', 'notizen', 'hinweis', 'kommentar'],
 };
@@ -76,6 +79,9 @@ interface ImportPreviewRow {
   difficulty: number;
   past: string;
   participle: string;
+  imagePath: string;
+  imageAlt: string;
+  imageSource: string;
   notes: string;
   level: number | null;
   questTitle: string | null;
@@ -193,6 +199,9 @@ function buildWordImportPreview(csv: string) {
     const difficulty = difficultyRaw ? Number(difficultyRaw) : 1;
     const past = getImportValue(row, 'past');
     const participle = getImportValue(row, 'participle');
+    const imagePath = getImportValue(row, 'imagePath');
+    const imageAlt = getImportValue(row, 'imageAlt');
+    const imageSource = getImportValue(row, 'imageSource');
     const notes = getImportValue(row, 'notes');
     const type = normalizeImportType(getImportValue(row, 'type'), past, participle);
     const levelRaw = getImportValue(row, 'level');
@@ -239,6 +248,9 @@ function buildWordImportPreview(csv: string) {
       difficulty: Number.isInteger(difficulty) ? difficulty : 1,
       past,
       participle,
+      imagePath,
+      imageAlt,
+      imageSource,
       notes,
       level: Number.isInteger(level) ? Number(level) : null,
       questTitle: targetQuest?.title ?? null,
@@ -561,8 +573,8 @@ app.post('/api/admin/words/import', requireAdmin, (req, res) => {
   }
 
   const insertWord = db.prepare(`
-    INSERT INTO words (german, english, type, category, grade, unit, difficulty, past, participle, notes, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO words (german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, notes, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const insertQuestWord = db.prepare('INSERT OR IGNORE INTO quest_words (questId, wordId, sortOrder) VALUES (?, ?, ?)');
   const nextSortOrder = db.prepare('SELECT COALESCE(MAX(sortOrder), 0) + 1 as nextOrder FROM quest_words WHERE questId = ?');
@@ -588,6 +600,9 @@ app.post('/api/admin/words/import', requireAdmin, (req, res) => {
           row.difficulty,
           row.type === 'irregular' ? row.past : null,
           row.type === 'irregular' ? row.participle : null,
+          row.imagePath || null,
+          row.imageAlt || null,
+          row.imageSource || null,
           row.notes || null,
           now,
         );
@@ -877,8 +892,8 @@ app.post('/api/admin/words', requireAdmin, (req, res) => {
 
   const now = new Date().toISOString();
   const result = db.prepare(`
-    INSERT INTO words (german, english, type, category, grade, unit, difficulty, past, participle, notes, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO words (german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, notes, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     word.german,
     word.english,
@@ -889,11 +904,14 @@ app.post('/api/admin/words', requireAdmin, (req, res) => {
     word.difficulty,
     word.past,
     word.participle,
+    word.imagePath,
+    word.imageAlt,
+    word.imageSource,
     word.notes,
     now,
   );
 
-  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, notes FROM words WHERE id = ?')
+  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, notes FROM words WHERE id = ?')
     .get(Number(result.lastInsertRowid));
   res.status(201).json(saved);
 });
@@ -908,6 +926,9 @@ function sanitizeWordInput(body: any, existing?: any) {
   const difficulty = Number.isInteger(Number(body.difficulty)) ? Number(body.difficulty) : Number(existing?.difficulty ?? 1);
   const past = typeof body.past === 'string' && body.past.trim() ? body.past.trim() : null;
   const participle = typeof body.participle === 'string' && body.participle.trim() ? body.participle.trim() : null;
+  const imagePath = typeof body.imagePath === 'string' && body.imagePath.trim() ? body.imagePath.trim() : null;
+  const imageAlt = typeof body.imageAlt === 'string' && body.imageAlt.trim() ? body.imageAlt.trim() : null;
+  const imageSource = typeof body.imageSource === 'string' && body.imageSource.trim() ? body.imageSource.trim() : null;
   const notes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null;
 
   if (!german || !english) {
@@ -931,6 +952,9 @@ function sanitizeWordInput(body: any, existing?: any) {
       difficulty,
       past: type === 'irregular' ? past : null,
       participle: type === 'irregular' ? participle : null,
+      imagePath,
+      imageAlt,
+      imageSource,
       notes,
     },
   };
@@ -951,11 +975,11 @@ app.patch('/api/admin/words/:id', requireAdmin, (req, res) => {
 
   db.prepare(`
     UPDATE words
-    SET german = ?, english = ?, type = ?, category = ?, grade = ?, unit = ?, difficulty = ?, past = ?, participle = ?, notes = ?
+    SET german = ?, english = ?, type = ?, category = ?, grade = ?, unit = ?, difficulty = ?, past = ?, participle = ?, imagePath = ?, imageAlt = ?, imageSource = ?, notes = ?
     WHERE id = ?
-  `).run(word.german, word.english, word.type, word.category, word.grade, word.unit, word.difficulty, word.past, word.participle, word.notes, wordId);
+  `).run(word.german, word.english, word.type, word.category, word.grade, word.unit, word.difficulty, word.past, word.participle, word.imagePath, word.imageAlt, word.imageSource, word.notes, wordId);
 
-  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, notes FROM words WHERE id = ?')
+  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, notes FROM words WHERE id = ?')
     .get(wordId);
   res.json(saved);
 });
@@ -1025,7 +1049,7 @@ app.delete('/api/admin/quests/:questId/words/:wordId', requireAdmin, (req, res) 
 
 app.get('/api/admin/content', requireAdmin, (_req, res) => {
   const quests = getQuests();
-  const words = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, notes FROM words ORDER BY id').all() as any[];
+  const words = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, notes FROM words ORDER BY id').all() as any[];
   const wordsById = new Map(words.map(word => [word.id, word]));
   res.json({
     quests: quests.map(quest => ({

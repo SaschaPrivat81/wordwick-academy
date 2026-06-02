@@ -12,6 +12,9 @@ interface AdminWord {
   difficulty?: number;
   past?: string;
   participle?: string;
+  imagePath?: string;
+  imageAlt?: string;
+  imageSource?: string;
   notes?: string;
 }
 
@@ -130,6 +133,9 @@ interface WordForm {
   difficulty: string;
   past: string;
   participle: string;
+  imagePath: string;
+  imageAlt: string;
+  imageSource: string;
   notes: string;
 }
 
@@ -144,6 +150,9 @@ interface ImportPreviewRow {
   difficulty: number;
   past: string;
   participle: string;
+  imagePath: string;
+  imageAlt: string;
+  imageSource: string;
   notes: string;
   level: number | null;
   questTitle: string | null;
@@ -175,6 +184,9 @@ const emptyWordForm: WordForm = {
   difficulty: '1',
   past: '',
   participle: '',
+  imagePath: '',
+  imageAlt: '',
+  imageSource: '',
   notes: '',
 };
 
@@ -341,6 +353,9 @@ export default function Admin() {
       difficulty: String(word.difficulty ?? 1),
       past: word.past ?? '',
       participle: word.participle ?? '',
+      imagePath: word.imagePath ?? '',
+      imageAlt: word.imageAlt ?? '',
+      imageSource: word.imageSource ?? '',
       notes: word.notes ?? '',
     }])));
     setQuestDrafts(Object.fromEntries(data.quests.map((quest: AdminQuest) => [quest.id, {
@@ -1353,6 +1368,20 @@ export default function Admin() {
                   </label>
                 </div>
               )}
+              <div className="grid gap-3 sm:grid-cols-3">
+                <label>
+                  <span className={labelClass}>Bildpfad</span>
+                  <input className={inputClass} value={wordForm.imagePath} placeholder="/assets/word-images/dog.png" onChange={event => updateWordForm('imagePath', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Bildbeschreibung</span>
+                  <input className={inputClass} value={wordForm.imageAlt} placeholder="Hund auf hellem Hintergrund" onChange={event => updateWordForm('imageAlt', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Bildquelle</span>
+                  <input className={inputClass} value={wordForm.imageSource} placeholder="eigener Upload" onChange={event => updateWordForm('imageSource', event.target.value)} />
+                </label>
+              </div>
               <label>
                 <span className={labelClass}>Notizen</span>
                 <textarea className={`${inputClass} min-h-20 resize-y`} value={wordForm.notes} onChange={event => updateWordForm('notes', event.target.value)} />
@@ -1409,7 +1438,7 @@ export default function Admin() {
                 </a>
               ))}
             </div>
-            <p className="mb-2 text-xs font-bold text-stone-500">Spalten: deutsch, englisch, typ, kategorie, klasse, lektion, schwierigkeit, past, participle, level, notizen</p>
+            <p className="mb-2 text-xs font-bold text-stone-500">Spalten: deutsch, englisch, typ, kategorie, klasse, lektion, schwierigkeit, past, participle, bildpfad, bildbeschreibung, bildquelle, level, notizen</p>
             <label className="mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-blue-950/20 bg-white/55 px-4 py-5 text-center text-sm font-black text-blue-950 transition hover:border-blue-700 hover:bg-blue-50/70 sm:flex-row">
               <UploadCloud className="h-5 w-5" />
               <span>CSV-Datei auswählen oder unten direkt Text einfügen</span>
@@ -1431,9 +1460,9 @@ export default function Admin() {
               }}
               rows={7}
               className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 font-mono text-sm outline-none ring-blue-800/25 focus:ring-4"
-              placeholder={`deutsch,englisch,typ,kategorie,klasse,lektion,schwierigkeit,past,participle,level,notizen
-Hund,dog,vocab,animals,3,Unit 1,1,,,1,Tierwort
-klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,4,Bewegungsphrase`}
+              placeholder={`deutsch,englisch,typ,kategorie,klasse,lektion,schwierigkeit,past,participle,bildpfad,bildbeschreibung,bildquelle,level,notizen
+Hund,dog,vocab,animals,3,Unit 1,1,,,/assets/word-images/dog.png,Hund auf hellem Hintergrund,eigener Upload,1,Tierwort
+klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,4,Bewegungsphrase`}
             />
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <button onClick={previewImport} className="magic-button w-full">
@@ -1503,6 +1532,7 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,4,B
                       <div className="text-xs font-bold text-stone-600">
                         {row.type === 'irregular' ? `Verb: ${row.english} / ${row.past || '?'} / ${row.participle || '?'}` : `Vokabel · ${row.category || 'ohne Kategorie'}`}
                         <span> · Klasse {row.grade || '-'} · {row.unit || 'ohne Lektion'} · Schwierigkeit {row.difficulty}</span>
+                        {row.imagePath && <span> · Bild vorbereitet</span>}
                         {row.level && <span> · Level {row.level}{row.questTitle ? `: ${row.questTitle}` : ''}</span>}
                       </div>
                       {row.notes && (
@@ -1542,6 +1572,9 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,4,B
                   difficulty: String(word.difficulty ?? 1),
                   past: word.past ?? '',
                   participle: word.participle ?? '',
+                  imagePath: word.imagePath ?? '',
+                  imageAlt: word.imageAlt ?? '',
+                  imageSource: word.imageSource ?? '',
                   notes: word.notes ?? '',
                 };
                 const usedInQuests = content?.quests
@@ -1618,6 +1651,20 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,4,B
                           </label>
                         </div>
                       )}
+                      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+                        <label>
+                          <span className={labelClass}>Bildpfad</span>
+                          <input className={inputClass} value={draft.imagePath} placeholder="/assets/word-images/dog.png" onChange={event => updateWordDraft(word.id, 'imagePath', event.target.value)} />
+                        </label>
+                        <label>
+                          <span className={labelClass}>Bildbeschreibung</span>
+                          <input className={inputClass} value={draft.imageAlt} onChange={event => updateWordDraft(word.id, 'imageAlt', event.target.value)} />
+                        </label>
+                        <label>
+                          <span className={labelClass}>Bildquelle</span>
+                          <input className={inputClass} value={draft.imageSource} onChange={event => updateWordDraft(word.id, 'imageSource', event.target.value)} />
+                        </label>
+                      </div>
                       <label>
                         <span className={labelClass}>Notizen</span>
                         <textarea className={`${inputClass} min-h-20 resize-y`} value={draft.notes} onChange={event => updateWordDraft(word.id, 'notes', event.target.value)} />

@@ -29,6 +29,9 @@ db.exec(`
     difficulty INTEGER NOT NULL DEFAULT 1,
     past TEXT,
     participle TEXT,
+    imagePath TEXT,
+    imageAlt TEXT,
+    imageSource TEXT,
     notes TEXT,
     createdAt TEXT NOT NULL
   );
@@ -164,6 +167,15 @@ if (!wordColumns.some(column => column.name === 'difficulty')) {
 }
 if (!wordColumns.some(column => column.name === 'notes')) {
   db.prepare("ALTER TABLE words ADD COLUMN notes TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'imagePath')) {
+  db.prepare("ALTER TABLE words ADD COLUMN imagePath TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'imageAlt')) {
+  db.prepare("ALTER TABLE words ADD COLUMN imageAlt TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'imageSource')) {
+  db.prepare("ALTER TABLE words ADD COLUMN imageSource TEXT").run();
 }
 
 // ─── Seed Demo-Daten ───
