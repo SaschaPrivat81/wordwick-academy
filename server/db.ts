@@ -508,6 +508,36 @@ if (!classThreeSeedVerbCleanup) {
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('class-three-seed-verb-cleanup-v1', 'applied')").run();
 }
 
+const wordImageCardsMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'word-image-cards-v1'").get();
+if (!wordImageCardsMigration) {
+  const wordImages = [
+    { english: 'bat', path: '/assets/word-images/wordwick-bat.jpg', alt: 'Wordwick Bildkarte: Fledermaus' },
+    { english: 'book', path: '/assets/word-images/wordwick-book.jpg', alt: 'Wordwick Bildkarte: Buch' },
+    { english: 'cat', path: '/assets/word-images/wordwick-cat.jpg', alt: 'Wordwick Bildkarte: Katze' },
+    { english: 'chair', path: '/assets/word-images/wordwick-chair.jpg', alt: 'Wordwick Bildkarte: Stuhl' },
+    { english: 'dog', path: '/assets/word-images/wordwick-dog.jpg', alt: 'Wordwick Bildkarte: Hund' },
+    { english: 'eye', path: '/assets/word-images/wordwick-eye.jpg', alt: 'Wordwick Bildkarte: Auge' },
+    { english: 'hand', path: '/assets/word-images/wordwick-hand.jpg', alt: 'Wordwick Bildkarte: Hand' },
+    { english: 'nose', path: '/assets/word-images/wordwick-nose.jpg', alt: 'Wordwick Bildkarte: Nase' },
+    { english: 'owl', path: '/assets/word-images/wordwick-owl.jpg', alt: 'Wordwick Bildkarte: Eule' },
+    { english: 'ruler', path: '/assets/word-images/wordwick-ruler.jpg', alt: 'Wordwick Bildkarte: Lineal' },
+    { english: 'scissors', path: '/assets/word-images/wordwick-scissors.jpg', alt: 'Wordwick Bildkarte: Schere' },
+    { english: 'toast', path: '/assets/word-images/wordwick-toast.jpg', alt: 'Wordwick Bildkarte: Toast' },
+  ];
+
+  for (const image of wordImages) {
+    db.prepare(`
+      UPDATE words
+      SET imagePath = ?,
+          imageAlt = ?,
+          imageSource = 'AI-generierte Wordwick Bildkarte'
+      WHERE lower(english) = ?
+        AND (imagePath IS NULL OR imagePath = '')
+    `).run(image.path, image.alt, image.english);
+  }
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('word-image-cards-v1', 'applied')").run();
+}
+
 const rewardDefaults = [
   { title: '20 Min Minecraft', description: 'Ein echtes Eltern-Fach: 20 Minuten Spielzeit nach Absprache.', kind: 'real', unlockType: 'coins', cost: 30, icon: '🎮', sortOrder: 1, requiresApproval: 1, visibility: 'visible' },
   { title: 'Eis essen gehen', description: 'Eine größere echte Belohnung für fleißig gesammelte Wortfunken.', kind: 'real', unlockType: 'coins', cost: 50, icon: '🍦', sortOrder: 2, requiresApproval: 1, visibility: 'visible' },
