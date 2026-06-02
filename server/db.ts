@@ -32,6 +32,10 @@ db.exec(`
     imagePath TEXT,
     imageAlt TEXT,
     imageSource TEXT,
+    audioPath TEXT,
+    audioText TEXT,
+    audioVoice TEXT,
+    audioSource TEXT,
     notes TEXT,
     createdAt TEXT NOT NULL
   );
@@ -176,6 +180,18 @@ if (!wordColumns.some(column => column.name === 'imageAlt')) {
 }
 if (!wordColumns.some(column => column.name === 'imageSource')) {
   db.prepare("ALTER TABLE words ADD COLUMN imageSource TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'audioPath')) {
+  db.prepare("ALTER TABLE words ADD COLUMN audioPath TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'audioText')) {
+  db.prepare("ALTER TABLE words ADD COLUMN audioText TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'audioVoice')) {
+  db.prepare("ALTER TABLE words ADD COLUMN audioVoice TEXT").run();
+}
+if (!wordColumns.some(column => column.name === 'audioSource')) {
+  db.prepare("ALTER TABLE words ADD COLUMN audioSource TEXT").run();
 }
 
 // ─── Seed Demo-Daten ───

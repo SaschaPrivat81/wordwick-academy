@@ -20,30 +20,37 @@ Wordwick Academy - CSV-Import kurz erklärt
    Beispiel für bildpfad: /assets/word-images/dog.png
    Diese Felder sind nur Vorbereitung. Der spätere Upload kann sie automatisch befüllen.
 
-7. Typen:
+7. Optionale Audiospalten:
+   audiopfad, sprechtext, stimme, audioquelle
+   Beispiel für audiopfad: /assets/word-audio/dog.mp3
+   Beispiel für sprechtext: dog
+   audioquelle kann z.B. ElevenLabs sein.
+   Diese Felder bereiten Hörverständnis und spätere Audio-Uploads vor.
+
+8. Typen:
    vocab = normale Vokabel
    irregular = unregelmäßiges Verb, aktuell eher für später gedacht
 
-8. Unregelmäßige Verben brauchen zusätzlich:
+9. Unregelmäßige Verben brauchen zusätzlich:
    past und participle
    Für den aktuellen Klasse-3-Content kannst du diese Spalten leer lassen.
 
-9. Schwierigkeit:
+10. Schwierigkeit:
    1 = leicht
    2 = mittel
    3 = knifflig
 
-10. Level-Zuordnung:
+11. Level-Zuordnung:
    In der Spalte level steht die Level-ID, nicht die Schritt-Nummer.
    Beispiel: Spark Practice Grounds ist Schritt 2, hat aber level_id 10.
 
-11. Vor dem Import immer Vorschau prüfen.
+12. Vor dem Import immer Vorschau prüfen.
    Wordwick meldet Duplikate, fehlende Verbformen und falsche Level-Zuordnungen.
 
-12. Phrasen:
+13. Phrasen:
    Kurze Satzbausteine wie "brush my teeth" oder "fly a kite" werden aktuell als vocab importiert.
    Das ist für die Minispiele stabil und passt zum Schulbuchstand.
 
-13. Importstrategie:
+14. Importstrategie:
    Am einfachsten ist eine Datei pro Lernpaket, zum Beispiel Unit 1, Unit 2 oder Phrases A.
    Du kannst Inhalte später erneut importieren. Bereits vorhandene Wörter werden übersprungen.

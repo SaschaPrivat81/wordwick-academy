@@ -12,6 +12,10 @@ interface Word {
   participle?: string;
   imagePath?: string;
   imageAlt?: string;
+  audioPath?: string;
+  audioText?: string;
+  audioVoice?: string;
+  audioSource?: string;
 }
 
 interface Challenge {

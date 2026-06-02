@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Database, Download, FileText, Gift, Image as ImageIcon, LineChart, LockKeyhole, PackageCheck, PlusCircle, RotateCcw, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Wand2, XCircle } from 'lucide-react';
+import { BookOpen, Database, Download, FileText, Gift, Image as ImageIcon, LineChart, LockKeyhole, PackageCheck, PlusCircle, RotateCcw, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Volume2, Wand2, XCircle } from 'lucide-react';
 
 interface AdminWord {
   id: number;
@@ -15,6 +15,10 @@ interface AdminWord {
   imagePath?: string;
   imageAlt?: string;
   imageSource?: string;
+  audioPath?: string;
+  audioText?: string;
+  audioVoice?: string;
+  audioSource?: string;
   notes?: string;
 }
 
@@ -139,6 +143,10 @@ interface WordForm {
   imagePath: string;
   imageAlt: string;
   imageSource: string;
+  audioPath: string;
+  audioText: string;
+  audioVoice: string;
+  audioSource: string;
   notes: string;
 }
 
@@ -156,6 +164,10 @@ interface ImportPreviewRow {
   imagePath: string;
   imageAlt: string;
   imageSource: string;
+  audioPath: string;
+  audioText: string;
+  audioVoice: string;
+  audioSource: string;
   notes: string;
   level: number | null;
   questTitle: string | null;
@@ -190,6 +202,10 @@ const emptyWordForm: WordForm = {
   imagePath: '',
   imageAlt: '',
   imageSource: '',
+  audioPath: '',
+  audioText: '',
+  audioVoice: '',
+  audioSource: '',
   notes: '',
 };
 
@@ -372,6 +388,10 @@ export default function Admin() {
       imagePath: word.imagePath ?? '',
       imageAlt: word.imageAlt ?? '',
       imageSource: word.imageSource ?? '',
+      audioPath: word.audioPath ?? '',
+      audioText: word.audioText ?? '',
+      audioVoice: word.audioVoice ?? '',
+      audioSource: word.audioSource ?? '',
       notes: word.notes ?? '',
     }])));
     setQuestDrafts(Object.fromEntries(data.quests.map((quest: AdminQuest) => [quest.id, {
@@ -1446,6 +1466,28 @@ export default function Admin() {
                   <input className={inputClass} value={wordForm.imageSource} placeholder="eigener Upload" onChange={event => updateWordForm('imageSource', event.target.value)} />
                 </label>
               </div>
+              <div className="grid gap-3 rounded-2xl border border-blue-950/10 bg-blue-50/55 p-3 sm:grid-cols-2">
+                <div className="flex items-center gap-2 text-sm font-black text-blue-950 sm:col-span-2">
+                  <Volume2 className="h-4 w-4" />
+                  Audio-Vorbereitung
+                </div>
+                <label>
+                  <span className={labelClass}>Audiopfad</span>
+                  <input className={inputClass} value={wordForm.audioPath} placeholder="/assets/word-audio/dog.mp3" onChange={event => updateWordForm('audioPath', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Sprechtext</span>
+                  <input className={inputClass} value={wordForm.audioText} placeholder={wordForm.english || 'dog'} onChange={event => updateWordForm('audioText', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Stimme</span>
+                  <input className={inputClass} value={wordForm.audioVoice} placeholder="ElevenLabs Stimme" onChange={event => updateWordForm('audioVoice', event.target.value)} />
+                </label>
+                <label>
+                  <span className={labelClass}>Audioquelle</span>
+                  <input className={inputClass} value={wordForm.audioSource} placeholder="ElevenLabs" onChange={event => updateWordForm('audioSource', event.target.value)} />
+                </label>
+              </div>
               <label>
                 <span className={labelClass}>Notizen</span>
                 <textarea className={`${inputClass} min-h-20 resize-y`} value={wordForm.notes} onChange={event => updateWordForm('notes', event.target.value)} />
@@ -1502,7 +1544,7 @@ export default function Admin() {
                 </a>
               ))}
             </div>
-            <p className="mb-2 text-xs font-bold text-stone-500">Spalten: deutsch, englisch, typ, kategorie, klasse, lektion, schwierigkeit, past, participle, bildpfad, bildbeschreibung, bildquelle, level, notizen</p>
+            <p className="mb-2 text-xs font-bold text-stone-500">Spalten: deutsch, englisch, typ, kategorie, klasse, lektion, schwierigkeit, past, participle, bildpfad, bildbeschreibung, bildquelle, audiopfad, sprechtext, stimme, audioquelle, level, notizen</p>
             <label className="mb-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-blue-950/20 bg-white/55 px-4 py-5 text-center text-sm font-black text-blue-950 transition hover:border-blue-700 hover:bg-blue-50/70 sm:flex-row">
               <UploadCloud className="h-5 w-5" />
               <span>CSV-Datei auswählen oder unten direkt Text einfügen</span>
@@ -1524,9 +1566,9 @@ export default function Admin() {
               }}
               rows={7}
               className="w-full rounded-xl border border-amber-900/15 bg-white/70 px-3 py-2 font-mono text-sm outline-none ring-blue-800/25 focus:ring-4"
-              placeholder={`deutsch,englisch,typ,kategorie,klasse,lektion,schwierigkeit,past,participle,bildpfad,bildbeschreibung,bildquelle,level,notizen
-Hund,dog,vocab,animals,3,Unit 1,1,,,/assets/word-images/dog.png,Hund auf hellem Hintergrund,eigener Upload,1,Tierwort
-klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,4,Bewegungsphrase`}
+              placeholder={`deutsch,englisch,typ,kategorie,klasse,lektion,schwierigkeit,past,participle,bildpfad,bildbeschreibung,bildquelle,audiopfad,sprechtext,stimme,audioquelle,level,notizen
+Hund,dog,vocab,animals,3,Unit 1,1,,,/assets/word-images/dog.png,Hund auf hellem Hintergrund,eigener Upload,/assets/word-audio/dog.mp3,dog,ElevenLabs Stimme,ElevenLabs,1,Tierwort
+klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,,/assets/word-audio/clap-your-hands.mp3,clap your hands,ElevenLabs Stimme,ElevenLabs,4,Bewegungsphrase`}
             />
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               <button onClick={previewImport} className="magic-button w-full">
@@ -1597,6 +1639,7 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,4
                         {row.type === 'irregular' ? `Verb: ${row.english} / ${row.past || '?'} / ${row.participle || '?'}` : `Vokabel · ${row.category || 'ohne Kategorie'}`}
                         <span> · Klasse {row.grade || '-'} · {row.unit || 'ohne Lektion'} · Schwierigkeit {row.difficulty}</span>
                         {row.imagePath && <span> · Bild vorbereitet</span>}
+                        {row.audioPath && <span> · Audio vorbereitet</span>}
                         {row.level && <span> · Level {row.level}{row.questTitle ? `: ${row.questTitle}` : ''}</span>}
                       </div>
                       {row.notes && (
@@ -1639,6 +1682,10 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,4
                   imagePath: word.imagePath ?? '',
                   imageAlt: word.imageAlt ?? '',
                   imageSource: word.imageSource ?? '',
+                  audioPath: word.audioPath ?? '',
+                  audioText: word.audioText ?? '',
+                  audioVoice: word.audioVoice ?? '',
+                  audioSource: word.audioSource ?? '',
                   notes: word.notes ?? '',
                 };
                 const usedInQuests = content?.quests
@@ -1763,6 +1810,28 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,4
                         <label>
                           <span className={labelClass}>Bildquelle</span>
                           <input className={inputClass} value={draft.imageSource} onChange={event => updateWordDraft(word.id, 'imageSource', event.target.value)} />
+                        </label>
+                      </div>
+                      <div className="grid gap-2 rounded-2xl border border-blue-950/10 bg-blue-50/55 p-3 sm:grid-cols-2 lg:grid-cols-1">
+                        <div className="flex items-center gap-2 text-sm font-black text-blue-950">
+                          <Volume2 className="h-4 w-4" />
+                          Audio-Vorbereitung
+                        </div>
+                        <label>
+                          <span className={labelClass}>Audiopfad</span>
+                          <input className={inputClass} value={draft.audioPath} placeholder="/assets/word-audio/dog.mp3" onChange={event => updateWordDraft(word.id, 'audioPath', event.target.value)} />
+                        </label>
+                        <label>
+                          <span className={labelClass}>Sprechtext</span>
+                          <input className={inputClass} value={draft.audioText} placeholder={draft.english || 'dog'} onChange={event => updateWordDraft(word.id, 'audioText', event.target.value)} />
+                        </label>
+                        <label>
+                          <span className={labelClass}>Stimme</span>
+                          <input className={inputClass} value={draft.audioVoice} placeholder="ElevenLabs Stimme" onChange={event => updateWordDraft(word.id, 'audioVoice', event.target.value)} />
+                        </label>
+                        <label>
+                          <span className={labelClass}>Audioquelle</span>
+                          <input className={inputClass} value={draft.audioSource} placeholder="ElevenLabs" onChange={event => updateWordDraft(word.id, 'audioSource', event.target.value)} />
                         </label>
                       </div>
                       <label>
