@@ -10,6 +10,8 @@ interface Word {
   type: string;
   past?: string;
   participle?: string;
+  imagePath?: string;
+  imageAlt?: string;
 }
 
 interface Challenge {
@@ -20,6 +22,8 @@ interface Challenge {
   helper: string;
   expected: string;
   acceptable: string[];
+  imagePath?: string;
+  imageAlt?: string;
   answerPool: 'english' | 'german' | 'verb';
   mode: 'choice' | 'text';
   retry?: boolean;
@@ -105,12 +109,31 @@ function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challen
 
 function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
   const rotatedWords = rotateItems(words, dailyQuestSeed(quest.id));
+  const isImageChoice = quest.gameType === 'image-choice';
   const verbChallenges: Challenge[] = [];
   const deEnChallenges: Challenge[] = [];
   const enDeChallenges: Challenge[] = [];
   const writeChallenges: Challenge[] = [];
 
   for (const word of rotatedWords) {
+    if (isImageChoice) {
+      if (word.type !== 'vocab' || !word.imagePath) continue;
+      deEnChallenges.push({
+        id: `${word.id}-image-choice`,
+        wordId: word.id,
+        eyebrow: 'Bildkarte',
+        prompt: 'Welcher englische Wortfunke passt zu diesem Bild?',
+        helper: 'Schau dir die Bildkarte genau an und wähle das passende englische Wort.',
+        expected: word.english,
+        acceptable: [word.english],
+        imagePath: word.imagePath,
+        imageAlt: word.imageAlt || `${word.german} / ${word.english}`,
+        answerPool: 'english',
+        mode: 'choice',
+      });
+      continue;
+    }
+
     if (word.type === 'irregular' && (quest.kind === 'verb' || quest.kind === 'mixed')) {
       verbChallenges.push(...[
         {
@@ -271,6 +294,7 @@ export default function Quest() {
   const activeGameType = quest?.gameType ?? (quest?.id === 1 ? 'spark-catcher' : quest?.id === 2 ? 'library-sorter' : 'text-input');
   const isLibrarySorter = activeGameType === 'library-sorter';
   const isVerbAssembler = activeGameType === 'verb-assembler';
+  const isImageChoice = activeGameType === 'image-choice' && current?.mode === 'choice';
   const verbWords = useMemo(
     () => words.filter(word => word.type === 'irregular' && word.past && word.participle),
     [words],
@@ -301,7 +325,7 @@ export default function Quest() {
   const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
   const isSparkCatcher = activeGameType === 'spark-catcher' && current?.mode === 'choice';
   const choiceOptions = useMemo(() => {
-    if (!current || !isSparkCatcher) return [];
+    if (!current || (!isSparkCatcher && !isImageChoice)) return [];
     const candidateWords = allWords.length > 0 ? allWords : words;
     const candidates = current.answerPool === 'german'
       ? candidateWords.map(word => word.german)
@@ -313,7 +337,7 @@ export default function Quest() {
       candidates,
       current.wordId + currentIndex + questId,
     );
-  }, [allWords, current, currentIndex, isSparkCatcher, questId, words]);
+  }, [allWords, current, currentIndex, isImageChoice, isSparkCatcher, questId, words]);
   const weakWordIds = useMemo(() => Array.from(new Set(answerLog.filter(item => !item.correct).map(item => item.wordId))), [answerLog]);
   const retrySolvedCount = answerLog.filter(item => item.retry && item.correct).length;
   const weakWords = useMemo(
@@ -728,8 +752,17 @@ export default function Quest() {
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
             <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
-              {isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
+              {isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
             </div>
+            {isImageChoice && current.imagePath && (
+              <div className="mx-auto mt-5 aspect-square w-full max-w-[18rem] overflow-hidden rounded-[28px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10">
+                <img
+                  src={current.imagePath}
+                  alt={current.imageAlt || current.prompt}
+                  className="h-full w-full object-cover"
+                />
+              </div>
+            )}
             <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-slate-950 sm:text-5xl">
               {isLibrarySorter ? 'Welche Buchseiten gehören zusammen?' : isVerbAssembler ? `Ordne die Formen von "${currentVerb?.german}"` : current.prompt}
             </h2>
@@ -816,7 +849,7 @@ export default function Quest() {
                 </div>
               </div>
             </div>
-          ) : isSparkCatcher ? (
+          ) : isSparkCatcher || isImageChoice ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {choiceOptions.map((option, optionIndex) => {
                 const isSelected = normalizeAnswer(answer) === normalizeAnswer(option);
@@ -833,7 +866,7 @@ export default function Quest() {
                     <span className="absolute right-3 top-3 text-amber-400/75">
                       <Sparkles className="h-4 w-4" />
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/45">Funke {optionIndex + 1}</span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/45">{isImageChoice ? 'Antwort' : 'Funke'} {optionIndex + 1}</span>
                     <span className="mt-2 block text-2xl font-black text-slate-950">{option}</span>
                   </button>
                 );
@@ -882,7 +915,7 @@ export default function Quest() {
                 {matchedWordIds.length >= totalTasks ? 'Alle Bücher sortiert.' : selectedGermanId ? 'Wähle jetzt den passenden englischen Buchrücken.' : 'Wähle eine deutsche Buchseite.'}
               </div>
             ) : !result ? (
-              <button type="submit" disabled={isSparkCatcher || !answer.trim()} className={isSparkCatcher ? 'hidden' : 'magic-button w-full'}>
+              <button type="submit" disabled={isSparkCatcher || isImageChoice || !answer.trim()} className={isSparkCatcher || isImageChoice ? 'hidden' : 'magic-button w-full'}>
                 Antwort prüfen
               </button>
             ) : (
