@@ -8,6 +8,7 @@ export interface AcademyQuest {
   kind: QuestKind;
   gameType?: 'spark-catcher' | 'library-sorter' | 'verb-assembler' | 'text-input';
   sortOrder?: number;
+  taskLimit?: number;
   x: number;
   y: number;
   sigil: string;
@@ -298,6 +299,7 @@ export const academyQuests: AcademyQuest[] = [
     kind: 'vocab',
     gameType: 'spark-catcher',
     sortOrder: 1,
+    taskLimit: 12,
     x: 64,
     y: 49,
     sigil: 'hall',
@@ -313,6 +315,7 @@ export const academyQuests: AcademyQuest[] = [
     kind: 'vocab',
     gameType: 'library-sorter',
     sortOrder: 3,
+    taskLimit: 4,
     x: 29,
     y: 78,
     sigil: 'library',
@@ -328,6 +331,7 @@ export const academyQuests: AcademyQuest[] = [
     kind: 'mixed',
     gameType: 'text-input',
     sortOrder: 6,
+    taskLimit: 10,
     x: 39,
     y: 41,
     sigil: 'brew',
@@ -343,6 +347,7 @@ export const academyQuests: AcademyQuest[] = [
     kind: 'vocab',
     gameType: 'text-input',
     sortOrder: 4,
+    taskLimit: 10,
     x: 18,
     y: 66,
     sigil: 'sky',
@@ -358,6 +363,7 @@ export const academyQuests: AcademyQuest[] = [
     kind: 'mixed',
     gameType: 'text-input',
     sortOrder: 10,
+    taskLimit: 14,
     x: 58,
     y: 20,
     sigil: 'tower',
@@ -372,6 +378,7 @@ export const academyQuests: AcademyQuest[] = [
     chapter: 'Glashaus',
     kind: 'vocab',
     sortOrder: 5,
+    taskLimit: 10,
     x: 26,
     y: 51,
     sigil: 'garden',
@@ -386,6 +393,7 @@ export const academyQuests: AcademyQuest[] = [
     chapter: 'Flüsterwald',
     kind: 'vocab',
     sortOrder: 9,
+    taskLimit: 10,
     x: 78,
     y: 28,
     sigil: 'woods',
@@ -400,6 +408,7 @@ export const academyQuests: AcademyQuest[] = [
     chapter: 'Drachenhöhle',
     kind: 'mixed',
     sortOrder: 8,
+    taskLimit: 10,
     x: 82,
     y: 52,
     sigil: 'cave',
@@ -414,6 +423,7 @@ export const academyQuests: AcademyQuest[] = [
     chapter: 'Mondsee',
     kind: 'mixed',
     sortOrder: 7,
+    taskLimit: 12,
     x: 77,
     y: 72,
     sigil: 'moonwell',
@@ -428,6 +438,7 @@ export const academyQuests: AcademyQuest[] = [
     chapter: 'Übungshof',
     kind: 'mixed',
     sortOrder: 2,
+    taskLimit: 10,
     x: 55,
     y: 83,
     sigil: 'spark',

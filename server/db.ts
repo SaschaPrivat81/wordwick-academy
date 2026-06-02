@@ -148,6 +148,9 @@ const addedGameTypeColumn = !questColumns.some(column => column.name === 'gameTy
 if (addedGameTypeColumn) {
   db.prepare("ALTER TABLE quests ADD COLUMN gameType TEXT NOT NULL DEFAULT 'text-input'").run();
 }
+if (!questColumns.some(column => column.name === 'taskLimit')) {
+  db.prepare('ALTER TABLE quests ADD COLUMN taskLimit INTEGER').run();
+}
 
 const wordColumns = db.prepare('PRAGMA table_info(words)').all() as { name: string }[];
 if (!wordColumns.some(column => column.name === 'grade')) {
@@ -388,6 +391,28 @@ if (!sparkPracticeMigration) {
     'Auf dem Übungshof lernt Pip mit dir, wie Wortfunken ruhig bleiben, bevor der Pfad weiterleuchtet.',
   );
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('spark-practice-grounds-v1', 'applied')").run();
+}
+
+const taskLimitsMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'quest-task-limits-v1'").get();
+if (!taskLimitsMigration) {
+  const taskLimits = [
+    { id: 1, taskLimit: 12 },
+    { id: 2, taskLimit: 4 },
+    { id: 3, taskLimit: 10 },
+    { id: 4, taskLimit: 10 },
+    { id: 5, taskLimit: 14 },
+    { id: 6, taskLimit: 10 },
+    { id: 7, taskLimit: 10 },
+    { id: 8, taskLimit: 10 },
+    { id: 9, taskLimit: 12 },
+    { id: 10, taskLimit: 10 },
+  ];
+
+  for (const quest of taskLimits) {
+    db.prepare('UPDATE quests SET taskLimit = ? WHERE id = ? AND taskLimit IS NULL')
+      .run(quest.taskLimit, quest.id);
+  }
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('quest-task-limits-v1', 'applied')").run();
 }
 
 const classThreePhraseLevelsMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'class-three-phrase-levels-v1'").get();

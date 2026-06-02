@@ -23,6 +23,7 @@ interface AdminQuest {
   kind: string;
   gameType?: string;
   sortOrder?: number;
+  taskLimit?: number;
   reward?: string;
   guide: string;
   words: number[];
@@ -348,6 +349,7 @@ export default function Admin() {
       chapter: quest.chapter,
       kind: quest.kind,
       gameType: quest.gameType ?? 'text-input',
+      taskLimit: quest.taskLimit,
       reward: quest.reward ?? '',
       guide: quest.guide,
     }])));
@@ -664,7 +666,7 @@ export default function Admin() {
     await loadContent();
   };
 
-  const updateQuestDraft = (questId: number, field: keyof AdminQuest, value: string) => {
+  const updateQuestDraft = (questId: number, field: keyof AdminQuest, value: AdminQuest[keyof AdminQuest]) => {
     setQuestDrafts(current => ({
       ...current,
       [questId]: { ...current[questId], [field]: value },
@@ -1130,13 +1132,14 @@ export default function Admin() {
               </a>
             </div>
             <div className="overflow-auto">
-              <table className="w-full min-w-[760px] text-left text-xs font-bold">
+              <table className="w-full min-w-[880px] text-left text-xs font-bold">
                 <thead className="bg-blue-950/5 text-[10px] uppercase tracking-[0.14em] text-blue-950/60">
                   <tr>
                     <th className="px-4 py-3">Schritt</th>
                     <th className="px-4 py-3">Level</th>
                     <th className="px-4 py-3">Rolle</th>
                     <th className="px-4 py-3">Content</th>
+                    <th className="px-4 py-3">Runde</th>
                     <th className="px-4 py-3">Mini-Game</th>
                     <th className="px-4 py-3">Status</th>
                   </tr>
@@ -1155,9 +1158,10 @@ export default function Admin() {
                         <td className="px-4 py-3">
                           <div>{kindLabels[quest.kind] ?? quest.kind}</div>
                           <div className="mt-1 text-[11px] text-stone-500">
-                            min. {contentStatus.requirement.minWords} · {contentStatus.requirement.label}
+                            {contentStatus.eligibleWordCount} passend · min. {contentStatus.requirement.minWords}
                           </div>
                         </td>
+                        <td className="px-4 py-3 text-stone-700">{quest.taskLimit ?? 'Standard'} Aufgaben</td>
                         <td className="px-4 py-3 text-stone-700">{gameTypes.find(([value]) => value === quest.gameType)?.[1] ?? 'Texteingabe'}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${contentStatus.ready ? 'bg-blue-100 text-blue-950' : 'bg-amber-100 text-amber-900'}`}>
@@ -1177,11 +1181,12 @@ export default function Admin() {
               const draft = questDrafts[quest.id] ?? quest;
               const availableWords = (content?.words ?? []).filter(word => !quest.words.includes(word.id));
               const contentStatus = contentStatusForQuest(quest);
+              const roundLimit = draft.taskLimit ?? quest.taskLimit ?? 'Standard';
               return (
                 <div key={quest.id} className="rounded-2xl border border-amber-900/10 bg-white/60 p-4">
                   <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                     <div className="text-xs font-black uppercase tracking-[0.14em] text-blue-950/55">
-                      {contentStatus.eligibleWordCount}/{contentStatus.requirement.minWords} passende Inhalte · {contentStatus.requirement.label} · {gameTypes.find(([value]) => value === (draft.gameType ?? quest.gameType))?.[1] ?? 'Spieltyp'}
+                      {contentStatus.eligibleWordCount}/{contentStatus.requirement.minWords} passende Inhalte · {roundLimit} Aufgaben/Runde · {gameTypes.find(([value]) => value === (draft.gameType ?? quest.gameType))?.[1] ?? 'Spieltyp'}
                     </div>
                     <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${contentStatus.ready ? 'bg-blue-100 text-blue-950' : 'bg-amber-100 text-amber-900'}`}>
                       {contentStatus.ready ? 'Spielbereit' : 'Prüfen'}
@@ -1222,6 +1227,17 @@ export default function Admin() {
                       <select className={inputClass} value={draft.gameType ?? 'text-input'} onChange={event => updateQuestDraft(quest.id, 'gameType', event.target.value)}>
                         {gameTypes.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
+                    </label>
+                    <label>
+                      <span className={labelClass}>Aufgaben pro Runde</span>
+                      <input
+                        className={inputClass}
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={draft.taskLimit ?? quest.taskLimit ?? ''}
+                        onChange={event => updateQuestDraft(quest.id, 'taskLimit', event.target.value === '' ? undefined : Number(event.target.value))}
+                      />
                     </label>
                   </div>
 

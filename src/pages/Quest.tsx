@@ -65,6 +65,9 @@ function dailyQuestSeed(questId: number) {
 }
 
 function questTaskLimit(quest: AcademyQuest) {
+  if (Number.isInteger(quest.taskLimit) && Number(quest.taskLimit) > 0) {
+    return Math.min(30, Number(quest.taskLimit));
+  }
   return QUEST_TASK_LIMITS[quest.id] ?? (quest.kind === 'mixed' ? 12 : 10);
 }
 

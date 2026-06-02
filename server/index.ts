@@ -32,6 +32,22 @@ const allowedRoles = new Set(['child', 'parent', 'admin']);
 const canManageAcademy = (role: string) => role === 'parent' || role === 'admin';
 const isValidPin = (pin: unknown) => typeof pin === 'string' && /^\d{4}$/.test(pin);
 const QUEST_COMPLETION_PERCENT = 80;
+const DEFAULT_QUEST_TASK_LIMITS: Record<number, number> = {
+  1: 12,
+  2: 4,
+  3: 10,
+  4: 10,
+  5: 14,
+  6: 10,
+  7: 10,
+  8: 10,
+  9: 12,
+  10: 10,
+};
+
+function defaultQuestTaskLimit(quest: { id: number; kind?: string }) {
+  return DEFAULT_QUEST_TASK_LIMITS[quest.id] ?? (quest.kind === 'mixed' ? 12 : 10);
+}
 
 const importHeaderAliases = {
   german: ['german', 'deutsch', 'de'],
@@ -316,6 +332,7 @@ function getQuests() {
 
   return quests.map(quest => ({
     ...quest,
+    taskLimit: quest.taskLimit ?? defaultQuestTaskLimit(quest),
     words: wordsByQuest.get(quest.id) ?? [],
     contentStatus: buildQuestContentStatus(quest, wordDetailsByQuest.get(quest.id) ?? []),
   }));
@@ -966,18 +983,24 @@ app.patch('/api/admin/quests/:id', requireAdmin, (req, res) => {
   const chapter = req.body.chapter?.trim();
   const kind = allowedKinds.has(req.body.kind) ? req.body.kind : existing.kind;
   const gameType = allowedGameTypes.has(req.body.gameType) ? req.body.gameType : existing.gameType;
+  const taskLimit = req.body.taskLimit === undefined || req.body.taskLimit === ''
+    ? existing.taskLimit ?? defaultQuestTaskLimit(existing)
+    : Number(req.body.taskLimit);
   const reward = typeof req.body.reward === 'string' ? req.body.reward.trim() : existing.reward;
   const guide = req.body.guide?.trim();
 
   if (!title || !subtitle || !chapter || !guide) {
     return res.status(400).json({ error: 'Titel, Untertitel, Kapitel und Pips Hinweis sind Pflichtfelder' });
   }
+  if (!Number.isInteger(taskLimit) || taskLimit < 1 || taskLimit > 30) {
+    return res.status(400).json({ error: 'Aufgaben pro Runde müssen zwischen 1 und 30 liegen' });
+  }
 
   db.prepare(`
     UPDATE quests
-    SET title = ?, subtitle = ?, chapter = ?, kind = ?, gameType = ?, reward = ?, guide = ?
+    SET title = ?, subtitle = ?, chapter = ?, kind = ?, gameType = ?, taskLimit = ?, reward = ?, guide = ?
     WHERE id = ?
-  `).run(title, subtitle, chapter, kind, gameType, reward, guide, questId);
+  `).run(title, subtitle, chapter, kind, gameType, Math.floor(taskLimit), reward, guide, questId);
 
   res.json(getQuests().find(item => item.id === questId));
 });
