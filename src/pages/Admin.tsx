@@ -43,6 +43,7 @@ interface AdminQuest {
       minWords: number;
       accepts: ('vocab' | 'irregular')[];
       requiresImage?: boolean;
+      requiresAudio?: boolean;
       requiresSingleWord?: boolean;
       requiresPhrase?: boolean;
     };
@@ -275,6 +276,7 @@ const gameTypes = [
   ['spark-catcher', 'Wortfunken fangen'],
   ['library-sorter', 'Bücherregal sortieren'],
   ['image-choice', 'Bildkarte erkennen'],
+  ['audio-choice', 'Hörzauber'],
   ['word-builder', 'Wort-Bausteine'],
   ['spell-order', 'Zauberspruch ordnen'],
   ['verb-assembler', 'Verbsteine ordnen (später)'],
@@ -313,7 +315,7 @@ function contentStatusForQuest(quest: AdminQuest) {
   return quest.contentStatus ?? {
     ready: quest.words.length > 0,
     issues: quest.words.length > 0 ? [] : ['Noch kein Inhalt zugeordnet'],
-    requirement: { label: 'Inhalte', minWords: 1, accepts: ['vocab', 'irregular'], requiresImage: false, requiresSingleWord: false, requiresPhrase: false },
+    requirement: { label: 'Inhalte', minWords: 1, accepts: ['vocab', 'irregular'], requiresImage: false, requiresAudio: false, requiresSingleWord: false, requiresPhrase: false },
     eligibleWordCount: quest.words.length,
   };
 }
@@ -322,6 +324,7 @@ function questRole(quest: AdminQuest) {
   if (quest.id === 1) return 'Startlevel';
   if (quest.gameType === 'library-sorter') return 'Sortierübung';
   if (quest.gameType === 'image-choice') return 'Bildtraining';
+  if (quest.gameType === 'audio-choice') return 'Hörzauber';
   if (quest.gameType === 'word-builder') return 'Wort-Bausteine';
   if (quest.gameType === 'spell-order') return 'Zauberspruch';
   if (quest.gameType === 'verb-assembler') return 'Verbtraining (später)';

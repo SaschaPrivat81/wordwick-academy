@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, CheckCircle2, PlayCircle, RotateCcw, Sparkles, XCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, PlayCircle, RotateCcw, Sparkles, Volume2, XCircle } from 'lucide-react';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, getUnlockedStorySceneAfterQuest, normalizeAnswer } from '../data/academy';
 
 interface Word {
@@ -28,6 +28,10 @@ interface Challenge {
   acceptable: string[];
   imagePath?: string;
   imageAlt?: string;
+  audioPath?: string;
+  audioText?: string;
+  audioVoice?: string;
+  audioSource?: string;
   answerPool: 'english' | 'german' | 'verb';
   mode: 'choice' | 'text' | 'builder' | 'phrase';
   retry?: boolean;
@@ -138,7 +142,7 @@ function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challen
     id: `${challenge.id}-retry-${retryNumber}`,
     eyebrow: 'Wiederholung',
     helper: 'Dieses Wort war eben schwierig. Pip legt es noch einmal auf die Karte.',
-    mode: challenge.mode === 'builder' || challenge.mode === 'phrase' ? challenge.mode : 'text',
+    mode: challenge.audioPath || challenge.mode === 'builder' || challenge.mode === 'phrase' ? challenge.mode : 'text',
     retry: true,
   };
 }
@@ -146,6 +150,7 @@ function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challen
 function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
   const rotatedWords = rotateItems(words, dailyQuestSeed(quest.id));
   const isImageChoice = quest.gameType === 'image-choice';
+  const isAudioChoice = quest.gameType === 'audio-choice';
   const isWordBuilder = quest.gameType === 'word-builder';
   const isSpellOrder = quest.gameType === 'spell-order';
   const verbChallenges: Challenge[] = [];
@@ -203,6 +208,28 @@ function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
         acceptable: [word.english],
         imagePath: word.imagePath,
         imageAlt: word.imageAlt || `${word.german} / ${word.english}`,
+        answerPool: 'english',
+        mode: 'choice',
+      });
+      continue;
+    }
+
+    if (isAudioChoice) {
+      if (word.type !== 'vocab' || !word.audioPath) continue;
+      deEnChallenges.push({
+        id: `${word.id}-audio-choice`,
+        wordId: word.id,
+        eyebrow: 'Hörzauber',
+        prompt: 'Welcher Wortfunke wurde gesprochen?',
+        helper: 'Tippe auf das Ohr, hör genau hin und wähle die passende Antwortkarte.',
+        expected: word.english,
+        acceptable: [word.english],
+        imagePath: word.imagePath,
+        imageAlt: word.imageAlt || `${word.german} / ${word.english}`,
+        audioPath: word.audioPath,
+        audioText: word.audioText || word.english,
+        audioVoice: word.audioVoice,
+        audioSource: word.audioSource,
         answerPool: 'english',
         mode: 'choice',
       });
@@ -372,6 +399,7 @@ export default function Quest() {
   const isLibrarySorter = activeGameType === 'library-sorter';
   const isVerbAssembler = activeGameType === 'verb-assembler';
   const isImageChoice = activeGameType === 'image-choice' && current?.mode === 'choice';
+  const isAudioChoice = activeGameType === 'audio-choice' && current?.mode === 'choice';
   const isWordBuilder = activeGameType === 'word-builder' && current?.mode === 'builder';
   const isSpellOrder = activeGameType === 'spell-order' && current?.mode === 'phrase';
   const verbWords = useMemo(
@@ -404,7 +432,7 @@ export default function Quest() {
   const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
   const isSparkCatcher = activeGameType === 'spark-catcher' && current?.mode === 'choice';
   const choiceOptions = useMemo(() => {
-    if (!current || (!isSparkCatcher && !isImageChoice)) return [];
+    if (!current || (!isSparkCatcher && !isImageChoice && !isAudioChoice)) return [];
     const candidateWords = allWords.length > 0 ? allWords : words;
     const candidates = current.answerPool === 'german'
       ? candidateWords.map(word => word.german)
@@ -416,7 +444,11 @@ export default function Quest() {
       candidates,
       current.wordId + currentIndex + questId,
     );
-  }, [allWords, current, currentIndex, isImageChoice, isSparkCatcher, questId, words]);
+  }, [allWords, current, currentIndex, isAudioChoice, isImageChoice, isSparkCatcher, questId, words]);
+  const choiceOptionWords = useMemo(() => {
+    const candidateWords = allWords.length > 0 ? allWords : words;
+    return new Map(candidateWords.map(word => [normalizeAnswer(word.english), word]));
+  }, [allWords, words]);
   const letterTiles = useMemo(
     () => current && isWordBuilder ? buildLetterTiles(current.expected, current.wordId + currentIndex + questId * 3) : [],
     [current, currentIndex, isWordBuilder, questId],
@@ -879,7 +911,7 @@ export default function Quest() {
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
             <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
-              {isSpellOrder ? 'Zauberspruch ordnen' : isWordBuilder ? 'Wort-Bausteine' : isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
+              {isSpellOrder ? 'Zauberspruch ordnen' : isWordBuilder ? 'Wort-Bausteine' : isAudioChoice ? 'Hörzauber' : isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
             </div>
             {(isImageChoice || isWordBuilder || isSpellOrder) && current.imagePath && (
               <div className={`mx-auto mt-5 aspect-square w-full overflow-hidden rounded-[28px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10 ${isWordBuilder ? 'max-w-[11rem]' : 'max-w-[18rem]'}`}>
@@ -888,6 +920,19 @@ export default function Quest() {
                   alt={current.imageAlt || current.prompt}
                   className="h-full w-full object-cover"
                 />
+              </div>
+            )}
+            {isAudioChoice && current.audioPath && (
+              <div className="mx-auto mt-5 grid max-w-xl gap-4 rounded-[28px] border border-blue-950/10 bg-blue-950 px-5 py-5 text-amber-50 shadow-lg shadow-blue-950/20">
+                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-amber-100/20 bg-white/10">
+                  <Volume2 className="h-10 w-10" />
+                </div>
+                <audio controls src={current.audioPath} className="w-full">
+                  <a href={current.audioPath}>Audio öffnen</a>
+                </audio>
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-amber-100/70">
+                  Hör genau hin
+                </div>
               </div>
             )}
             <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-slate-950 sm:text-5xl">
@@ -1071,12 +1116,13 @@ export default function Quest() {
                 </button>
               </div>
             </div>
-          ) : isSparkCatcher || isImageChoice ? (
+          ) : isSparkCatcher || isImageChoice || isAudioChoice ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {choiceOptions.map((option, optionIndex) => {
                 const isSelected = normalizeAnswer(answer) === normalizeAnswer(option);
                 const isExpected = result && normalizeAnswer(option) === normalizeAnswer(result.expected);
                 const isWrongPick = result && isSelected && !result.correct;
+                const optionWord = choiceOptionWords.get(normalizeAnswer(option));
                 return (
                   <button
                     key={option}
@@ -1088,7 +1134,16 @@ export default function Quest() {
                     <span className="absolute right-3 top-3 text-amber-400/75">
                       <Sparkles className="h-4 w-4" />
                     </span>
-                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/45">{isImageChoice ? 'Antwort' : 'Funke'} {optionIndex + 1}</span>
+                    {isAudioChoice && optionWord?.imagePath && (
+                      <span className="mx-auto mb-3 block aspect-square w-full max-w-28 overflow-hidden rounded-2xl border border-blue-950/10 bg-blue-50">
+                        <img
+                          src={optionWord.imagePath}
+                          alt={optionWord.imageAlt || `${optionWord.german} / ${optionWord.english}`}
+                          className="h-full w-full object-cover"
+                        />
+                      </span>
+                    )}
+                    <span className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/45">{isAudioChoice ? 'Hörkarte' : isImageChoice ? 'Antwort' : 'Funke'} {optionIndex + 1}</span>
                     <span className="mt-2 block text-2xl font-black text-slate-950">{option}</span>
                   </button>
                 );
@@ -1157,7 +1212,7 @@ export default function Quest() {
                 </div>
               )
             ) : !result ? (
-              <button type="submit" disabled={isSparkCatcher || isImageChoice || isWordBuilder || isSpellOrder || !answer.trim()} className={isSparkCatcher || isImageChoice || isWordBuilder || isSpellOrder ? 'hidden' : 'magic-button w-full'}>
+              <button type="submit" disabled={isSparkCatcher || isImageChoice || isAudioChoice || isWordBuilder || isSpellOrder || !answer.trim()} className={isSparkCatcher || isImageChoice || isAudioChoice || isWordBuilder || isSpellOrder ? 'hidden' : 'magic-button w-full'}>
                 Antwort prüfen
               </button>
             ) : (

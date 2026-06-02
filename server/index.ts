@@ -145,6 +145,7 @@ interface QuestRequirement {
   minWords: number;
   accepts: ('vocab' | 'irregular')[];
   requiresImage?: boolean;
+  requiresAudio?: boolean;
   requiresSingleWord?: boolean;
   requiresPhrase?: boolean;
 }
@@ -156,6 +157,7 @@ interface WordContentRow {
   past?: string | null;
   participle?: string | null;
   imagePath?: string | null;
+  audioPath?: string | null;
 }
 
 function normalizeImportHeader(value: string) {
@@ -190,6 +192,9 @@ function getQuestRequirement(quest: { kind: string; gameType?: string | null }):
   if (quest.gameType === 'image-choice') {
     return { label: 'Vokabeln mit Bild', minWords: 4, accepts: ['vocab'], requiresImage: true };
   }
+  if (quest.gameType === 'audio-choice') {
+    return { label: 'Vokabeln mit Audio', minWords: 4, accepts: ['vocab'], requiresAudio: true };
+  }
   if (quest.gameType === 'word-builder') {
     return { label: 'einzelne Vokabeln', minWords: 2, accepts: ['vocab'], requiresSingleWord: true };
   }
@@ -208,6 +213,7 @@ function getQuestRequirement(quest: { kind: string; gameType?: string | null }):
 function isEligibleQuestWord(word: WordContentRow, requirement: QuestRequirement) {
   if (!requirement.accepts.includes(word.type)) return false;
   if (requirement.requiresImage && !word.imagePath) return false;
+  if (requirement.requiresAudio && !word.audioPath) return false;
   if (requirement.requiresSingleWord && !/^[a-zA-Z]+$/.test(word.english)) return false;
   if (requirement.requiresPhrase && word.english.trim().split(/\s+/).length < 2) return false;
   return word.type !== 'irregular' || Boolean(word.past && word.participle);
@@ -237,6 +243,7 @@ function buildQuestContentStatus(quest: { kind: string; gameType?: string | null
       minWords: requirement.minWords,
       accepts: requirement.accepts,
       requiresImage: requirement.requiresImage,
+      requiresAudio: requirement.requiresAudio,
       requiresSingleWord: requirement.requiresSingleWord,
       requiresPhrase: requirement.requiresPhrase,
     },
@@ -293,7 +300,7 @@ function buildWordImportPreview(csv: string) {
     const targetQuest = Number.isInteger(level) ? questsById.get(Number(level)) : null;
     if (targetQuest) {
       const requirement = getQuestRequirement(targetQuest);
-      const previewWord = { id: 0, english, type, past, participle, imagePath };
+      const previewWord = { id: 0, english, type, past, participle, imagePath, audioPath };
       if (!isEligibleQuestWord(previewWord, requirement)) {
         errors.push(`Passt nicht zu Level ${targetQuest.id}: erwartet ${requirement.label}`);
       }
@@ -400,7 +407,7 @@ app.get('/api/words/:id', requirePin, (req, res) => {
 function getQuests() {
   const quests = db.prepare('SELECT * FROM quests ORDER BY sortOrder, id').all() as any[];
   const rows = db.prepare(`
-    SELECT qw.questId, qw.wordId, w.english, w.type, w.past, w.participle, w.imagePath
+    SELECT qw.questId, qw.wordId, w.english, w.type, w.past, w.participle, w.imagePath, w.audioPath
     FROM quest_words qw
     JOIN words w ON w.id = qw.wordId
     ORDER BY qw.sortOrder, qw.wordId
@@ -413,7 +420,7 @@ function getQuests() {
     wordsByQuest.set(row.questId, words);
 
     const wordDetails = wordDetailsByQuest.get(row.questId) ?? [];
-    wordDetails.push({ id: row.wordId, english: row.english, type: row.type, past: row.past, participle: row.participle, imagePath: row.imagePath });
+    wordDetails.push({ id: row.wordId, english: row.english, type: row.type, past: row.past, participle: row.participle, imagePath: row.imagePath, audioPath: row.audioPath });
     wordDetailsByQuest.set(row.questId, wordDetails);
   }
 
@@ -1230,7 +1237,7 @@ app.delete('/api/admin/words/:id', requireAdmin, (req, res) => {
 
 app.patch('/api/admin/quests/:id', requireAdmin, (req, res) => {
   const questId = Number(req.params.id);
-  const allowedGameTypes = new Set(['spark-catcher', 'library-sorter', 'image-choice', 'word-builder', 'spell-order', 'verb-assembler', 'text-input']);
+  const allowedGameTypes = new Set(['spark-catcher', 'library-sorter', 'image-choice', 'audio-choice', 'word-builder', 'spell-order', 'verb-assembler', 'text-input']);
   const allowedKinds = new Set(['vocab', 'verb', 'mixed']);
   const existing = db.prepare('SELECT * FROM quests WHERE id = ?').get(questId) as any;
   if (!existing) return res.status(404).json({ error: 'Quest nicht gefunden' });
