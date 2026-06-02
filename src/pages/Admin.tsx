@@ -704,6 +704,58 @@ export default function Admin() {
     await loadContent();
   };
 
+  const uploadWordAudio = async (word: AdminWord, file?: File) => {
+    if (!file) return;
+    const draft = wordDrafts[word.id];
+    setWordResult('');
+    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/wav', 'audio/x-wav', 'audio/ogg'];
+    if (!allowedTypes.includes(file.type)) {
+      setWordResult('Bitte MP3, M4A, AAC, WAV oder OGG hochladen.');
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setWordResult('Die Audiodatei darf maximal 8 MB groß sein.');
+      return;
+    }
+
+    const data = await readFileAsDataUrl(file);
+    const response = await fetch(`/api/admin/words/${word.id}/audio`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        data,
+        mimeType: file.type,
+        fileName: file.name,
+        audioText: draft?.audioText || word.audioText || word.english,
+        audioVoice: draft?.audioVoice || word.audioVoice || '',
+        audioSource: draft?.audioSource || word.audioSource || 'Admin-Upload',
+      }),
+    });
+    const saved = await response.json();
+    if (!response.ok) {
+      setWordResult(saved.error ?? 'Audio konnte nicht hochgeladen werden.');
+      return;
+    }
+    setWordResult(`Audio für ${saved.german} / ${saved.english} wurde gespeichert.`);
+    await loadContent();
+  };
+
+  const removeWordAudio = async (word: AdminWord) => {
+    setWordResult('');
+    const response = await fetch(`/api/admin/words/${word.id}/audio`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    const saved = await response.json();
+    if (!response.ok) {
+      setWordResult(saved.error ?? 'Audio konnte nicht entfernt werden.');
+      return;
+    }
+    setWordResult(`Audio für ${saved.german} / ${saved.english} wurde entfernt.`);
+    await loadContent();
+  };
+
   const deleteWord = async (wordId: number) => {
     setWordResult('');
     const word = content?.words.find(item => item.id === wordId);
@@ -1816,6 +1868,38 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,,
                         <div className="flex items-center gap-2 text-sm font-black text-blue-950">
                           <Volume2 className="h-4 w-4" />
                           Audio-Vorbereitung
+                        </div>
+                        {draft.audioPath ? (
+                          <audio controls src={draft.audioPath} className="w-full sm:col-span-2 lg:col-span-1">
+                            <a href={draft.audioPath}>Audio öffnen</a>
+                          </audio>
+                        ) : (
+                          <div className="rounded-xl border border-blue-950/10 bg-white/65 px-3 py-2 text-xs font-bold text-blue-950/55 sm:col-span-2 lg:col-span-1">
+                            Noch keine Audiodatei
+                          </div>
+                        )}
+                        <div className="grid gap-2 sm:col-span-2 sm:grid-cols-2 lg:col-span-1 lg:grid-cols-1">
+                          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-950 px-3 py-2 text-sm font-black text-amber-50 transition hover:bg-blue-800 active:scale-[0.98]">
+                            <UploadCloud className="h-4 w-4" />
+                            Audio hochladen
+                            <input
+                              type="file"
+                              accept="audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/x-wav,audio/ogg"
+                              className="sr-only"
+                              onChange={event => {
+                                void uploadWordAudio(word, event.target.files?.[0]);
+                                event.target.value = '';
+                              }}
+                            />
+                          </label>
+                          <button
+                            onClick={() => removeWordAudio(word)}
+                            disabled={!draft.audioPath}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/80 px-3 py-2 text-sm font-black text-red-800 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            Audio entfernen
+                          </button>
                         </div>
                         <label>
                           <span className={labelClass}>Audiopfad</span>

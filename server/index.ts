@@ -8,7 +8,7 @@ import fs from 'fs/promises';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));   
 const app = express();
-app.use(express.json({ limit: '8mb' }));
+app.use(express.json({ limit: '14mb' }));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'wordwick-academy-dev-secret',
   resave: false,
@@ -35,10 +35,22 @@ const isValidPin = (pin: unknown) => typeof pin === 'string' && /^\d{4}$/.test(p
 const QUEST_COMPLETION_PERCENT = 80;
 const WORD_IMAGE_DIR = path.join(__dirname, '../public/assets/word-images');
 const WORD_IMAGE_PUBLIC_PATH = '/assets/word-images';
+const WORD_AUDIO_DIR = path.join(__dirname, '../public/assets/word-audio');
+const WORD_AUDIO_PUBLIC_PATH = '/assets/word-audio';
 const allowedWordImageTypes: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
   'image/webp': 'webp',
+};
+const allowedWordAudioTypes: Record<string, string> = {
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/mp4': 'm4a',
+  'audio/x-m4a': 'm4a',
+  'audio/aac': 'aac',
+  'audio/wav': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/ogg': 'ogg',
 };
 const DEFAULT_QUEST_TASK_LIMITS: Record<number, number> = {
   1: 12,
@@ -70,6 +82,11 @@ function slugifyFilePart(value: string) {
 function localWordImagePath(imagePath?: string | null) {
   if (!imagePath?.startsWith(`${WORD_IMAGE_PUBLIC_PATH}/`)) return null;
   return path.join(WORD_IMAGE_DIR, path.basename(imagePath));
+}
+
+function localWordAudioPath(audioPath?: string | null) {
+  if (!audioPath?.startsWith(`${WORD_AUDIO_PUBLIC_PATH}/`)) return null;
+  return path.join(WORD_AUDIO_DIR, path.basename(audioPath));
 }
 
 const importHeaderAliases = {
@@ -1122,14 +1139,88 @@ app.delete('/api/admin/words/:id/image', requireAdmin, async (req, res) => {
   res.json(saved);
 });
 
+app.post('/api/admin/words/:id/audio', requireAdmin, async (req, res) => {
+  const wordId = Number(req.params.id);
+  const existing = db.prepare('SELECT * FROM words WHERE id = ?').get(wordId) as any;
+  if (!existing) return res.status(404).json({ error: 'Wort nicht gefunden' });
+
+  const mimeType = typeof req.body.mimeType === 'string' ? req.body.mimeType : '';
+  const extension = allowedWordAudioTypes[mimeType];
+  const rawData = typeof req.body.data === 'string' ? req.body.data : '';
+  const audioText = typeof req.body.audioText === 'string' && req.body.audioText.trim()
+    ? req.body.audioText.trim()
+    : existing.audioText || existing.english;
+  const audioVoice = typeof req.body.audioVoice === 'string' && req.body.audioVoice.trim()
+    ? req.body.audioVoice.trim()
+    : existing.audioVoice || null;
+  const audioSource = typeof req.body.audioSource === 'string' && req.body.audioSource.trim()
+    ? req.body.audioSource.trim()
+    : existing.audioSource || 'Admin-Upload';
+
+  if (!extension) {
+    return res.status(400).json({ error: 'Bitte MP3, M4A, AAC, WAV oder OGG hochladen' });
+  }
+
+  const base64 = rawData.includes(',') ? rawData.split(',').pop() ?? '' : rawData;
+  if (!base64) {
+    return res.status(400).json({ error: 'Audiodaten fehlen' });
+  }
+
+  const buffer = Buffer.from(base64, 'base64');
+  if (buffer.length === 0 || buffer.length > 8 * 1024 * 1024) {
+    return res.status(400).json({ error: 'Die Audiodatei darf maximal 8 MB groß sein' });
+  }
+
+  await fs.mkdir(WORD_AUDIO_DIR, { recursive: true });
+  const fileName = `${wordId}-${slugifyFilePart(existing.english)}-${Date.now()}.${extension}`;
+  const filePath = path.join(WORD_AUDIO_DIR, fileName);
+  await fs.writeFile(filePath, buffer);
+
+  const oldLocalPath = localWordAudioPath(existing.audioPath);
+  if (oldLocalPath) {
+    await fs.unlink(oldLocalPath).catch(() => undefined);
+  }
+
+  const audioPath = `${WORD_AUDIO_PUBLIC_PATH}/${fileName}`;
+  db.prepare(`
+    UPDATE words
+    SET audioPath = ?, audioText = ?, audioVoice = ?, audioSource = ?
+    WHERE id = ?
+  `).run(audioPath, audioText, audioVoice, audioSource, wordId);
+
+  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, audioPath, audioText, audioVoice, audioSource, notes FROM words WHERE id = ?')
+    .get(wordId);
+  res.json(saved);
+});
+
+app.delete('/api/admin/words/:id/audio', requireAdmin, async (req, res) => {
+  const wordId = Number(req.params.id);
+  const existing = db.prepare('SELECT * FROM words WHERE id = ?').get(wordId) as any;
+  if (!existing) return res.status(404).json({ error: 'Wort nicht gefunden' });
+
+  const oldLocalPath = localWordAudioPath(existing.audioPath);
+  if (oldLocalPath) {
+    await fs.unlink(oldLocalPath).catch(() => undefined);
+  }
+  db.prepare('UPDATE words SET audioPath = NULL, audioText = NULL, audioVoice = NULL, audioSource = NULL WHERE id = ?').run(wordId);
+
+  const saved = db.prepare('SELECT id, german, english, type, category, grade, unit, difficulty, past, participle, imagePath, imageAlt, imageSource, audioPath, audioText, audioVoice, audioSource, notes FROM words WHERE id = ?')
+    .get(wordId);
+  res.json(saved);
+});
+
 app.delete('/api/admin/words/:id', requireAdmin, (req, res) => {
   const wordId = Number(req.params.id);
-  const existing = db.prepare('SELECT id, imagePath FROM words WHERE id = ?').get(wordId) as any;
+  const existing = db.prepare('SELECT id, imagePath, audioPath FROM words WHERE id = ?').get(wordId) as any;
   if (!existing) return res.status(404).json({ error: 'Wort nicht gefunden' });
 
   const oldLocalPath = localWordImagePath(existing.imagePath);
   if (oldLocalPath) {
     fs.unlink(oldLocalPath).catch(() => undefined);
+  }
+  const oldLocalAudioPath = localWordAudioPath(existing.audioPath);
+  if (oldLocalAudioPath) {
+    fs.unlink(oldLocalAudioPath).catch(() => undefined);
   }
   db.prepare('DELETE FROM quest_words WHERE wordId = ?').run(wordId);
   db.prepare('DELETE FROM progress WHERE wordId = ?').run(wordId);
