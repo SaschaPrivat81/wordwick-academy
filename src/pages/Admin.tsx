@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Database, Download, FileText, Gift, LineChart, LockKeyhole, PackageCheck, PlusCircle, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Wand2 } from 'lucide-react';
+import { BookOpen, Database, Download, FileText, Gift, LineChart, LockKeyhole, PackageCheck, PlusCircle, RotateCcw, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Wand2 } from 'lucide-react';
 
 interface AdminWord {
   id: number;
@@ -453,6 +453,36 @@ export default function Admin() {
     await loadUsers();
   };
 
+  const clearLocalJourneyMarkers = (userId: number) => {
+    const suffix = `-${userId}`;
+    const prefixes = ['wordwick-prologue-seen-', 'wordwick-story-seen-'];
+    for (let index = localStorage.length - 1; index >= 0; index--) {
+      const key = localStorage.key(index);
+      if (key && key.endsWith(suffix) && prefixes.some(prefix => key.startsWith(prefix))) {
+        localStorage.removeItem(key);
+      }
+    }
+  };
+
+  const resetUserJourney = async (user: AdminUser) => {
+    const confirmed = window.confirm(`Die Reise von ${user.name} wirklich zurücksetzen? Fortschritt, Levelabschlüsse, Wortfunken und Belohnungsanfragen werden gelöscht. Name, PIN und Rolle bleiben erhalten.`);
+    if (!confirmed) return;
+
+    setUserResult('');
+    const response = await fetch(`/api/admin/users/${user.id}/reset-journey`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setUserResult(data.error ?? 'Reise konnte nicht zurückgesetzt werden.');
+      return;
+    }
+    clearLocalJourneyMarkers(user.id);
+    setUserResult(`Reise von ${data.name} wurde zurückgesetzt.`);
+    await Promise.all([loadUsers(), loadRewards(), loadContent()]);
+  };
+
   const updateRewardForm = <K extends keyof RewardDraft>(field: K, value: RewardDraft[K]) => {
     setRewardForm(current => ({
       ...current,
@@ -797,10 +827,19 @@ export default function Admin() {
 
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-stone-600">
                     <span>{user.progressCount} Wörter gesehen · {user.masteredCount} beherrscht</span>
-                    <button onClick={() => saveUser(user.id)} className="gold-button px-4 py-2">
-                      <Save className="h-4 w-4" />
-                      Speichern
-                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => resetUserJourney(user)}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-black text-red-800 transition hover:bg-red-100"
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                        Reise zurücksetzen
+                      </button>
+                      <button onClick={() => saveUser(user.id)} className="gold-button px-4 py-2">
+                        <Save className="h-4 w-4" />
+                        Speichern
+                      </button>
+                    </div>
                   </div>
                 </div>
               );

@@ -695,6 +695,26 @@ app.patch('/api/admin/users/:id', requireAdmin, (req, res) => {
   res.json(user);
 });
 
+app.post('/api/admin/users/:id/reset-journey', requireAdmin, (req, res) => {
+  const userId = Number(req.params.id);
+  const existing = db.prepare('SELECT id, name FROM users WHERE id = ?').get(userId) as { id: number; name: string } | undefined;
+  if (!existing) return res.status(404).json({ error: 'Nutzer nicht gefunden' });
+
+  const reset = db.transaction(() => {
+    const progress = db.prepare('DELETE FROM progress WHERE userId = ?').run(userId).changes;
+    const questResults = db.prepare('DELETE FROM quest_results WHERE userId = ?').run(userId).changes;
+    const claimedRewards = db.prepare('DELETE FROM claimed_rewards WHERE userId = ?').run(userId).changes;
+    db.prepare('UPDATE users SET coins = 0, streak = 0, lastPlayed = NULL WHERE id = ?').run(userId);
+    return { progress, questResults, claimedRewards };
+  });
+
+  res.json({
+    userId,
+    name: existing.name,
+    ...reset(),
+  });
+});
+
 const allowedRewardKinds = new Set(['real', 'game']);
 const allowedUnlockTypes = new Set(['coins', 'quest', 'final']);
 const allowedRewardVisibility = new Set(['visible', 'unlocked']);
