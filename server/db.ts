@@ -236,7 +236,7 @@ if (questCount.c === 0) {
     [6, 'Glasshouse Garden', 'Pflanzen, Farben und kleine Dinge', 'Glashaus', 'vocab', 26, 51, 'garden', 'Kristallsamen', 'Das Glashaus wartet auf neue Vokabeln aus deinem Eltern-Dashboard.'],
     [7, 'Whispering Woods', 'Laute, Tiere und Waldwörter', 'Flüsterwald', 'vocab', 78, 28, 'woods', 'Silberblatt', 'Der Wald ist schon auf der Karte, aber sein Wortschatz wird später gefüllt.'],
     [8, 'Wyrm Cave', 'Mutprobe für lange Phrasen', 'Drachenhöhle', 'mixed', 82, 52, 'cave', 'Drachenmarke', 'Die Höhle prüft längere Wörter und Phrasen, aber noch keine unregelmäßigen Verben.'],
-    [9, 'Moonwell Lake', 'Wiederholen und festigen', 'Mondsee', 'mixed', 77, 72, 'moonwell', 'Mondperle', 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.'],
+    [9, 'Moonwell Lake', 'Verdrehte Zaubersprüche entwirren', 'Mondsee', 'mixed', 77, 72, 'moonwell', 'Mondperle', 'Am Mondsee sieht alles friedlich aus, doch im Wasser treiben die Wortfunken kreuz und quer. Ordne die Zaubersprüche wieder richtig, bevor Pip aus Versehen den See nach Hausaufgaben fragt.'],
     [10, 'Spark Practice Grounds', 'Erste Übungsrunde für sichere Wortfunken', 'Übungshof', 'mixed', 55, 83, 'spark', 'Funkenkompass', 'Auf dem Übungshof lernt Pip mit dir, wie Wortfunken ruhig bleiben, bevor der Pfad weiterleuchtet.'],
   ];
   const insertQuest = db.prepare(`
@@ -272,6 +272,8 @@ const umlautQuestFixes = [
   { id: 8, field: 'chapter', oldValue: 'Drachenhoehle', newValue: 'Drachenhöhle' },
   { id: 8, field: 'guide', oldValue: 'Die Hoehle wird ein Hauptlevel mit einer groesseren Pruefung.', newValue: 'Die Höhle wird ein Hauptlevel mit einer größeren Prüfung.' },
   { id: 9, field: 'guide', oldValue: 'Am Mondsee werden schwierige Woerter spaeter gezielt wiederholt.', newValue: 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.' },
+  { id: 9, field: 'subtitle', oldValue: 'Wiederholen und festigen', newValue: 'Verdrehte Zaubersprüche entwirren' },
+  { id: 9, field: 'guide', oldValue: 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.', newValue: 'Am Mondsee sieht alles friedlich aus, doch im Wasser treiben die Wortfunken kreuz und quer. Ordne die Zaubersprüche wieder richtig, bevor Pip aus Versehen den See nach Hausaufgaben fragt.' },
   { id: 10, field: 'guide', oldValue: 'Hier kann spaeter eine echte Belohnung freigeschaltet werden.', newValue: 'Hier kann später eine echte Belohnung freigeschaltet werden.' },
 ];
 

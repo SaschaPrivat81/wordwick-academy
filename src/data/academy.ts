@@ -419,7 +419,7 @@ export const academyQuests: AcademyQuest[] = [
   {
     id: 9,
     title: 'Moonwell Lake',
-    subtitle: 'Wiederholen und festigen',
+    subtitle: 'Verdrehte Zaubersprüche entwirren',
     chapter: 'Mondsee',
     kind: 'mixed',
     sortOrder: 7,
@@ -429,7 +429,7 @@ export const academyQuests: AcademyQuest[] = [
     sigil: 'moonwell',
     words: [7, 8],
     reward: 'Mondperle',
-    guide: 'Am Mondsee werden schwierige Wörter später gezielt wiederholt.',
+    guide: 'Am Mondsee sieht alles friedlich aus, doch im Wasser treiben die Wortfunken kreuz und quer. Ordne die Zaubersprüche wieder richtig, bevor Pip aus Versehen den See nach Hausaufgaben fragt.',
   },
   {
     id: 10,

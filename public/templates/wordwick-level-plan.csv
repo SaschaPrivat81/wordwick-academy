@@ -5,7 +5,7 @@ schritt,level_id,levelname,rolle,inhaltstyp,mini_game,aufgaben_pro_runde,mindest
 4,4,Sky Practice Yards,Bewegungsübung,vocab,text-input,10,2 Vokabeln oder Bewegungsphrasen,6-10 Körper- und Bewegungswörter,body actions
 5,6,Glasshouse Garden,Themenlevel,vocab,text-input,10,2 Vokabeln,6-10 Themenwörter,weather
 6,3,Wordbrew Workshop,Satzbausteine,mixed,text-input,10,2 gemischte Inhalte,6-10 kurze Alltagsphrasen,morning routine
-7,9,Moonwell Lake,Wiederholung,mixed,text-input,12,2 gemischte Inhalte,6-12 schwierige Wörter und Phrasen,review
+7,9,Moonwell Lake,Zauberspruch,mixed,spell-order,12,2 Satzbausteine,6-12 verdrehte Phrasen und Zaubersprüche,phrases
 8,8,Wyrm Cave,Phrasenprüfung,mixed,text-input,10,2 gemischte Inhalte,6-10 längere Phrasen,beach
 9,7,Whispering Woods,Übungslevel,vocab,text-input,10,2 Vokabeln,6-10 Wörter nach Thema,feelings
 10,5,Stargazer Tower,Finallevel,mixed,text-input,14,2 gemischte Inhalte,8-14 gemischte Abschlussaufgaben,final review
