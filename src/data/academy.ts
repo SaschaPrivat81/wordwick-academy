@@ -94,7 +94,7 @@ export const prologuePages: ProloguePage[] = [
     eyebrow: 'Dein Auftrag',
     title: 'Bring die Pfade zurück',
     body: 'In jeder Mission wartet ein kleiner Teil der Akademie auf dich. Du fängst Wortfunken, übst englische Wörter und sammelst Belohnungen, die Pips Karte wieder heller machen. Wenn genug Spuren zurückkehren, öffnet sich der Weg zum nächsten wichtigen Ort.',
-    extra: 'Dein erstes Ziel ist Wordwick Hall. Dort liegen die ersten Tierwörter im Dunkeln. Pip hat die Spur gefunden, aber er braucht dich, um sie wieder zum Leuchten zu bringen.',
+    extra: 'Dein erstes Ziel ist Wordwick Hall. Dort liegen die ersten Wörter im Dunkeln. Pip hat die Spur gefunden, aber er braucht dich, um sie wieder zum Leuchten zu bringen.',
   },
 ];
 
