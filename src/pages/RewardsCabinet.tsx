@@ -33,20 +33,20 @@ const claimButtonLabel = (reward: Reward) => {
 };
 
 const rewardTitleClass = (title: string) => {
-  if (title.length > 34) return 'text-[10px] leading-[1.05]';
-  if (title.length > 24) return 'text-[11px] leading-[1.08]';
-  return 'text-sm leading-tight';
+  if (title.length > 34) return 'text-[9px] leading-[1.04]';
+  if (title.length > 24) return 'text-[10px] leading-[1.06]';
+  return 'text-[11px] leading-tight';
 };
 
 const cabinetSlots = [
-  { left: '22%', top: '32%', width: '17%', height: '25%' },
-  { left: '41%', top: '32%', width: '17%', height: '25%' },
-  { left: '59%', top: '32%', width: '17%', height: '25%' },
-  { left: '78%', top: '32%', width: '17%', height: '25%' },
-  { left: '22%', top: '64%', width: '17%', height: '25%' },
-  { left: '41%', top: '64%', width: '17%', height: '25%' },
-  { left: '59%', top: '64%', width: '17%', height: '25%' },
-  { left: '78%', top: '64%', width: '17%', height: '25%' },
+  { left: '22%', top: '32%', width: '14.8%', height: '21%' },
+  { left: '41%', top: '32%', width: '14.8%', height: '21%' },
+  { left: '59%', top: '32%', width: '14.8%', height: '21%' },
+  { left: '78%', top: '32%', width: '14.8%', height: '21%' },
+  { left: '22%', top: '64%', width: '14.8%', height: '21%' },
+  { left: '41%', top: '64%', width: '14.8%', height: '21%' },
+  { left: '59%', top: '64%', width: '14.8%', height: '21%' },
+  { left: '78%', top: '64%', width: '14.8%', height: '21%' },
 ];
 
 export default function RewardsCabinet() {
@@ -120,21 +120,21 @@ export default function RewardsCabinet() {
               return (
                 <div
                   key={reward.id}
-                  className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-2xl border p-2 shadow-xl backdrop-blur-sm ${
+                  className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-xl border p-1.5 shadow-xl shadow-slate-950/35 ${
                     reward.claimed
-                      ? 'border-blue-200/80 bg-blue-950/72 text-amber-50'
+                      ? 'border-blue-200/90 bg-blue-950 text-amber-50'
                       : reward.unlocked
-                        ? 'border-amber-200/80 bg-amber-50/82 text-slate-950'
-                        : 'border-stone-200/30 bg-slate-950/62 text-stone-200'
+                        ? 'border-amber-100 bg-[#fff4cc] text-blue-950'
+                        : 'border-amber-100/90 bg-[#f6ead0] text-blue-950'
                   }`}
                   style={slot}
                 >
                   <div className="flex h-full flex-col justify-between gap-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-2xl ${reward.unlocked || reward.claimed ? 'bg-blue-950 text-amber-100' : 'bg-stone-600 text-stone-200'}`}>
+                    <div className="flex items-start justify-between gap-1.5">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xl shadow-inner ${reward.unlocked || reward.claimed ? 'bg-blue-950 text-amber-100' : 'bg-stone-700 text-stone-100'}`}>
                         {reward.unlocked || reward.claimed ? reward.icon : <LockKeyhole className="h-5 w-5" />}
                       </div>
-                      <span className={`rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-[0.08em] ${reward.kind === 'real' ? 'bg-amber-200 text-amber-950' : 'bg-blue-200 text-blue-950'}`}>
+                      <span className={`rounded-full px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.06em] ${reward.kind === 'real' ? 'bg-amber-200 text-amber-950' : 'bg-blue-200 text-blue-950'}`}>
                         {reward.kind === 'real' ? 'Echt' : 'Spiel'}
                       </span>
                     </div>
@@ -147,16 +147,16 @@ export default function RewardsCabinet() {
                       >
                         {reward.title}
                       </div>
-                      <div className={`mt-1 text-[10px] font-black uppercase tracking-[0.08em] ${reward.claimed ? 'text-amber-100/80' : reward.unlocked ? 'text-blue-950/70' : 'text-stone-200/70'}`}>
+                      <div className={`mt-0.5 text-[8px] font-black uppercase tracking-[0.06em] ${reward.claimed ? 'text-amber-100/80' : reward.unlocked ? 'text-blue-950/65' : 'text-blue-950/60'}`}>
                         {reward.cost > 0 ? `${reward.cost} Funken` : reward.unlockType === 'coins' ? 'Frei' : reward.unlockType === 'final' ? 'Finallevel' : 'Level'}
                       </div>
                       {reward.requiresApproval === 1 && reward.unlocked && !reward.claimed && (
-                        <div className="mt-1 text-[9px] font-black uppercase tracking-[0.08em] text-amber-800/80">Elternfreigabe</div>
+                        <div className="mt-0.5 text-[8px] font-black uppercase tracking-[0.06em] text-amber-800/80">Elternfreigabe</div>
                       )}
                     </div>
 
                     {reward.claimed ? (
-                      <span className="inline-flex min-w-0 items-center justify-center gap-1 rounded-lg bg-blue-100 px-2 py-1 text-[10px] font-black text-blue-950">
+                      <span className="inline-flex min-w-0 items-center justify-center gap-1 rounded-md bg-blue-100 px-1.5 py-0.5 text-[9px] font-black text-blue-950">
                         {reward.claimStatus === 'requested' ? <PackageCheck className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
                         <span className="truncate">{claimLabels[reward.claimStatus ?? 'claimed'] ?? 'Erhalten'}</span>
                       </span>
@@ -164,10 +164,10 @@ export default function RewardsCabinet() {
                       <button
                         onClick={() => claim(reward)}
                         disabled={!reward.unlocked}
-                        className={`rounded-lg px-2 py-1 text-[10px] font-black transition active:scale-95 disabled:cursor-not-allowed ${
+                        className={`rounded-md px-1.5 py-0.5 text-[9px] font-black transition active:scale-95 disabled:cursor-not-allowed ${
                           reward.unlocked
                             ? 'bg-blue-800 text-amber-50 hover:bg-blue-700'
-                            : 'bg-stone-700 text-stone-200'
+                            : 'bg-stone-800 text-stone-50'
                         }`}
                       >
                         {claimButtonLabel(reward)}
