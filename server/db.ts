@@ -556,6 +556,38 @@ if (!wordImageCardsMigration) {
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('word-image-cards-v1', 'applied')").run();
 }
 
+const whisperingWoodsAudioMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'whispering-woods-audio-v1'").get();
+if (!whisperingWoodsAudioMigration) {
+  const wordAudioFiles = [
+    'angry',
+    'friendly',
+    'funny',
+    'glasses',
+    'grumpy',
+    'happy',
+    'helpful',
+    'honest',
+    'sad',
+    'scared',
+    'smart',
+    'thirsty',
+    'tired',
+  ];
+
+  for (const english of wordAudioFiles) {
+    db.prepare(`
+      UPDATE words
+      SET audioPath = ?,
+          audioText = ?,
+          audioVoice = NULL,
+          audioSource = 'ElevenLabs'
+      WHERE lower(english) = ?
+        AND (audioPath IS NULL OR audioPath = '')
+    `).run(`/assets/word-audio/whispering-woods-${english}.mp3`, english, english);
+  }
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('whispering-woods-audio-v1', 'applied')").run();
+}
+
 const rewardDefaults = [
   { title: '20 Min Minecraft', description: 'Ein echtes Eltern-Fach: 20 Minuten Spielzeit nach Absprache.', kind: 'real', unlockType: 'coins', cost: 30, icon: '🎮', sortOrder: 1, requiresApproval: 1, visibility: 'visible' },
   { title: 'Eis essen gehen', description: 'Eine größere echte Belohnung für fleißig gesammelte Wortfunken.', kind: 'real', unlockType: 'coins', cost: 50, icon: '🍦', sortOrder: 2, requiresApproval: 1, visibility: 'visible' },
