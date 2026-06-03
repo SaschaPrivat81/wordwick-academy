@@ -102,7 +102,7 @@ export const questStories: Record<number, QuestStory> = {
   1: {
     arc: 'Kapitel I: Die verlorenen Wortfunken',
     mapTeaser: 'Über Wordwick Academy sind in der Nacht blaue Wortfunken verschwunden. Pip hat die erste Spur in der Haupthalle gefunden.',
-    missionIntro: 'Pip flattert über die alten Steinfliesen. "Wenn wir die Tierwörter wecken, leuchtet der erste Pfad wieder."',
+    missionIntro: 'Pip flattert über die alten Steinfliesen. "Wenn wir die Wörter wecken, leuchtet der erste Pfad wieder."',
     correct: 'Ein Wortfunke springt zurück in die Karte. Pip tippt begeistert mit der Schwanzspitze auf den nächsten Stern.',
     wrong: 'Pip legt den Kopf schief. "Fast. Das Wort knistert schon, aber wir müssen es sauber aussprechen."',
     completed: 'Die Bronzefeder schwebt aus dem Wappen der Haupthalle. Der erste Pfad auf der Karte beginnt wieder zu glimmen.',
