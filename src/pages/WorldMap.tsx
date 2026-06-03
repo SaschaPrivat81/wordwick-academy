@@ -69,10 +69,10 @@ const prologuePages = [
 ];
 
 function ribbonClass(x: number, y: number) {
-  if (y >= 70) return 'map-ribbon map-ribbon-above hidden 2xl:block';
-  if (x <= 24) return 'map-ribbon map-ribbon-right hidden 2xl:block';
-  if (x >= 76) return 'map-ribbon map-ribbon-left hidden 2xl:block';
-  return 'map-ribbon hidden 2xl:block';
+  if (y >= 70) return 'map-ribbon map-ribbon-above hidden group-hover:block group-focus-visible:block';
+  if (x <= 24) return 'map-ribbon map-ribbon-right hidden group-hover:block group-focus-visible:block';
+  if (x >= 76) return 'map-ribbon map-ribbon-left hidden group-hover:block group-focus-visible:block';
+  return 'map-ribbon hidden group-hover:block group-focus-visible:block';
 }
 
 function activeRibbonClass(x: number, y: number) {
@@ -277,7 +277,7 @@ export default function WorldMap() {
               onClick={() => {
                 if (questState !== 'locked') setSelectedQuest(quest);
               }}
-              className={`quest-node z-30 ${questState}`}
+              className={`quest-node group z-30 ${questState}`}
               style={{ left: `${quest.x}%`, top: `${quest.y}%`, position: 'absolute', transform: 'translate(-50%, -50%)' }}
               aria-label={quest.title}
             >
@@ -302,7 +302,7 @@ export default function WorldMap() {
               onClick={() => {
                 if (unlocked) navigate(`/story/${scene.id}`);
               }}
-              className={`story-scroll-marker z-30 ${unlocked ? seen ? 'seen' : 'available' : 'locked'} ${seen ? 'rotate-3' : '-rotate-6'}`}
+              className={`story-scroll-marker group z-30 ${unlocked ? seen ? 'seen' : 'available' : 'locked'} ${seen ? 'rotate-3' : '-rotate-6'}`}
               style={{ left: `${scene.x}%`, top: `${scene.y}%`, position: 'absolute', transform: `translate(-50%, -50%) rotate(${seen ? 6 : -8}deg)` }}
               aria-label={scene.title}
             >
