@@ -290,6 +290,7 @@ const gameTypes = [
   ['word-builder', 'Wort-Bausteine'],
   ['spell-order', 'Zauberspruch ordnen'],
   ['verb-assembler', 'Verbsteine ordnen (später)'],
+  ['constellation-trial', 'Sternbild-Prüfung'],
   ['text-input', 'Texteingabe'],
 ];
 
@@ -339,6 +340,7 @@ function questRole(quest: AdminQuest) {
   if (quest.gameType === 'word-builder') return 'Wort-Bausteine';
   if (quest.gameType === 'spell-order') return 'Zauberspruch';
   if (quest.gameType === 'verb-assembler') return 'Verbtraining (später)';
+  if (quest.gameType === 'constellation-trial') return 'Finalprüfung';
   if (quest.id === 3) return 'Satzbausteine';
   if (quest.id === 4) return 'Bewegungsübung';
   if (quest.id === 8) return 'Phrasenprüfung';

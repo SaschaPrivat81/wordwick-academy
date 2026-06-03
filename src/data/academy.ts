@@ -6,7 +6,7 @@ export interface AcademyQuest {
   subtitle: string;
   chapter: string;
   kind: QuestKind;
-  gameType?: 'spark-catcher' | 'library-sorter' | 'image-choice' | 'audio-choice' | 'word-builder' | 'spell-order' | 'verb-assembler' | 'text-input';
+  gameType?: 'spark-catcher' | 'library-sorter' | 'image-choice' | 'audio-choice' | 'word-builder' | 'spell-order' | 'verb-assembler' | 'constellation-trial' | 'text-input';
   sortOrder?: number;
   taskLimit?: number;
   x: number;
@@ -420,7 +420,7 @@ export const academyQuests: AcademyQuest[] = [
     subtitle: 'ruhige Worte, starke Formen',
     chapter: 'Sternenturm',
     kind: 'mixed',
-    gameType: 'text-input',
+    gameType: 'constellation-trial',
     sortOrder: 10,
     taskLimit: 14,
     x: 58,

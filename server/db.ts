@@ -597,6 +597,19 @@ if (!whisperingWoodsAudioMigration) {
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('whispering-woods-audio-v1', 'applied')").run();
 }
 
+const stargazerFinalMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'stargazer-final-game-v1'").get();
+if (!stargazerFinalMigration) {
+  db.prepare(`
+    UPDATE quests
+    SET gameType = 'constellation-trial',
+        taskLimit = 14,
+        subtitle = 'Die Sternbild-Prüfung im Turmfinale',
+        guide = 'Im Stargazer Tower verbindet Pip Bildkarten, Hörzauber, Wort-Bausteine und Zaubersprüche zu einer letzten Sternbild-Prüfung.'
+    WHERE id = 5
+  `).run();
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('stargazer-final-game-v1', 'applied')").run();
+}
+
 const rewardDefaults = [
   { title: '20 Min Minecraft', description: 'Ein echtes Eltern-Fach: 20 Minuten Spielzeit nach Absprache.', kind: 'real', unlockType: 'coins', cost: 30, icon: '🎮', sortOrder: 1, requiresApproval: 1, visibility: 'visible' },
   { title: 'Eis essen gehen', description: 'Eine größere echte Belohnung für fleißig gesammelte Wortfunken.', kind: 'real', unlockType: 'coins', cost: 50, icon: '🍦', sortOrder: 2, requiresApproval: 1, visibility: 'visible' },

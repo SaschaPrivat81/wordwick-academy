@@ -208,6 +208,9 @@ function getQuestRequirement(quest: { kind: string; gameType?: string | null }):
   if (quest.gameType === 'spell-order') {
     return { label: 'Satzbausteine', minWords: 2, accepts: ['vocab'], requiresPhrase: true };
   }
+  if (quest.gameType === 'constellation-trial') {
+    return { label: 'Final-Inhalte', minWords: 4, accepts: ['vocab', 'irregular'] };
+  }
   if (quest.gameType === 'library-sorter') {
     return { label: 'Vokabeln', minWords: 4, accepts: ['vocab'] };
   }
@@ -1330,7 +1333,7 @@ app.delete('/api/admin/words/:id', requireAdmin, (req, res) => {
 
 app.patch('/api/admin/quests/:id', requireAdmin, (req, res) => {
   const questId = Number(req.params.id);
-  const allowedGameTypes = new Set(['spark-catcher', 'library-sorter', 'image-choice', 'audio-choice', 'word-builder', 'spell-order', 'verb-assembler', 'text-input']);
+  const allowedGameTypes = new Set(['spark-catcher', 'library-sorter', 'image-choice', 'audio-choice', 'word-builder', 'spell-order', 'verb-assembler', 'constellation-trial', 'text-input']);
   const allowedKinds = new Set(['vocab', 'verb', 'mixed']);
   const existing = db.prepare('SELECT * FROM quests WHERE id = ?').get(questId) as any;
   if (!existing) return res.status(404).json({ error: 'Quest nicht gefunden' });

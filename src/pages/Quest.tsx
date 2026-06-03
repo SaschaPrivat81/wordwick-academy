@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, CheckCircle2, PlayCircle, RotateCcw, Sparkles, Volume2, XCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, PlayCircle, RotateCcw, Sparkles, Star, Volume2, XCircle } from 'lucide-react';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, getUnlockedStorySceneAfterQuest, normalizeAnswer } from '../data/academy';
 
 interface Word {
@@ -22,6 +22,7 @@ interface Challenge {
   id: string;
   wordId: number;
   eyebrow: string;
+  finalPhase?: string;
   prompt: string;
   helper: string;
   expected: string;
@@ -155,7 +156,130 @@ function buildRetryChallenge(challenge: Challenge, retryNumber: number): Challen
   };
 }
 
-function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
+function uniqueWords(words: Word[]) {
+  const byId = new Map<number, Word>();
+  for (const word of words) byId.set(word.id, word);
+  return Array.from(byId.values());
+}
+
+function buildConstellationChallenges(words: Word[], allWords: Word[], quest: AcademyQuest): Challenge[] {
+  const sourceWords = rotateItems(uniqueWords([...words, ...allWords]), dailyQuestSeed(quest.id));
+  const vocabWords = sourceWords.filter(word => word.type === 'vocab');
+  const imageWords = vocabWords.filter(word => word.imagePath);
+  const audioWords = vocabWords.filter(word => word.audioPath);
+  const singleWords = vocabWords.filter(word => /^[a-zA-Z]+$/.test(word.english));
+  const phraseWords = vocabWords.filter(word => word.english.trim().split(/\s+/).length >= 2);
+  const challenges: Challenge[] = [];
+  const usedPhaseWords = new Set<string>();
+
+  const addChallenge = (phase: string, word: Word, mode: Challenge['mode'], options: Partial<Challenge>) => {
+    const key = `${phase}-${word.id}`;
+    if (usedPhaseWords.has(key)) return;
+    usedPhaseWords.add(key);
+    challenges.push({
+      id: key,
+      wordId: word.id,
+      eyebrow: phase,
+      finalPhase: phase,
+      prompt: options.prompt ?? `Wie heisst "${word.german}" auf Englisch?`,
+      helper: options.helper ?? 'Finde den passenden Wortfunken.',
+      expected: options.expected ?? word.english,
+      acceptable: options.acceptable ?? [word.english],
+      imagePath: options.imagePath,
+      imageAlt: options.imageAlt ?? (word.imageAlt || `${word.german} / ${word.english}`),
+      audioPath: options.audioPath,
+      audioText: options.audioText,
+      audioVoice: options.audioVoice,
+      audioSource: options.audioSource,
+      answerPool: options.answerPool ?? 'english',
+      mode,
+    });
+  };
+
+  for (const word of imageWords.slice(0, 3)) {
+    addChallenge('Stern 1 · Bildkarten', word, 'choice', {
+      prompt: 'Welcher englische Wortfunke passt zu diesem Bild?',
+      helper: 'Schau genau hin. Jeder richtige Bildfunke entzündet den ersten Stern.',
+      expected: word.english,
+      acceptable: [word.english],
+      imagePath: word.imagePath,
+      answerPool: 'english',
+    });
+  }
+
+  for (const word of vocabWords.slice(0, 4)) {
+    addChallenge('Stern 2 · Bücher ordnen', word, 'choice', {
+      prompt: `Was bedeutet "${word.english}" auf Deutsch?`,
+      helper: 'Ordne das englische Wort dem richtigen deutschen Buchblatt zu.',
+      expected: word.german,
+      acceptable: [word.german],
+      answerPool: 'german',
+    });
+  }
+
+  for (const word of audioWords.slice(0, 3)) {
+    addChallenge('Stern 3 · Hörzauber', word, 'choice', {
+      prompt: 'Was bedeutet der gesprochene Wortfunke?',
+      helper: 'Hör genau hin und wähle die passende deutsche Bedeutung.',
+      expected: word.german,
+      acceptable: [word.german],
+      imagePath: word.imagePath,
+      audioPath: word.audioPath,
+      audioText: word.audioText || word.english,
+      audioVoice: word.audioVoice,
+      audioSource: word.audioSource,
+      answerPool: 'german',
+    });
+  }
+
+  for (const word of singleWords.slice(0, 2)) {
+    addChallenge('Stern 4 · Wort-Bausteine', word, 'builder', {
+      prompt: `Baue das englische Wort für "${word.german}".`,
+      helper: 'Lege die Buchstaben in der richtigen Reihenfolge.',
+      expected: word.english.toLowerCase(),
+      acceptable: [word.english],
+      imagePath: word.imagePath,
+      answerPool: 'english',
+    });
+  }
+
+  for (const word of phraseWords.slice(0, 2)) {
+    const phraseParts = word.english.trim().split(/\s+/);
+    addChallenge('Stern 5 · Zauberspruch', word, 'phrase', {
+      prompt: `Ordne den finalen Zauberspruch für "${word.german}".`,
+      helper: 'Wenn der Satz stimmt, schliesst sich das Sternbild.',
+      expected: phraseParts.join(' '),
+      acceptable: [word.english],
+      imagePath: word.imagePath,
+      answerPool: 'english',
+    });
+  }
+
+  if (challenges.length === 0) return buildChallenges(words, { ...quest, gameType: 'text-input' }, allWords);
+
+  const target = questTaskLimit(quest);
+  let index = 0;
+  while (challenges.length < target && vocabWords.length > 0) {
+    const word = vocabWords[index % vocabWords.length];
+    addChallenge('Sternbild-Funken', word, 'choice', {
+      prompt: `Wie heisst "${word.german}" auf Englisch?`,
+      helper: 'Ein letzter Wortfunke sucht seinen Platz im Sternbild.',
+      expected: word.english,
+      acceptable: [word.english],
+      answerPool: 'english',
+    });
+    index++;
+    if (index > vocabWords.length * 2) break;
+  }
+
+  return challenges.slice(0, target);
+}
+
+function buildChallenges(words: Word[], quest: AcademyQuest, allWords: Word[] = []): Challenge[] {
+  if (quest.gameType === 'constellation-trial') {
+    return buildConstellationChallenges(words, allWords, quest);
+  }
+
   const rotatedWords = rotateItems(words, dailyQuestSeed(quest.id));
   const isImageChoice = quest.gameType === 'image-choice';
   const isAudioChoice = quest.gameType === 'audio-choice';
@@ -398,18 +522,20 @@ export default function Quest() {
 
   const challenges = useMemo<Challenge[]>(() => {
     if (!quest) return [];
-    return buildChallenges(words, quest);
-  }, [quest, words]);
+    return buildChallenges(words, quest, allWords);
+  }, [allWords, quest, words]);
 
   const activeChallenges = useMemo(() => [...challenges, ...retryChallenges], [challenges, retryChallenges]);
   const current = activeChallenges[currentIndex];
   const activeGameType = quest?.gameType ?? (quest?.id === 1 ? 'spark-catcher' : quest?.id === 2 ? 'library-sorter' : 'text-input');
+  const isConstellationTrial = activeGameType === 'constellation-trial';
   const isLibrarySorter = activeGameType === 'library-sorter';
   const isVerbAssembler = activeGameType === 'verb-assembler';
-  const isImageChoice = activeGameType === 'image-choice' && current?.mode === 'choice';
-  const isAudioChoice = activeGameType === 'audio-choice' && current?.mode === 'choice';
+  const isAudioChoice = current?.mode === 'choice' && Boolean(current?.audioPath) && (activeGameType === 'audio-choice' || isConstellationTrial);
+  const isImageChoice = current?.mode === 'choice' && Boolean(current?.imagePath) && !isAudioChoice && (activeGameType === 'image-choice' || isConstellationTrial);
   const isWordBuilder = activeGameType === 'word-builder' && current?.mode === 'builder';
-  const isSpellOrder = activeGameType === 'spell-order' && current?.mode === 'phrase';
+  const isFinalWordBuilder = isConstellationTrial && current?.mode === 'builder';
+  const isSpellOrder = (activeGameType === 'spell-order' || isConstellationTrial) && current?.mode === 'phrase';
   const verbWords = useMemo(
     () => words.filter(word => word.type === 'irregular' && word.past && word.participle),
     [words],
@@ -438,7 +564,7 @@ export default function Quest() {
     ? (totalTasks > 0 ? Math.round((matchedWordIds.length / totalTasks) * 100) : 0)
     : (activeChallenges.length > 0 ? Math.round((currentIndex / activeChallenges.length) * 100) : 0);
   const pipMissionImage = result ? (result.correct ? '/assets/pip-cheer.webp' : '/assets/pip-think.webp') : '/assets/pip-guide.webp';
-  const isSparkCatcher = activeGameType === 'spark-catcher' && current?.mode === 'choice';
+  const isSparkCatcher = current?.mode === 'choice' && !isImageChoice && !isAudioChoice && (activeGameType === 'spark-catcher' || isConstellationTrial);
   const choiceOptions = useMemo(() => {
     if (!current || (!isSparkCatcher && !isImageChoice && !isAudioChoice)) return [];
     const levelCandidates = choiceValuesForPool(words, current.answerPool);
@@ -465,8 +591,8 @@ export default function Quest() {
     };
   }, [allWords, words]);
   const letterTiles = useMemo(
-    () => current && isWordBuilder ? buildLetterTiles(current.expected, current.wordId + currentIndex + questId * 3) : [],
-    [current, currentIndex, isWordBuilder, questId],
+    () => current && (isWordBuilder || isFinalWordBuilder) ? buildLetterTiles(current.expected, current.wordId + currentIndex + questId * 3) : [],
+    [current, currentIndex, isFinalWordBuilder, isWordBuilder, questId],
   );
   const phraseTiles = useMemo(
     () => current && isSpellOrder ? buildPhraseTiles(current.expected, current.wordId + currentIndex + questId * 5) : [],
@@ -479,6 +605,14 @@ export default function Quest() {
   const weakWords = useMemo(
     () => weakWordIds.map(wordId => words.find(word => word.id === wordId)).filter(Boolean) as Word[],
     [weakWordIds, words],
+  );
+  const constellationPhases = useMemo(
+    () => Array.from(new Set(challenges.map(challenge => challenge.finalPhase).filter(Boolean))) as string[],
+    [challenges],
+  );
+  const completedConstellationPhases = useMemo(
+    () => new Set(answerLog.filter(item => item.correct).map(item => challenges.find(challenge => challenge.id === item.challengeId)?.finalPhase).filter(Boolean)),
+    [answerLog, challenges],
   );
 
   const report = async (wordId: number, isCorrect: boolean) => {
@@ -748,7 +882,9 @@ export default function Quest() {
 
             <div className="p-7 sm:p-9">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{story.arc}</div>
-              <h2 className="mt-2 text-3xl font-black leading-tight text-slate-950">Die Spur beginnt hier.</h2>
+              <h2 className="mt-2 text-3xl font-black leading-tight text-slate-950">
+                {isConstellationTrial ? 'Das Sternbild wartet.' : 'Die Spur beginnt hier.'}
+              </h2>
               <p className="mt-4 text-base font-bold leading-7 text-stone-700">{story.mapTeaser}</p>
               <p className="mt-3 text-base font-bold leading-7 text-slate-900">{story.missionIntro}</p>
               <p className="mt-3 text-sm font-bold leading-6 text-stone-600">
@@ -770,14 +906,16 @@ export default function Quest() {
                 </div>
                 <div className="min-w-0 rounded-2xl bg-white/60 p-4 text-center">
                   <div className={missionStatValueClass} lang="de" title={quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}>
-                    {quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}
+                {isConstellationTrial ? 'Finale' : quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}
                   </div>
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Magie</div>
                 </div>
               </div>
 
               <div className="mt-6 rounded-2xl border border-blue-950/10 bg-blue-100/70 p-4 text-sm font-bold leading-6 text-blue-950">
-                Ziel: Sammle Wortfunken, damit Pip den nächsten Pfad auf der Karte wiederfinden kann.
+                {isConstellationTrial
+                  ? 'Ziel: Entzünde genug Sterne, damit Pip das erste Sternbild der Akademie wieder zusammensetzen kann.'
+                  : 'Ziel: Sammle Wortfunken, damit Pip den nächsten Pfad auf der Karte wiederfinden kann.'}
               </div>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -811,13 +949,13 @@ export default function Quest() {
                 alt="Pip jubelt"
                 className="h-56 w-56 object-contain drop-shadow-2xl"
               />
-              <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Quest abgeschlossen</div>
+              <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">{isConstellationTrial ? 'Finale abgeschlossen' : 'Quest abgeschlossen'}</div>
               <h1 className="mt-2 text-4xl font-black">{quest.title}</h1>
             </div>
             <div className="p-7 sm:p-9">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{story.arc}</div>
               <h2 className="mt-2 text-3xl font-black text-slate-950">
-                {questCompleted ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Übungssaal.'}
+                {isConstellationTrial && questCompleted ? 'Das Sternbild leuchtet!' : questCompleted ? 'Starker Zauber!' : finalPercent >= 50 ? 'Gute Runde!' : 'Nochmal in den Übungssaal.'}
               </h2>
               <p className="mt-3 text-sm font-bold leading-6 text-stone-600">
                 {questCompleted ? story.completed : 'Pip hat die Wortfunken gezählt. Ab 80 Prozent öffnet sich der nächste Pfad auf der Karte.'}
@@ -909,13 +1047,37 @@ export default function Quest() {
         </div>
         <div className="mt-7">
           <div className="mb-2 flex justify-between text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">
-            <span>Runde</span>
+            <span>{isConstellationTrial ? 'Sternbild' : 'Runde'}</span>
             <span>{isVerbAssembler ? `${verbIndex + 1}/${totalTasks}` : isLibrarySorter ? `${matchedWordIds.length}/${totalTasks}` : `${currentIndex + 1}/${activeChallenges.length}`}</span>
           </div>
           <div className="h-3 overflow-hidden rounded-full bg-white/12">
             <div className="h-full rounded-full bg-amber-200" style={{ width: `${percent}%` }} />
           </div>
         </div>
+        {isConstellationTrial && constellationPhases.length > 0 && (
+          <div className="mt-5 grid gap-2">
+            {constellationPhases.map((phase, index) => {
+              const active = current?.finalPhase === phase;
+              const completed = completedConstellationPhases.has(phase);
+              return (
+                <div
+                  key={phase}
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black ${
+                    active
+                      ? 'border-amber-200 bg-amber-200 text-blue-950'
+                      : completed
+                        ? 'border-blue-200/40 bg-white/15 text-amber-100'
+                        : 'border-amber-100/10 bg-white/5 text-amber-50/55'
+                  }`}
+                >
+                  <Star className={`h-4 w-4 ${completed || active ? 'fill-current' : ''}`} />
+                  <span>Stern {index + 1}</span>
+                  <span className="min-w-0 truncate opacity-80">{phase.replace(/^Stern \d+ · /, '')}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </aside>
 
       <section className="parchment flex min-h-[520px] flex-col justify-between rounded-[32px] border border-amber-100/70 p-6 sm:p-8">
@@ -932,10 +1094,10 @@ export default function Quest() {
 
           <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
             <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
-              {isSpellOrder ? 'Zauberspruch ordnen' : isWordBuilder ? 'Wort-Bausteine' : isAudioChoice ? 'Hörzauber' : isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
+              {isConstellationTrial ? 'Sternbild-Prüfung' : isSpellOrder ? 'Zauberspruch ordnen' : isWordBuilder ? 'Wort-Bausteine' : isAudioChoice ? 'Hörzauber' : isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
             </div>
-            {(isImageChoice || isWordBuilder || isSpellOrder) && current.imagePath && (
-              <div className={`mx-auto mt-5 aspect-square w-full overflow-hidden rounded-[28px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10 ${isWordBuilder ? 'max-w-[11rem]' : 'max-w-[18rem]'}`}>
+            {(isImageChoice || isWordBuilder || isFinalWordBuilder || isSpellOrder) && current.imagePath && (
+              <div className={`mx-auto mt-5 aspect-square w-full overflow-hidden rounded-[28px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10 ${isWordBuilder || isFinalWordBuilder ? 'max-w-[11rem]' : 'max-w-[18rem]'}`}>
                 <img
                   src={current.imagePath}
                   alt={current.imageAlt || current.prompt}
@@ -1042,7 +1204,7 @@ export default function Quest() {
                 </div>
               </div>
             </div>
-          ) : isWordBuilder ? (
+          ) : isWordBuilder || isFinalWordBuilder ? (
             <div className="space-y-5">
               <div className="grid grid-flow-col auto-cols-fr gap-2">
                 {current.expected.split('').map((_, index) => (
@@ -1214,7 +1376,7 @@ export default function Quest() {
               <div className="w-full rounded-2xl bg-white/45 px-4 py-3 text-center text-sm font-black text-blue-950/70">
                 {matchedWordIds.length >= totalTasks ? 'Alle Bücher sortiert.' : selectedGermanId ? 'Wähle jetzt den passenden englischen Buchrücken.' : 'Wähle eine deutsche Buchseite.'}
               </div>
-            ) : isWordBuilder ? (
+            ) : isWordBuilder || isFinalWordBuilder ? (
               result ? (
                 <button type="button" onClick={next} className="gold-button w-full">
                   Weiter
@@ -1235,7 +1397,7 @@ export default function Quest() {
                 </div>
               )
             ) : !result ? (
-              <button type="submit" disabled={isSparkCatcher || isImageChoice || isAudioChoice || isWordBuilder || isSpellOrder || !answer.trim()} className={isSparkCatcher || isImageChoice || isAudioChoice || isWordBuilder || isSpellOrder ? 'hidden' : 'magic-button w-full'}>
+              <button type="submit" disabled={isSparkCatcher || isImageChoice || isAudioChoice || isWordBuilder || isFinalWordBuilder || isSpellOrder || !answer.trim()} className={isSparkCatcher || isImageChoice || isAudioChoice || isWordBuilder || isFinalWordBuilder || isSpellOrder ? 'hidden' : 'magic-button w-full'}>
                 Antwort prüfen
               </button>
             ) : (
