@@ -104,6 +104,12 @@ function buildChoiceOptions(expected: string, candidates: string[], seed: number
   return [...options.slice(rotation), ...options.slice(0, rotation)];
 }
 
+function choiceValuesForPool(candidateWords: Word[], answerPool: Challenge['answerPool']) {
+  if (answerPool === 'german') return candidateWords.map(word => word.german);
+  if (answerPool === 'verb') return candidateWords.flatMap(word => [word.english, word.past, word.participle]).filter(Boolean) as string[];
+  return candidateWords.map(word => word.english);
+}
+
 function buildLetterTiles(expected: string, seed: number) {
   const letters = expected.toLowerCase().split('');
   const tiles = letters.map((letter, index) => ({ letter, originalIndex: index }));
@@ -433,12 +439,16 @@ export default function Quest() {
   const isSparkCatcher = activeGameType === 'spark-catcher' && current?.mode === 'choice';
   const choiceOptions = useMemo(() => {
     if (!current || (!isSparkCatcher && !isImageChoice && !isAudioChoice)) return [];
-    const candidateWords = allWords.length > 0 ? allWords : words;
-    const candidates = current.answerPool === 'german'
-      ? candidateWords.map(word => word.german)
-      : current.answerPool === 'verb'
-      ? candidateWords.flatMap(word => [word.english, word.past, word.participle]).filter(Boolean) as string[]
-      : candidateWords.map(word => word.english);
+    const levelCandidates = choiceValuesForPool(words, current.answerPool);
+    const normalizedExpected = normalizeAnswer(current.expected);
+    const levelDistractors = new Set(
+      levelCandidates
+        .map(candidate => normalizeAnswer(candidate))
+        .filter(candidate => candidate && candidate !== normalizedExpected),
+    );
+    const candidates = levelDistractors.size >= 3
+      ? levelCandidates
+      : [...levelCandidates, ...choiceValuesForPool(allWords, current.answerPool)];
     return buildChoiceOptions(
       current.expected,
       candidates,
