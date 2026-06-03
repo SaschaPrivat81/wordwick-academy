@@ -97,7 +97,7 @@ const gameTypeLabels: Record<string, string> = {
   'text-input': 'Texteingabe',
 };
 
-const detailValueClass = 'mt-1 line-clamp-3 min-h-[2.35rem] max-w-full break-words text-sm font-black leading-tight text-slate-950 [hyphens:auto] [overflow-wrap:anywhere] xl:text-[15px]';
+const detailValueClass = 'mt-1 line-clamp-3 min-h-[2.35rem] max-w-full break-words text-center text-sm font-black leading-tight text-slate-950 [hyphens:auto] [overflow-wrap:anywhere] xl:text-[15px]';
 
 export default function WorldMap() {
   const { user } = useAuth();
@@ -395,19 +395,19 @@ export default function WorldMap() {
           </div>
 
           <div className="mt-4 grid grid-cols-3 gap-2 xl:mt-5">
-            <div className="min-w-0 rounded-2xl bg-white/60 p-3">
+            <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center">
               <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
               <div className={detailValueClass} title={`${selectedTaskCount}`}>
                 {selectedTaskCount}
               </div>
             </div>
-            <div className="min-w-0 rounded-2xl bg-white/60 p-3">
+            <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center">
               <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Belohnung</div>
               <div className={detailValueClass} lang="de" title={selectedQuest.reward}>
                 {selectedQuest.reward}
               </div>
             </div>
-            <div className="min-w-0 rounded-2xl bg-white/60 p-3">
+            <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center">
               <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Magie</div>
               <div className={detailValueClass} lang="de" title={selectedMagic}>
                 {selectedMagic}
