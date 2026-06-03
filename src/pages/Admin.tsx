@@ -1369,7 +1369,7 @@ export default function Admin() {
         </div>
       </section>
 
-      <div className={activeTab === 'levels' || activeTab === 'import' || activeTab === 'progress' ? 'grid gap-5' : 'hidden'}>
+      <div className={activeTab === 'levels' || activeTab === 'storyAudio' || activeTab === 'import' || activeTab === 'progress' ? 'grid gap-5' : 'hidden'}>
         <section className={`${activeTab === 'levels' ? '' : 'hidden'} parchment rounded-[28px] border border-amber-100/70 p-5`}>
           <div className="mb-4 flex items-center gap-3">
             <BookOpen className="h-6 w-6 text-blue-950" />
