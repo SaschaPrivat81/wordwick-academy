@@ -342,6 +342,33 @@ function questStepLabel(quest: AdminQuest, quests: AdminQuest[]) {
   return mapStep > 0 ? `Schritt ${mapStep}` : `ID ${quest.id}`;
 }
 
+function normalizeSearch(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function wordMatchesSearch(word: AdminWord, query: string) {
+  const tokens = normalizeSearch(query).split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return true;
+  const haystack = normalizeSearch([
+    word.german,
+    word.english,
+    word.category,
+    word.grade,
+    word.unit,
+    word.type,
+    word.past,
+    word.participle,
+    word.imageAlt,
+    word.audioText,
+    word.notes,
+  ].filter(Boolean).join(' '));
+  return tokens.every(token => haystack.includes(token));
+}
+
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [csv, setCsv] = useState('');
@@ -365,10 +392,19 @@ export default function Admin() {
   const [wordResult, setWordResult] = useState('');
   const [questDrafts, setQuestDrafts] = useState<Record<number, Partial<AdminQuest>>>({});
   const [selectedWords, setSelectedWords] = useState<Record<number, string>>({});
+  const [questWordSearches, setQuestWordSearches] = useState<Record<number, string>>({});
+  const [questCategoryFilters, setQuestCategoryFilters] = useState<Record<number, string>>({});
+  const [wordSearch, setWordSearch] = useState('');
   const readyQuestCount = content?.quests.filter(quest => contentStatusForQuest(quest).ready).length ?? 0;
   const totalQuestCount = content?.quests.length ?? 0;
   const wordBankCount = content?.words.length ?? 0;
   const openRewardClaims = rewardClaims.filter(claim => claim.status === 'requested').length;
+  const filteredWordBank = (content?.words ?? []).filter(word => wordMatchesSearch(word, wordSearch));
+  const wordCategories = Array.from(new Set(
+    (content?.words ?? [])
+      .map(word => word.category?.trim())
+      .filter((category): category is string => Boolean(category)),
+  )).sort((a, b) => a.localeCompare(b, 'de'));
 
   const loadContent = async () => {
     const response = await fetch('/api/admin/content', { credentials: 'include' });
@@ -1333,7 +1369,12 @@ export default function Admin() {
           <div className="grid gap-4">
             {(content?.quests ?? []).map(quest => {
               const draft = questDrafts[quest.id] ?? quest;
-              const availableWords = (content?.words ?? []).filter(word => !quest.words.includes(word.id));
+              const questWordSearch = questWordSearches[quest.id] ?? '';
+              const questCategoryFilter = questCategoryFilters[quest.id] ?? '';
+              const availableWords = (content?.words ?? [])
+                .filter(word => !quest.words.includes(word.id))
+                .filter(word => !questCategoryFilter || word.category === questCategoryFilter)
+                .filter(word => wordMatchesSearch(word, questWordSearch));
               const contentStatus = contentStatusForQuest(quest);
               const roundLimit = draft.taskLimit ?? quest.taskLimit ?? 'Standard';
               const stepLabel = questStepLabel(quest, content?.quests ?? []);
@@ -1416,16 +1457,42 @@ export default function Admin() {
                     />
                   </label>
 
-                  <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_14rem]">
+                    <label>
+                      <span className={labelClass}>Wortbank durchsuchen</span>
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-950/40" />
+                        <input
+                          className={`${inputClass} pl-9`}
+                          value={questWordSearch}
+                          placeholder="Deutsch, Englisch, Kategorie oder Lektion"
+                          onChange={event => setQuestWordSearches(current => ({ ...current, [quest.id]: event.target.value }))}
+                        />
+                      </div>
+                    </label>
+                    <label>
+                      <span className={labelClass}>Kategorie filtern</span>
+                      <select
+                        className={inputClass}
+                        value={questCategoryFilter}
+                        onChange={event => setQuestCategoryFilters(current => ({ ...current, [quest.id]: event.target.value }))}
+                      >
+                        <option value="">Alle Kategorien</option>
+                        {wordCategories.map(category => <option key={category} value={category}>{category}</option>)}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                     <select
                       className={inputClass}
                       value={selectedWords[quest.id] ?? ''}
                       onChange={event => setSelectedWords(current => ({ ...current, [quest.id]: event.target.value }))}
                     >
-                      <option value="">Wort aus Wortbank wählen</option>
+                      <option value="">{availableWords.length} passende Wörter wählen</option>
                       {availableWords.map(word => (
                         <option key={word.id} value={word.id}>
-                          {word.german} / {word.english}{word.type === 'irregular' ? ` / ${word.past} / ${word.participle}` : ''} · {word.type === 'irregular' ? 'Verb' : 'Vokabel'}
+                          {word.german} / {word.english}{word.type === 'irregular' ? ` / ${word.past} / ${word.participle}` : ''} · {word.category || 'ohne Kategorie'} · {word.unit || 'ohne Lektion'}
                         </option>
                       ))}
                     </select>
@@ -1448,7 +1515,8 @@ export default function Admin() {
                           contentStatus.requirement.accepts.includes(word.type) ? 'bg-blue-100 text-blue-950' : 'bg-red-100 text-red-800'
                         }`}
                       >
-                        {word.german} / {word.english}
+                        <span>{word.german} / {word.english}</span>
+                        {word.category && <span className="rounded-full bg-white/60 px-2 py-0.5 text-[0.65rem] uppercase tracking-[0.12em] text-blue-950/60">{word.category}</span>}
                         <Trash2 className="h-3 w-3" />
                       </button>
                     )) : (
@@ -1730,12 +1798,26 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,,
             <div className="mb-4 flex items-center gap-3">
               <Database className="h-6 w-6 text-blue-950" />
               <div>
-                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{wordBankCount} Einträge</div>
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">
+                  {wordSearch ? `${filteredWordBank.length}/${wordBankCount} Einträge` : `${wordBankCount} Einträge`}
+                </div>
                 <h2 className="text-xl font-black text-slate-950">Wortbank bearbeiten</h2>
               </div>
             </div>
+            <label className="mb-3 block">
+              <span className={labelClass}>Wortbank durchsuchen</span>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-950/40" />
+                <input
+                  className={`${inputClass} pl-9`}
+                  value={wordSearch}
+                  placeholder="Deutsch, Englisch, Kategorie, Lektion, Notiz"
+                  onChange={event => setWordSearch(event.target.value)}
+                />
+              </div>
+            </label>
             <div className="max-h-[30rem] space-y-3 overflow-auto pr-1">
-              {(content?.words ?? []).map(word => {
+              {filteredWordBank.map(word => {
                 const draft = wordDrafts[word.id] ?? {
                   german: word.german,
                   english: word.english,
@@ -1955,9 +2037,14 @@ klatsche in die Hände,clap your hands,vocab,body actions,3,Body actions,2,,,,,,
                   </div>
                 );
               })}
-              {(content?.words ?? []).length === 0 && (
+              {wordBankCount === 0 && (
                 <div className="rounded-xl bg-white/60 px-3 py-2 text-sm font-bold text-stone-600">
                   Noch keine Wörter angelegt.
+                </div>
+              )}
+              {wordBankCount > 0 && filteredWordBank.length === 0 && (
+                <div className="rounded-xl bg-white/60 px-3 py-2 text-sm font-bold text-stone-600">
+                  Keine Wörter gefunden.
                 </div>
               )}
             </div>
