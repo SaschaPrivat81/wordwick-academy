@@ -66,6 +66,7 @@ const DEFAULT_QUEST_TASK_LIMITS: Record<number, number> = {
   9: 12,
   10: 10,
 };
+const allowedFinalePhases = new Set(['image', 'sorter', 'audio', 'builder', 'spell', 'spark']);
 
 function defaultQuestTaskLimit(quest: { id: number; kind?: string }) {
   return DEFAULT_QUEST_TASK_LIMITS[quest.id] ?? (quest.kind === 'mixed' ? 12 : 10);
@@ -433,11 +434,23 @@ function getQuests() {
     wordDetails.push({ id: row.wordId, english: row.english, type: row.type, past: row.past, participle: row.participle, imagePath: row.imagePath, audioPath: row.audioPath });
     wordDetailsByQuest.set(row.questId, wordDetails);
   }
+  const finaleRows = db.prepare(`
+    SELECT questId, phase, wordId
+    FROM finale_phase_words
+    ORDER BY questId, phase, sortOrder, wordId
+  `).all() as { questId: number; phase: string; wordId: number }[];
+  const finaleWordsByQuest = new Map<number, Record<string, number[]>>();
+  for (const row of finaleRows) {
+    const phases = finaleWordsByQuest.get(row.questId) ?? {};
+    phases[row.phase] = [...(phases[row.phase] ?? []), row.wordId];
+    finaleWordsByQuest.set(row.questId, phases);
+  }
 
   return quests.map(quest => ({
     ...quest,
     taskLimit: quest.taskLimit ?? defaultQuestTaskLimit(quest),
     words: wordsByQuest.get(quest.id) ?? [],
+    finalPhaseWords: finaleWordsByQuest.get(quest.id) ?? {},
     contentStatus: buildQuestContentStatus(quest, wordDetailsByQuest.get(quest.id) ?? []),
   }));
 }
@@ -1326,6 +1339,7 @@ app.delete('/api/admin/words/:id', requireAdmin, (req, res) => {
     fs.unlink(oldLocalAudioPath).catch(() => undefined);
   }
   db.prepare('DELETE FROM quest_words WHERE wordId = ?').run(wordId);
+  db.prepare('DELETE FROM finale_phase_words WHERE wordId = ?').run(wordId);
   db.prepare('DELETE FROM progress WHERE wordId = ?').run(wordId);
   db.prepare('DELETE FROM words WHERE id = ?').run(wordId);
   res.json({ ok: true });
@@ -1379,7 +1393,36 @@ app.post('/api/admin/quests/:id/words', requireAdmin, (req, res) => {
 });
 
 app.delete('/api/admin/quests/:questId/words/:wordId', requireAdmin, (req, res) => {
-  db.prepare('DELETE FROM quest_words WHERE questId = ? AND wordId = ?').run(Number(req.params.questId), Number(req.params.wordId));
+  const questId = Number(req.params.questId);
+  const wordId = Number(req.params.wordId);
+  db.prepare('DELETE FROM quest_words WHERE questId = ? AND wordId = ?').run(questId, wordId);
+  db.prepare('DELETE FROM finale_phase_words WHERE questId = ? AND wordId = ?').run(questId, wordId);
+  res.json({ ok: true });
+});
+
+app.post('/api/admin/quests/:id/finale-words', requireAdmin, (req, res) => {
+  const questId = Number(req.params.id);
+  const wordId = Number(req.body.wordId);
+  const phase = String(req.body.phase ?? '');
+  if (!allowedFinalePhases.has(phase)) return res.status(400).json({ error: 'Finalphase wurde nicht erkannt' });
+
+  const quest = db.prepare('SELECT id, gameType FROM quests WHERE id = ?').get(questId) as any;
+  const linkedWord = db.prepare('SELECT wordId FROM quest_words WHERE questId = ? AND wordId = ?').get(questId, wordId);
+  if (!quest || !linkedWord) return res.status(404).json({ error: 'Level oder zugeordnetes Wort nicht gefunden' });
+  if (quest.gameType !== 'constellation-trial') return res.status(400).json({ error: 'Finale-Zuordnung ist nur für Sternbild-Prüfungen verfügbar' });
+
+  const row = db.prepare('SELECT COALESCE(MAX(sortOrder), 0) + 1 as nextOrder FROM finale_phase_words WHERE questId = ? AND phase = ?')
+    .get(questId, phase) as { nextOrder: number };
+  db.prepare('INSERT OR IGNORE INTO finale_phase_words (questId, phase, wordId, sortOrder) VALUES (?, ?, ?, ?)')
+    .run(questId, phase, wordId, row.nextOrder);
+  res.json(getQuests().find(item => item.id === questId));
+});
+
+app.delete('/api/admin/quests/:questId/finale-words/:phase/:wordId', requireAdmin, (req, res) => {
+  const phase = String(req.params.phase ?? '');
+  if (!allowedFinalePhases.has(phase)) return res.status(400).json({ error: 'Finalphase wurde nicht erkannt' });
+  db.prepare('DELETE FROM finale_phase_words WHERE questId = ? AND phase = ? AND wordId = ?')
+    .run(Number(req.params.questId), phase, Number(req.params.wordId));
   res.json({ ok: true });
 });
 
@@ -1401,6 +1444,7 @@ app.get('/api/admin/content/export', requireAdmin, (_req, res) => {
   const words = db.prepare('SELECT * FROM words ORDER BY id').all();
   const quests = getQuests();
   const questWords = db.prepare('SELECT questId, wordId, sortOrder FROM quest_words ORDER BY questId, sortOrder, wordId').all();
+  const finalePhaseWords = db.prepare('SELECT questId, phase, wordId, sortOrder FROM finale_phase_words ORDER BY questId, phase, sortOrder, wordId').all();
   const rewards = db.prepare('SELECT * FROM rewards ORDER BY sortOrder, id').all();
 
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -1412,6 +1456,7 @@ app.get('/api/admin/content/export', requireAdmin, (_req, res) => {
     words,
     quests,
     questWords,
+    finalePhaseWords,
     rewards,
   });
 });

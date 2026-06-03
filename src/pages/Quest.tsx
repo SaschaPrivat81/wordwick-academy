@@ -164,6 +164,7 @@ function uniqueWords(words: Word[]) {
 
 function buildConstellationChallenges(words: Word[], allWords: Word[], quest: AcademyQuest): Challenge[] {
   const sourceWords = rotateItems(uniqueWords([...words, ...allWords]), dailyQuestSeed(quest.id));
+  const wordById = new Map(sourceWords.map(word => [word.id, word]));
   const vocabWords = sourceWords.filter(word => word.type === 'vocab');
   const imageWords = vocabWords.filter(word => word.imagePath);
   const audioWords = vocabWords.filter(word => word.audioPath);
@@ -196,7 +197,22 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
     });
   };
 
-  for (const word of imageWords.slice(0, 3)) {
+  const phaseWords = (phase: string, fallback: Word[], predicate: (word: Word) => boolean) => {
+    const selected = (quest.finalPhaseWords?.[phase] ?? [])
+      .map(wordId => wordById.get(wordId))
+      .filter((word): word is Word => Boolean(word))
+      .filter(predicate);
+    return selected.length > 0 ? selected : fallback;
+  };
+
+  const finalImageWords = phaseWords('image', imageWords, word => word.type === 'vocab' && Boolean(word.imagePath));
+  const finalSorterWords = phaseWords('sorter', vocabWords, word => word.type === 'vocab');
+  const finalAudioWords = phaseWords('audio', audioWords, word => word.type === 'vocab' && Boolean(word.audioPath));
+  const finalBuilderWords = phaseWords('builder', singleWords, word => word.type === 'vocab' && /^[a-zA-Z]+$/.test(word.english));
+  const finalSpellWords = phaseWords('spell', phraseWords, word => word.type === 'vocab' && word.english.trim().split(/\s+/).length >= 2);
+  const finalSparkWords = phaseWords('spark', vocabWords, word => word.type === 'vocab');
+
+  for (const word of finalImageWords.slice(0, 3)) {
     addChallenge('Stern 1 · Bildkarten', word, 'choice', {
       prompt: 'Welcher englische Wortfunke passt zu diesem Bild?',
       helper: 'Schau genau hin. Jeder richtige Bildfunke entzündet den ersten Stern.',
@@ -207,7 +223,7 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
     });
   }
 
-  for (const word of vocabWords.slice(0, 4)) {
+  for (const word of finalSorterWords.slice(0, 4)) {
     addChallenge('Stern 2 · Bücher ordnen', word, 'choice', {
       prompt: `Was bedeutet "${word.english}" auf Deutsch?`,
       helper: 'Ordne das englische Wort dem richtigen deutschen Buchblatt zu.',
@@ -217,7 +233,7 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
     });
   }
 
-  for (const word of audioWords.slice(0, 3)) {
+  for (const word of finalAudioWords.slice(0, 3)) {
     addChallenge('Stern 3 · Hörzauber', word, 'choice', {
       prompt: 'Was bedeutet der gesprochene Wortfunke?',
       helper: 'Hör genau hin und wähle die passende deutsche Bedeutung.',
@@ -232,7 +248,7 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
     });
   }
 
-  for (const word of singleWords.slice(0, 2)) {
+  for (const word of finalBuilderWords.slice(0, 2)) {
     addChallenge('Stern 4 · Wort-Bausteine', word, 'builder', {
       prompt: `Baue das englische Wort für "${word.german}".`,
       helper: 'Lege die Buchstaben in der richtigen Reihenfolge.',
@@ -243,7 +259,7 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
     });
   }
 
-  for (const word of phraseWords.slice(0, 2)) {
+  for (const word of finalSpellWords.slice(0, 2)) {
     const phraseParts = word.english.trim().split(/\s+/);
     addChallenge('Stern 5 · Zauberspruch', word, 'phrase', {
       prompt: `Ordne den finalen Zauberspruch für "${word.german}".`,
@@ -259,8 +275,8 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
 
   const target = questTaskLimit(quest);
   let index = 0;
-  while (challenges.length < target && vocabWords.length > 0) {
-    const word = vocabWords[index % vocabWords.length];
+  while (challenges.length < target && finalSparkWords.length > 0) {
+    const word = finalSparkWords[index % finalSparkWords.length];
     addChallenge('Sternbild-Funken', word, 'choice', {
       prompt: `Wie heisst "${word.german}" auf Englisch?`,
       helper: 'Ein letzter Wortfunke sucht seinen Platz im Sternbild.',
@@ -269,7 +285,7 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
       answerPool: 'english',
     });
     index++;
-    if (index > vocabWords.length * 2) break;
+    if (index > finalSparkWords.length * 2) break;
   }
 
   return challenges.slice(0, target);

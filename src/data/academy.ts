@@ -15,6 +15,7 @@ export interface AcademyQuest {
   words: number[];
   reward: string;
   guide: string;
+  finalPhaseWords?: Record<string, number[]>;
   contentStatus?: {
     ready: boolean;
     issues: string[];

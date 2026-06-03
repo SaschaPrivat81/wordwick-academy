@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BookOpen, Database, Download, FileText, Gift, Image as ImageIcon, LineChart, LockKeyhole, PackageCheck, PlusCircle, RotateCcw, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Volume2, Wand2, XCircle } from 'lucide-react';
+import { BookOpen, Database, Download, FileText, Gift, Image as ImageIcon, LineChart, LockKeyhole, PackageCheck, PlusCircle, RotateCcw, Save, Search, ShieldCheck, Star, Trash2, UploadCloud, UserPlus, Users, Volume2, Wand2, XCircle } from 'lucide-react';
 import { storyAudioSlots } from '../data/academy';
 
 interface AdminWord {
@@ -36,6 +36,7 @@ interface AdminQuest {
   guide: string;
   words: number[];
   wordItems: AdminWord[];
+  finalPhaseWords?: Record<string, number[]>;
   contentStatus?: {
     ready: boolean;
     issues: string[];
@@ -294,6 +295,15 @@ const gameTypes = [
   ['text-input', 'Texteingabe'],
 ];
 
+const finalePhaseOptions = [
+  { id: 'image', title: 'Stern 1 · Bildkarten', helper: 'Wörter mit Bild für Bildkarte erkennen.' },
+  { id: 'sorter', title: 'Stern 2 · Bücher ordnen', helper: 'Normale Vokabeln für Deutsch/Englisch-Zuordnung.' },
+  { id: 'audio', title: 'Stern 3 · Hörzauber', helper: 'Wörter mit Audiodatei für Hörverständnis.' },
+  { id: 'builder', title: 'Stern 4 · Wort-Bausteine', helper: 'Einzelne englische Wörter zum Buchstabenbauen.' },
+  { id: 'spell', title: 'Stern 5 · Zauberspruch', helper: 'Englische Phrasen mit mehreren Wörtern.' },
+  { id: 'spark', title: 'Zusatz · Sternbild-Funken', helper: 'Flexible Zusatzfragen, falls die Runde aufgefüllt wird.' },
+];
+
 const kindLabels: Record<string, string> = {
   vocab: 'Vokabeln',
   verb: 'Verben (später)',
@@ -382,6 +392,20 @@ function wordMatchesSearch(word: AdminWord, query: string) {
   return tokens.every(token => haystack.includes(token));
 }
 
+function wordFitsFinalePhase(word: AdminWord, phase: string) {
+  if (word.type !== 'vocab') return false;
+  if (phase === 'image') return Boolean(word.imagePath);
+  if (phase === 'audio') return Boolean(word.audioPath);
+  if (phase === 'builder') return /^[a-zA-Z]+$/.test(word.english);
+  if (phase === 'spell') return word.english.trim().split(/\s+/).length >= 2;
+  return true;
+}
+
+function wordShortLabel(word?: AdminWord) {
+  if (!word) return 'Unbekanntes Wort';
+  return `${word.german} / ${word.english}`;
+}
+
 export default function Admin() {
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [csv, setCsv] = useState('');
@@ -407,6 +431,7 @@ export default function Admin() {
   const [wordResult, setWordResult] = useState('');
   const [questDrafts, setQuestDrafts] = useState<Record<number, Partial<AdminQuest>>>({});
   const [selectedWords, setSelectedWords] = useState<Record<number, string>>({});
+  const [selectedFinaleWords, setSelectedFinaleWords] = useState<Record<string, string>>({});
   const [questWordSearches, setQuestWordSearches] = useState<Record<number, string>>({});
   const [questCategoryFilters, setQuestCategoryFilters] = useState<Record<number, string>>({});
   const [wordSearch, setWordSearch] = useState('');
@@ -973,6 +998,28 @@ export default function Admin() {
     await loadContent();
   };
 
+  const assignFinaleWord = async (questId: number, phase: string) => {
+    const key = `${questId}-${phase}`;
+    const wordId = selectedFinaleWords[key];
+    if (!wordId) return;
+    await fetch(`/api/admin/quests/${questId}/finale-words`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ phase, wordId }),
+    });
+    setSelectedFinaleWords(current => ({ ...current, [key]: '' }));
+    await loadContent();
+  };
+
+  const removeFinaleWord = async (questId: number, phase: string, wordId: number) => {
+    await fetch(`/api/admin/quests/${questId}/finale-words/${phase}/${wordId}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    await loadContent();
+  };
+
   const loadStats = async () => {
     if (!userId) {
       setStats(null);
@@ -1458,6 +1505,8 @@ export default function Admin() {
               const contentStatus = contentStatusForQuest(quest);
               const roundLimit = draft.taskLimit ?? quest.taskLimit ?? 'Standard';
               const stepLabel = questStepLabel(quest, content?.quests ?? []);
+              const questWordById = new Map(quest.wordItems.map(word => [word.id, word]));
+              const finalPhaseWords = quest.finalPhaseWords ?? {};
               return (
                 <div key={quest.id} className="rounded-2xl border border-amber-900/10 bg-white/60 p-4">
                   <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -1603,6 +1652,86 @@ export default function Admin() {
                       <span className="rounded-full bg-stone-200 px-3 py-1 text-xs font-bold text-stone-600">Noch kein Inhalt</span>
                     )}
                   </div>
+
+                  {(draft.gameType ?? quest.gameType) === 'constellation-trial' && (
+                    <div className="mt-4 rounded-2xl border border-blue-950/10 bg-blue-50/70 p-4">
+                      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.16em] text-blue-950/60">
+                            <Star className="h-4 w-4" />
+                            Finale-Zuordnung
+                          </div>
+                          <p className="mt-1 text-sm font-bold leading-6 text-blue-950/70">
+                            Leere Bereiche werden automatisch mit passenden Level-Wörtern aufgefüllt.
+                          </p>
+                        </div>
+                        <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-blue-950/55">
+                          {Object.values(finalPhaseWords).reduce((sum, ids) => sum + ids.length, 0)} festgelegt
+                        </span>
+                      </div>
+
+                      <div className="grid gap-3 lg:grid-cols-2">
+                        {finalePhaseOptions.map(phase => {
+                          const selectedIds = finalPhaseWords[phase.id] ?? [];
+                          const selectedKey = `${quest.id}-${phase.id}`;
+                          const candidates = quest.wordItems
+                            .filter(word => wordFitsFinalePhase(word, phase.id))
+                            .filter(word => !selectedIds.includes(word.id));
+                          return (
+                            <div key={phase.id} className="rounded-2xl border border-white/80 bg-white/70 p-3">
+                              <div className="mb-2">
+                                <div className="text-sm font-black text-slate-950">{phase.title}</div>
+                                <div className="text-xs font-bold leading-5 text-stone-600">{phase.helper}</div>
+                              </div>
+
+                              <div className="flex flex-col gap-2 sm:flex-row">
+                                <select
+                                  className={inputClass}
+                                  value={selectedFinaleWords[selectedKey] ?? ''}
+                                  onChange={event => setSelectedFinaleWords(current => ({ ...current, [selectedKey]: event.target.value }))}
+                                >
+                                  <option value="">{candidates.length} Wörter wählen</option>
+                                  {candidates.map(word => (
+                                    <option key={word.id} value={word.id}>
+                                      {word.german} / {word.english}{word.category ? ` · ${word.category}` : ''}
+                                    </option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => assignFinaleWord(quest.id, phase.id)}
+                                  disabled={!selectedFinaleWords[selectedKey]}
+                                  className="magic-button shrink-0 disabled:cursor-not-allowed disabled:opacity-45"
+                                >
+                                  <PlusCircle className="h-4 w-4" />
+                                  Setzen
+                                </button>
+                              </div>
+
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {selectedIds.length > 0 ? selectedIds.map(wordId => {
+                                  const word = questWordById.get(wordId);
+                                  return (
+                                    <button
+                                      key={`${phase.id}-${wordId}`}
+                                      type="button"
+                                      onClick={() => removeFinaleWord(quest.id, phase.id, wordId)}
+                                      className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-950 transition hover:bg-red-100 hover:text-red-800"
+                                    >
+                                      <span>{wordShortLabel(word)}</span>
+                                      <Trash2 className="h-3 w-3" />
+                                    </button>
+                                  );
+                                }) : (
+                                  <span className="rounded-full bg-stone-200 px-3 py-1 text-xs font-bold text-stone-600">Automatisch</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}

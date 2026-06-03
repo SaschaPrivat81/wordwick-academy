@@ -102,6 +102,14 @@ db.exec(`
     PRIMARY KEY (questId, wordId)
   );
 
+  CREATE TABLE IF NOT EXISTS finale_phase_words (
+    questId INTEGER NOT NULL,
+    phase TEXT NOT NULL,
+    wordId INTEGER NOT NULL,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (questId, phase, wordId)
+  );
+
   CREATE TABLE IF NOT EXISTS app_settings (
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
