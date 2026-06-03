@@ -65,6 +65,8 @@ const QUEST_TASK_LIMITS: Record<number, number> = {
   10: 10,
 };
 
+const missionStatValueClass = 'mt-1 line-clamp-3 min-h-[2.35rem] max-w-full break-words text-sm font-black leading-tight text-slate-950 [hyphens:auto] [overflow-wrap:anywhere] xl:text-[15px]';
+
 function rotateItems<T>(items: T[], seed: number) {
   if (items.length === 0) return items;
   const offset = seed % items.length;
@@ -754,16 +756,22 @@ export default function Quest() {
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl bg-white/60 p-4">
-                  <div className="text-2xl font-black text-slate-950">{totalTasks}</div>
+                <div className="min-w-0 rounded-2xl bg-white/60 p-4">
+                  <div className={missionStatValueClass} title={`${totalTasks}`}>
+                    {totalTasks}
+                  </div>
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
                 </div>
-                <div className="rounded-2xl bg-white/60 p-4">
-                  <div className="text-2xl font-black text-slate-950">{quest.reward}</div>
+                <div className="min-w-0 rounded-2xl bg-white/60 p-4">
+                  <div className={missionStatValueClass} lang="de" title={quest.reward}>
+                    {quest.reward}
+                  </div>
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Belohnung</div>
                 </div>
-                <div className="rounded-2xl bg-white/60 p-4">
-                  <div className="text-2xl font-black text-slate-950">{quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}</div>
+                <div className="min-w-0 rounded-2xl bg-white/60 p-4">
+                  <div className={missionStatValueClass} lang="de" title={quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}>
+                    {quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}
+                  </div>
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Magie</div>
                 </div>
               </div>
