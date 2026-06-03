@@ -220,17 +220,17 @@ function buildChallenges(words: Word[], quest: AcademyQuest): Challenge[] {
         id: `${word.id}-audio-choice`,
         wordId: word.id,
         eyebrow: 'Hörzauber',
-        prompt: 'Welcher Wortfunke wurde gesprochen?',
-        helper: 'Tippe auf das Ohr, hör genau hin und wähle die passende Antwortkarte.',
-        expected: word.english,
-        acceptable: [word.english],
+        prompt: 'Was bedeutet der gesprochene Wortfunke?',
+        helper: 'Hör genau hin und wähle die passende deutsche Bedeutung.',
+        expected: word.german,
+        acceptable: [word.german],
         imagePath: word.imagePath,
         imageAlt: word.imageAlt || `${word.german} / ${word.english}`,
         audioPath: word.audioPath,
         audioText: word.audioText || word.english,
         audioVoice: word.audioVoice,
         audioSource: word.audioSource,
-        answerPool: 'english',
+        answerPool: 'german',
         mode: 'choice',
       });
       continue;
@@ -447,7 +447,10 @@ export default function Quest() {
   }, [allWords, current, currentIndex, isAudioChoice, isImageChoice, isSparkCatcher, questId, words]);
   const choiceOptionWords = useMemo(() => {
     const candidateWords = allWords.length > 0 ? allWords : words;
-    return new Map(candidateWords.map(word => [normalizeAnswer(word.english), word]));
+    return {
+      byEnglish: new Map(candidateWords.map(word => [normalizeAnswer(word.english), word])),
+      byGerman: new Map(candidateWords.map(word => [normalizeAnswer(word.german), word])),
+    };
   }, [allWords, words]);
   const letterTiles = useMemo(
     () => current && isWordBuilder ? buildLetterTiles(current.expected, current.wordId + currentIndex + questId * 3) : [],
@@ -1122,7 +1125,9 @@ export default function Quest() {
                 const isSelected = normalizeAnswer(answer) === normalizeAnswer(option);
                 const isExpected = result && normalizeAnswer(option) === normalizeAnswer(result.expected);
                 const isWrongPick = result && isSelected && !result.correct;
-                const optionWord = choiceOptionWords.get(normalizeAnswer(option));
+                const optionWord = isAudioChoice
+                  ? choiceOptionWords.byGerman.get(normalizeAnswer(option))
+                  : choiceOptionWords.byEnglish.get(normalizeAnswer(option));
                 return (
                   <button
                     key={option}
