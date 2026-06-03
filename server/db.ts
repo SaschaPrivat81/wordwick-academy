@@ -106,6 +106,15 @@ db.exec(`
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS story_audio (
+    storyId TEXT PRIMARY KEY,
+    audioPath TEXT NOT NULL,
+    audioText TEXT,
+    audioVoice TEXT,
+    audioSource TEXT,
+    updatedAt TEXT NOT NULL
+  );
 `);
 
 const userColumns = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];

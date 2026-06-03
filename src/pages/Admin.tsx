@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BookOpen, Database, Download, FileText, Gift, Image as ImageIcon, LineChart, LockKeyhole, PackageCheck, PlusCircle, RotateCcw, Save, Search, ShieldCheck, Trash2, UploadCloud, UserPlus, Users, Volume2, Wand2, XCircle } from 'lucide-react';
+import { storyAudioSlots } from '../data/academy';
 
 interface AdminWord {
   id: number;
@@ -52,7 +53,7 @@ interface AdminQuest {
 }
 
 type UserRole = 'child' | 'parent' | 'admin';
-type AdminTab = 'users' | 'rewards' | 'levels' | 'import' | 'progress';
+type AdminTab = 'users' | 'rewards' | 'levels' | 'storyAudio' | 'import' | 'progress';
 
 interface AdminUser {
   id: number;
@@ -129,6 +130,15 @@ interface RewardClaim {
   parentNote?: string;
   status: RewardClaimStatus;
   claimedAt: string;
+}
+
+interface AdminStoryAudio {
+  storyId: string;
+  audioPath: string;
+  audioText?: string;
+  audioVoice?: string;
+  audioSource?: string;
+  updatedAt?: string;
 }
 
 interface WordForm {
@@ -307,6 +317,7 @@ const adminTabs: { id: AdminTab; label: string; icon: typeof Users }[] = [
   { id: 'users', label: 'Benutzer', icon: Users },
   { id: 'rewards', label: 'Belohnungen', icon: Gift },
   { id: 'levels', label: 'Level', icon: BookOpen },
+  { id: 'storyAudio', label: 'Story-Audio', icon: Volume2 },
   { id: 'import', label: 'Wörter & Import', icon: FileText },
   { id: 'progress', label: 'Fortschritt', icon: LineChart },
 ];
@@ -387,6 +398,8 @@ export default function Admin() {
   const [rewardDrafts, setRewardDrafts] = useState<Record<number, RewardDraft>>({});
   const [rewardForm, setRewardForm] = useState<RewardDraft>(emptyRewardDraft);
   const [rewardResult, setRewardResult] = useState('');
+  const [storyAudio, setStoryAudio] = useState<Record<string, AdminStoryAudio>>({});
+  const [storyAudioResult, setStoryAudioResult] = useState('');
   const [wordForm, setWordForm] = useState<WordForm>(emptyWordForm);
   const [wordDrafts, setWordDrafts] = useState<Record<number, WordForm>>({});
   const [wordResult, setWordResult] = useState('');
@@ -399,6 +412,7 @@ export default function Admin() {
   const totalQuestCount = content?.quests.length ?? 0;
   const wordBankCount = content?.words.length ?? 0;
   const openRewardClaims = rewardClaims.filter(claim => claim.status === 'requested').length;
+  const storyAudioCount = Object.keys(storyAudio).length;
   const filteredWordBank = (content?.words ?? []).filter(word => wordMatchesSearch(word, wordSearch));
   const wordCategories = Array.from(new Set(
     (content?.words ?? [])
@@ -493,10 +507,22 @@ export default function Admin() {
     setContentError('');
   };
 
+  const loadStoryAudio = async () => {
+    const response = await fetch('/api/admin/story-audio', { credentials: 'include' });
+    if (!response.ok) {
+      setContentError('Story-Audio ist für Eltern/Admins vorgesehen.');
+      return;
+    }
+    const data = await response.json();
+    setStoryAudio(Object.fromEntries(data.map((row: AdminStoryAudio) => [row.storyId, row])));
+    setContentError('');
+  };
+
   useEffect(() => {
     loadContent();
     loadUsers();
     loadRewards();
+    loadStoryAudio();
   }, []);
 
   const updateUserForm = <K extends keyof UserForm>(field: K, value: UserForm[K]) => {
@@ -795,6 +821,57 @@ export default function Admin() {
     await loadContent();
   };
 
+  const uploadStoryAudio = async (slotId: string, text: string, file?: File) => {
+    if (!file) return;
+    setStoryAudioResult('');
+    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/wav', 'audio/x-wav', 'audio/ogg'];
+    if (!allowedTypes.includes(file.type)) {
+      setStoryAudioResult('Bitte MP3, M4A, AAC, WAV oder OGG hochladen.');
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      setStoryAudioResult('Die Story-Audiodatei darf maximal 12 MB groß sein.');
+      return;
+    }
+
+    const data = await readFileAsDataUrl(file);
+    const response = await fetch(`/api/admin/story-audio/${slotId}/audio`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        data,
+        mimeType: file.type,
+        fileName: file.name,
+        audioText: text,
+        audioVoice: 'Erzähler',
+        audioSource: 'ElevenLabs',
+      }),
+    });
+    const saved = await response.json();
+    if (!response.ok) {
+      setStoryAudioResult(saved.error ?? 'Story-Audio konnte nicht hochgeladen werden.');
+      return;
+    }
+    setStoryAudioResult(`Story-Audio für ${saved.storyId} wurde gespeichert.`);
+    await loadStoryAudio();
+  };
+
+  const removeStoryAudio = async (slotId: string) => {
+    setStoryAudioResult('');
+    const response = await fetch(`/api/admin/story-audio/${slotId}/audio`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      setStoryAudioResult(data.error ?? 'Story-Audio konnte nicht entfernt werden.');
+      return;
+    }
+    setStoryAudioResult(`Story-Audio für ${data.storyId} wurde entfernt.`);
+    await loadStoryAudio();
+  };
+
   const deleteWord = async (wordId: number) => {
     setWordResult('');
     const word = content?.words.find(item => item.id === wordId);
@@ -925,10 +1002,11 @@ export default function Admin() {
       )}
 
       <section className="parchment mb-5 rounded-[28px] border border-amber-100/70 p-4">
-        <div className="mb-3 grid gap-2 text-center text-xs font-black text-blue-950/70 sm:grid-cols-4">
+        <div className="mb-3 grid gap-2 text-center text-xs font-black text-blue-950/70 sm:grid-cols-5">
           <div className="rounded-xl bg-white/60 px-3 py-2">{users.length} Zugänge</div>
           <div className="rounded-xl bg-white/60 px-3 py-2">{readyQuestCount}/{totalQuestCount} Level befüllt</div>
           <div className="rounded-xl bg-white/60 px-3 py-2">{wordBankCount} Wörter</div>
+          <div className="rounded-xl bg-white/60 px-3 py-2">{storyAudioCount}/{storyAudioSlots.length} Story-Audios</div>
           <div className="rounded-xl bg-white/60 px-3 py-2">{openRewardClaims} offene Anfragen</div>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -1527,6 +1605,90 @@ export default function Admin() {
               );
             })}
           </div>
+        </section>
+
+        <section className={`${activeTab === 'storyAudio' ? '' : 'hidden'} parchment mb-5 rounded-[28px] border border-amber-100/70 p-5`}>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Volume2 className="h-6 w-6 text-blue-950" />
+              <div>
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">
+                  {storyAudioCount}/{storyAudioSlots.length} Audios vorbereitet
+                </div>
+                <h2 className="text-2xl font-black text-slate-950">Story-Audio</h2>
+              </div>
+            </div>
+            <div className="rounded-xl bg-white/70 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-blue-950/65">
+              Erzählerstimme · MP3 empfohlen
+            </div>
+          </div>
+
+          <p className="mb-4 rounded-2xl bg-blue-50/80 px-4 py-3 text-sm font-bold leading-6 text-blue-950/75">
+            Lade hier die gesprochenen Audios für Prolog, Zwischensequenzen und Finalszene hoch. In der Kinderansicht erscheint nur dann ein Anhören-Button, wenn für die jeweilige Seite eine Datei vorhanden ist.
+          </p>
+
+          <div className="grid gap-3">
+            {storyAudioSlots.map(slot => {
+              const audio = storyAudio[slot.id];
+              return (
+                <div key={slot.id} className="rounded-2xl border border-amber-900/10 bg-white/65 p-4">
+                  <div className="grid gap-3 lg:grid-cols-[1fr_18rem]">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-blue-950">
+                          {slot.section}
+                        </span>
+                        <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-stone-500">
+                          {slot.id}
+                        </span>
+                        <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-[0.12em] ${audio ? 'bg-emerald-100 text-emerald-800' : 'bg-stone-200 text-stone-600'}`}>
+                          {audio ? 'Audio vorhanden' : 'Fehlt noch'}
+                        </span>
+                      </div>
+                      <h3 className="mt-3 text-lg font-black leading-tight text-slate-950">{slot.title}</h3>
+                      <div className="mt-1 text-sm font-black text-blue-950/55">{slot.subtitle}</div>
+                      <p className="mt-3 line-clamp-3 text-sm font-semibold leading-6 text-stone-600">{slot.text}</p>
+                    </div>
+
+                    <div className="grid content-start gap-2">
+                      {audio ? (
+                        <audio controls src={audio.audioPath} className="w-full">
+                          <a href={audio.audioPath}>Audio öffnen</a>
+                        </audio>
+                      ) : (
+                        <div className="rounded-xl border border-blue-950/10 bg-blue-50/65 px-3 py-2 text-xs font-bold text-blue-950/55">
+                          Noch keine Audiodatei
+                        </div>
+                      )}
+                      <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-blue-950 px-3 py-2 text-sm font-black text-amber-50 transition hover:bg-blue-800 active:scale-[0.98]">
+                        <UploadCloud className="h-4 w-4" />
+                        Audio hochladen
+                        <input
+                          type="file"
+                          accept="audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/aac,audio/wav,audio/x-wav,audio/ogg"
+                          className="sr-only"
+                          onChange={event => {
+                            void uploadStoryAudio(slot.id, slot.text, event.target.files?.[0]);
+                            event.target.value = '';
+                          }}
+                        />
+                      </label>
+                      <button
+                        onClick={() => removeStoryAudio(slot.id)}
+                        disabled={!audio}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-white/80 px-3 py-2 text-sm font-black text-red-800 transition hover:bg-red-100 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        <XCircle className="h-4 w-4" />
+                        Audio entfernen
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {storyAudioResult && <p className="mt-3 text-sm font-black text-blue-800">{storyAudioResult}</p>}
         </section>
 
         <aside className={activeTab === 'import' || activeTab === 'progress' ? 'grid content-start gap-5' : 'hidden'}>

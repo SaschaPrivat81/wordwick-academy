@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, MessageCircle, Sparkles } from 'lucide-react';
 import { useAuth } from '../App';
+import StoryAudioPlayer from '../components/StoryAudioPlayer';
 import { getStoryScene } from '../data/academy';
+import { useStoryAudio } from '../hooks/useStoryAudio';
 
 const speakerStyles = {
   Pip: 'bg-blue-950 text-amber-50',
@@ -17,6 +19,7 @@ export default function StoryScene() {
   const navigate = useNavigate();
   const scene = useMemo(() => (id ? getStoryScene(id) : undefined), [id]);
   const [pageIndex, setPageIndex] = useState(0);
+  const storyAudio = useStoryAudio();
 
   if (!scene) {
     return (
@@ -34,6 +37,7 @@ export default function StoryScene() {
 
   const page = scene.pages[pageIndex];
   const progress = ((pageIndex + 1) / scene.pages.length) * 100;
+  const pageAudio = storyAudio[`${scene.id}-${pageIndex + 1}`];
 
   const finishScene = () => {
     if (user) localStorage.setItem(`wordwick-story-seen-${scene.id}-${user.id}`, 'yes');
@@ -81,6 +85,7 @@ export default function StoryScene() {
                 {page.aside}
               </div>
             )}
+            <StoryAudioPlayer audioPath={pageAudio?.audioPath} />
 
             <div className="mt-7">
               <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-blue-950/55">

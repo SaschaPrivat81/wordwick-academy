@@ -8,7 +8,7 @@ import fs from 'fs/promises';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));   
 const app = express();
-app.use(express.json({ limit: '14mb' }));
+app.use(express.json({ limit: '20mb' }));
 app.use(session({
   secret: process.env.SESSION_SECRET || 'wordwick-academy-dev-secret',
   resave: false,
@@ -37,6 +37,8 @@ const WORD_IMAGE_DIR = path.join(__dirname, '../public/assets/word-images');
 const WORD_IMAGE_PUBLIC_PATH = '/assets/word-images';
 const WORD_AUDIO_DIR = path.join(__dirname, '../public/assets/word-audio');
 const WORD_AUDIO_PUBLIC_PATH = '/assets/word-audio';
+const STORY_AUDIO_DIR = path.join(__dirname, '../public/assets/story-audio');
+const STORY_AUDIO_PUBLIC_PATH = '/assets/story-audio';
 const allowedWordImageTypes: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -87,6 +89,11 @@ function localWordImagePath(imagePath?: string | null) {
 function localWordAudioPath(audioPath?: string | null) {
   if (!audioPath?.startsWith(`${WORD_AUDIO_PUBLIC_PATH}/`)) return null;
   return path.join(WORD_AUDIO_DIR, path.basename(audioPath));
+}
+
+function localStoryAudioPath(audioPath?: string | null) {
+  if (!audioPath?.startsWith(`${STORY_AUDIO_PUBLIC_PATH}/`)) return null;
+  return path.join(STORY_AUDIO_DIR, path.basename(audioPath));
 }
 
 const importHeaderAliases = {
@@ -636,6 +643,92 @@ app.post('/api/rewards/:id/claim', requirePin, (req, res) => {
   const result = db.prepare('INSERT INTO claimed_rewards (userId, rewardId, status, claimedAt) VALUES (?, ?, ?, ?)')
     .run(userId, reward.id, status, new Date().toISOString());
   res.json({ ok: true, claimId: Number(result.lastInsertRowid), status });
+});
+
+// ─── Story-Audio ───
+app.get('/api/story-audio', requirePin, (_req, res) => {
+  const rows = db.prepare('SELECT storyId, audioPath, audioText, audioVoice, audioSource, updatedAt FROM story_audio ORDER BY storyId').all();
+  res.json(rows);
+});
+
+app.get('/api/admin/story-audio', requireAdmin, (_req, res) => {
+  const rows = db.prepare('SELECT storyId, audioPath, audioText, audioVoice, audioSource, updatedAt FROM story_audio ORDER BY storyId').all();
+  res.json(rows);
+});
+
+app.post('/api/admin/story-audio/:storyId/audio', requireAdmin, async (req, res) => {
+  const storyId = String(req.params.storyId ?? '').trim();
+  if (!/^[a-z0-9-]+$/.test(storyId)) {
+    return res.status(400).json({ error: 'Ungültige Story-ID' });
+  }
+
+  const existing = db.prepare('SELECT * FROM story_audio WHERE storyId = ?').get(storyId) as any;
+  const mimeType = typeof req.body.mimeType === 'string' ? req.body.mimeType : '';
+  const extension = allowedWordAudioTypes[mimeType];
+  const rawData = typeof req.body.data === 'string' ? req.body.data : '';
+  const audioText = typeof req.body.audioText === 'string' && req.body.audioText.trim()
+    ? req.body.audioText.trim()
+    : existing?.audioText || null;
+  const audioVoice = typeof req.body.audioVoice === 'string' && req.body.audioVoice.trim()
+    ? req.body.audioVoice.trim()
+    : existing?.audioVoice || null;
+  const audioSource = typeof req.body.audioSource === 'string' && req.body.audioSource.trim()
+    ? req.body.audioSource.trim()
+    : existing?.audioSource || 'Admin-Upload';
+
+  if (!extension) {
+    return res.status(400).json({ error: 'Bitte MP3, M4A, AAC, WAV oder OGG hochladen' });
+  }
+
+  const base64 = rawData.includes(',') ? rawData.split(',').pop() ?? '' : rawData;
+  if (!base64) {
+    return res.status(400).json({ error: 'Audiodaten fehlen' });
+  }
+
+  const buffer = Buffer.from(base64, 'base64');
+  if (buffer.length === 0 || buffer.length > 12 * 1024 * 1024) {
+    return res.status(400).json({ error: 'Die Story-Audiodatei darf maximal 12 MB groß sein' });
+  }
+
+  await fs.mkdir(STORY_AUDIO_DIR, { recursive: true });
+  const fileName = `${slugifyFilePart(storyId)}-${Date.now()}.${extension}`;
+  const filePath = path.join(STORY_AUDIO_DIR, fileName);
+  await fs.writeFile(filePath, buffer);
+
+  const oldLocalPath = localStoryAudioPath(existing?.audioPath);
+  if (oldLocalPath) {
+    await fs.unlink(oldLocalPath).catch(() => undefined);
+  }
+
+  const audioPath = `${STORY_AUDIO_PUBLIC_PATH}/${fileName}`;
+  const updatedAt = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO story_audio (storyId, audioPath, audioText, audioVoice, audioSource, updatedAt)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(storyId) DO UPDATE SET
+      audioPath = excluded.audioPath,
+      audioText = excluded.audioText,
+      audioVoice = excluded.audioVoice,
+      audioSource = excluded.audioSource,
+      updatedAt = excluded.updatedAt
+  `).run(storyId, audioPath, audioText, audioVoice, audioSource, updatedAt);
+
+  const saved = db.prepare('SELECT storyId, audioPath, audioText, audioVoice, audioSource, updatedAt FROM story_audio WHERE storyId = ?')
+    .get(storyId);
+  res.json(saved);
+});
+
+app.delete('/api/admin/story-audio/:storyId/audio', requireAdmin, async (req, res) => {
+  const storyId = String(req.params.storyId ?? '').trim();
+  const existing = db.prepare('SELECT * FROM story_audio WHERE storyId = ?').get(storyId) as any;
+  if (!existing) return res.status(404).json({ error: 'Story-Audio nicht gefunden' });
+
+  const oldLocalPath = localStoryAudioPath(existing.audioPath);
+  if (oldLocalPath) {
+    await fs.unlink(oldLocalPath).catch(() => undefined);
+  }
+  db.prepare('DELETE FROM story_audio WHERE storyId = ?').run(storyId);
+  res.json({ ok: true, storyId });
 });
 
 // ─── Admin: CSV-Upload ───

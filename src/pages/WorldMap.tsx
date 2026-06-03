@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Castle, Check, CloudSun, Flame, FlaskConical, GraduationCap, Home, LibraryBig, LockKeyhole, PawPrint, ScrollText, Sparkles, Sprout, Star, Telescope, Trees, Trophy, Waves } from 'lucide-react';
 import { useAuth } from '../App';
+import StoryAudioPlayer from '../components/StoryAudioPlayer';
 import WordwickLogo from '../components/WordwickLogo';
-import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, storyScenes } from '../data/academy';
+import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, prologuePages, storyScenes } from '../data/academy';
+import { useStoryAudio } from '../hooks/useStoryAudio';
 
 interface ProgressRow {
   wordId: number;
@@ -40,33 +42,6 @@ const sigils = {
   water: Waves,
   graduation: GraduationCap,
 };
-
-const prologuePages = [
-  {
-    eyebrow: 'Prolog',
-    title: 'Willkommen in Wordwick Academy',
-    body: 'Wordwick Academy ist keine gewöhnliche Schule. Hier werden englische Wörter nicht nur gelernt, sie leuchten, fliegen, verstecken sich in Büchern und öffnen geheime Wege auf der alten Akademiekarte. Jedes Wort, das du richtig erkennst, kann zu einem kleinen blauen Wortfunken werden.',
-    extra: 'Eigentlich passen die Lehrerinnen und Lehrer gut auf diese Funken auf. Aber heute Morgen ist etwas Seltsames passiert: Die Karte ist still geworden, viele Pfade sind dunkel, und in den Fluren flüstern nur noch halbe Wörter.',
-  },
-  {
-    eyebrow: 'Die Nacht des Sturms',
-    title: 'Die Wortfunken sind verschwunden',
-    body: 'In der Nacht zog ein kräftiger Wind über die Türme der Akademie. Er rüttelte an Fenstern, blätterte alte Wörterbücher auf und wirbelte die englischen Wortfunken aus ihren sicheren Plätzen. Seitdem findet niemand mehr zuverlässig den Weg zu den Übungsräumen.',
-    extra: 'Die Haupthalle, die Mondbibliothek und sogar der Sternenturm warten darauf, wieder geweckt zu werden. Aber dafür braucht die Akademie jemanden, der mutig genug ist, die Wörter einzusammeln.',
-  },
-  {
-    eyebrow: 'Pip erscheint',
-    title: 'Ein Papierdrache braucht Hilfe',
-    body: 'Aus einem alten Wörterbuch flattert Pip hervor, ein kleiner Papierdrache mit Tintensternen auf den Flügeln. Er kennt die Karte besser als jeder andere, aber ohne die Wortfunken kann selbst er die versteckten Pfade nicht lesen.',
-    extra: 'Pip ist neugierig, ein bisschen ungeduldig und ziemlich sicher, dass du genau die richtige Person für diese Aufgabe bist. Er begleitet dich durch jedes Level, zeigt dir Spuren und bleibt auch dann bei dir, wenn ein Wort mal nicht sofort klappt.',
-  },
-  {
-    eyebrow: 'Dein Auftrag',
-    title: 'Bring die Pfade zurück',
-    body: 'In jeder Mission wartet ein kleiner Teil der Akademie auf dich. Du fängst Wortfunken, übst englische Wörter und sammelst Belohnungen, die Pips Karte wieder heller machen. Wenn genug Spuren zurückkehren, öffnet sich der Weg zum nächsten wichtigen Ort.',
-    extra: 'Dein erstes Ziel ist Wordwick Hall. Dort liegen die ersten Tierwörter im Dunkeln. Pip hat die Spur gefunden, aber er braucht dich, um sie wieder zum Leuchten zu bringen.',
-  },
-];
 
 function ribbonClass(x: number, y: number) {
   if (y >= 70) return 'map-ribbon map-ribbon-above hidden group-hover:block group-focus-visible:block';
@@ -109,6 +84,7 @@ export default function WorldMap() {
   const [prologueStep, setPrologueStep] = useState(0);
   const [showPrologue, setShowPrologue] = useState(false);
   const [seenStoryScenes, setSeenStoryScenes] = useState<Record<string, boolean>>({});
+  const storyAudio = useStoryAudio();
 
   useEffect(() => {
     if (user) {
@@ -173,6 +149,7 @@ export default function WorldMap() {
   const completedChapterQuests = chapterQuests.filter(quest => questStatus(quest) === 'completed').length;
   const chapterPercent = chapterQuests.length > 0 ? Math.round((completedChapterQuests / chapterQuests.length) * 100) : 0;
   const currentPrologue = prologuePages[prologueStep];
+  const currentPrologueAudio = storyAudio[`prologue-${prologueStep + 1}`];
   const openPrologue = () => {
     setPrologueStep(0);
     setShowPrologue(true);
@@ -202,6 +179,7 @@ export default function WorldMap() {
               <h2 className="mt-2 text-3xl font-black leading-tight text-slate-950 sm:text-4xl">{currentPrologue.title}</h2>
               <p className="mt-5 text-base font-bold leading-8 text-stone-700">{currentPrologue.body}</p>
               <p className="mt-4 text-base font-bold leading-8 text-slate-900">{currentPrologue.extra}</p>
+              <StoryAudioPlayer audioPath={currentPrologueAudio?.audioPath} />
 
               <div className="mt-7">
                 <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-blue-950/55">

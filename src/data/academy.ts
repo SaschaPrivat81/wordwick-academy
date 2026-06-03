@@ -44,6 +44,13 @@ export interface StoryScenePage {
   aside?: string;
 }
 
+export interface ProloguePage {
+  eyebrow: string;
+  title: string;
+  body: string;
+  extra: string;
+}
+
 export interface StoryScene {
   id: string;
   unlockAfterQuestId: number;
@@ -55,6 +62,41 @@ export interface StoryScene {
   y: number;
   pages: StoryScenePage[];
 }
+
+export interface StoryAudioSlot {
+  id: string;
+  section: string;
+  title: string;
+  subtitle: string;
+  text: string;
+}
+
+export const prologuePages: ProloguePage[] = [
+  {
+    eyebrow: 'Prolog',
+    title: 'Willkommen in Wordwick Academy',
+    body: 'Wordwick Academy ist keine gewöhnliche Schule. Hier werden englische Wörter nicht nur gelernt, sie leuchten, fliegen, verstecken sich in Büchern und öffnen geheime Wege auf der alten Akademiekarte. Jedes Wort, das du richtig erkennst, kann zu einem kleinen blauen Wortfunken werden.',
+    extra: 'Eigentlich passen die Lehrerinnen und Lehrer gut auf diese Funken auf. Aber heute Morgen ist etwas Seltsames passiert: Die Karte ist still geworden, viele Pfade sind dunkel, und in den Fluren flüstern nur noch halbe Wörter.',
+  },
+  {
+    eyebrow: 'Die Nacht des Sturms',
+    title: 'Die Wortfunken sind verschwunden',
+    body: 'In der Nacht zog ein kräftiger Wind über die Türme der Akademie. Er rüttelte an Fenstern, blätterte alte Wörterbücher auf und wirbelte die englischen Wortfunken aus ihren sicheren Plätzen. Seitdem findet niemand mehr zuverlässig den Weg zu den Übungsräumen.',
+    extra: 'Die Haupthalle, die Mondbibliothek und sogar der Sternenturm warten darauf, wieder geweckt zu werden. Aber dafür braucht die Akademie jemanden, der mutig genug ist, die Wörter einzusammeln.',
+  },
+  {
+    eyebrow: 'Pip erscheint',
+    title: 'Ein Papierdrache braucht Hilfe',
+    body: 'Aus einem alten Wörterbuch flattert Pip hervor, ein kleiner Papierdrache mit Tintensternen auf den Flügeln. Er kennt die Karte besser als jeder andere, aber ohne die Wortfunken kann selbst er die versteckten Pfade nicht lesen.',
+    extra: 'Pip ist neugierig, ein bisschen ungeduldig und ziemlich sicher, dass du genau die richtige Person für diese Aufgabe bist. Er begleitet dich durch jedes Level, zeigt dir Spuren und bleibt auch dann bei dir, wenn ein Wort mal nicht sofort klappt.',
+  },
+  {
+    eyebrow: 'Dein Auftrag',
+    title: 'Bring die Pfade zurück',
+    body: 'In jeder Mission wartet ein kleiner Teil der Akademie auf dich. Du fängst Wortfunken, übst englische Wörter und sammelst Belohnungen, die Pips Karte wieder heller machen. Wenn genug Spuren zurückkehren, öffnet sich der Weg zum nächsten wichtigen Ort.',
+    extra: 'Dein erstes Ziel ist Wordwick Hall. Dort liegen die ersten Tierwörter im Dunkeln. Pip hat die Spur gefunden, aber er braucht dich, um sie wieder zum Leuchten zu bringen.',
+  },
+];
 
 export const questStories: Record<number, QuestStory> = {
   1: {
@@ -277,6 +319,23 @@ export function getStoryScene(sceneId: string) {
 export function getUnlockedStorySceneAfterQuest(questId: number) {
   return storyScenes.find(scene => scene.unlockAfterQuestId === questId);
 }
+
+export const storyAudioSlots: StoryAudioSlot[] = [
+  ...prologuePages.map((page, index) => ({
+    id: `prologue-${index + 1}`,
+    section: 'Prolog',
+    title: page.title,
+    subtitle: page.eyebrow,
+    text: `${page.body}\n\n${page.extra}`,
+  })),
+  ...storyScenes.flatMap(scene => scene.pages.map((page, index) => ({
+    id: `${scene.id}-${index + 1}`,
+    section: scene.eyebrow,
+    title: page.title,
+    subtitle: `${scene.title} · Seite ${index + 1}/${scene.pages.length}`,
+    text: [page.body, page.aside].filter(Boolean).join('\n\n'),
+  }))),
+];
 
 export function getQuestStory(questId: number): QuestStory {
   return questStories[questId] ?? {
