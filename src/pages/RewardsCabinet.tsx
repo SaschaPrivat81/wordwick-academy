@@ -32,6 +32,12 @@ const claimButtonLabel = (reward: Reward) => {
   return reward.requiresApproval ? 'Anfragen' : 'Öffnen';
 };
 
+const rewardTitleClass = (title: string) => {
+  if (title.length > 34) return 'text-[10px] leading-[1.05]';
+  if (title.length > 24) return 'text-[11px] leading-[1.08]';
+  return 'text-sm leading-tight';
+};
+
 const cabinetSlots = [
   { left: '22%', top: '32%', width: '17%', height: '25%' },
   { left: '41%', top: '32%', width: '17%', height: '25%' },
@@ -133,8 +139,14 @@ export default function RewardsCabinet() {
                       </span>
                     </div>
 
-                    <div>
-                      <div className="line-clamp-2 text-sm font-black leading-tight">{reward.title}</div>
+                    <div className="min-w-0">
+                      <div
+                        title={reward.title}
+                        className={`line-clamp-3 max-w-full break-words font-black [hyphens:auto] [overflow-wrap:anywhere] ${rewardTitleClass(reward.title)}`}
+                        lang="de"
+                      >
+                        {reward.title}
+                      </div>
                       <div className={`mt-1 text-[10px] font-black uppercase tracking-[0.08em] ${reward.claimed ? 'text-amber-100/80' : reward.unlocked ? 'text-blue-950/70' : 'text-stone-200/70'}`}>
                         {reward.cost > 0 ? `${reward.cost} Funken` : reward.unlockType === 'coins' ? 'Frei' : reward.unlockType === 'final' ? 'Finallevel' : 'Level'}
                       </div>
@@ -144,9 +156,9 @@ export default function RewardsCabinet() {
                     </div>
 
                     {reward.claimed ? (
-                      <span className="inline-flex items-center justify-center gap-1 rounded-lg bg-blue-100 px-2 py-1 text-[10px] font-black text-blue-950">
+                      <span className="inline-flex min-w-0 items-center justify-center gap-1 rounded-lg bg-blue-100 px-2 py-1 text-[10px] font-black text-blue-950">
                         {reward.claimStatus === 'requested' ? <PackageCheck className="h-3 w-3" /> : <CheckCircle2 className="h-3 w-3" />}
-                        {claimLabels[reward.claimStatus ?? 'claimed'] ?? 'Erhalten'}
+                        <span className="truncate">{claimLabels[reward.claimStatus ?? 'claimed'] ?? 'Erhalten'}</span>
                       </span>
                     ) : (
                       <button
