@@ -86,6 +86,19 @@ function questContentReady(quest: AcademyQuest) {
   return quest.contentStatus?.ready ?? quest.words.length > 0;
 }
 
+const gameTypeLabels: Record<string, string> = {
+  'spark-catcher': 'Wortfunken fangen',
+  'library-sorter': 'Bücherregal sortieren',
+  'image-choice': 'Bildkarte erkennen',
+  'audio-choice': 'Hörzauber',
+  'word-builder': 'Wort-Bausteine',
+  'spell-order': 'Zauberspruch ordnen',
+  'verb-assembler': 'Verbsteine ordnen',
+  'text-input': 'Texteingabe',
+};
+
+const detailValueClass = 'mt-1 line-clamp-3 min-h-[2.35rem] max-w-full break-words text-sm font-black leading-tight text-slate-950 [hyphens:auto] [overflow-wrap:anywhere] xl:text-[15px]';
+
 export default function WorldMap() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -152,6 +165,8 @@ export default function WorldMap() {
   const selectedPercent = selectedQuest.words.length > 0 ? Math.round((mastered / selectedQuest.words.length) * 100) : 0;
   const selectedStep = stepByQuestId.get(selectedQuest.id) ?? selectedQuest.id;
   const selectedStory = getQuestStory(selectedQuest.id);
+  const selectedTaskCount = selectedQuest.taskLimit ?? selectedQuest.words.length;
+  const selectedMagic = gameTypeLabels[selectedQuest.gameType ?? 'text-input'] ?? 'Texteingabe';
   const unlockedStoryScenes = storyScenes.filter(scene => questResults[scene.unlockAfterQuestId]?.completed);
   const nextUnseenStoryScene = unlockedStoryScenes.find(scene => !seenStoryScenes[scene.id]);
   const chapterQuests = orderedQuests.filter(questContentReady);
@@ -379,18 +394,24 @@ export default function WorldMap() {
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-2 gap-2 xl:mt-5">
-            <div className="rounded-2xl bg-white/60 p-3">
-              <div className="text-xl font-black text-slate-950">{selectedQuest.words.length}</div>
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Worte</div>
+          <div className="mt-4 grid grid-cols-3 gap-2 xl:mt-5">
+            <div className="min-w-0 rounded-2xl bg-white/60 p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
+              <div className={detailValueClass} title={`${selectedTaskCount}`}>
+                {selectedTaskCount}
+              </div>
             </div>
-            <div className="rounded-2xl bg-white/60 p-3">
-              <div className="text-xl font-black text-slate-950">{mastered}</div>
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Gelernt</div>
-            </div>
-            <div className="col-span-2 rounded-2xl bg-white/60 p-3">
+            <div className="min-w-0 rounded-2xl bg-white/60 p-3">
               <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Belohnung</div>
-              <div className="mt-1 break-words text-lg font-black leading-tight text-slate-950">{selectedQuest.reward}</div>
+              <div className={detailValueClass} lang="de" title={selectedQuest.reward}>
+                {selectedQuest.reward}
+              </div>
+            </div>
+            <div className="min-w-0 rounded-2xl bg-white/60 p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Magie</div>
+              <div className={detailValueClass} lang="de" title={selectedMagic}>
+                {selectedMagic}
+              </div>
             </div>
           </div>
 
