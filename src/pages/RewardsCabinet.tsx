@@ -39,14 +39,14 @@ const rewardTitleClass = (title: string) => {
 };
 
 const cabinetSlots = [
-  { left: '22%', top: '32%', width: '14.8%', height: '21%' },
+  { left: '24%', top: '32%', width: '14.8%', height: '21%' },
   { left: '41%', top: '32%', width: '14.8%', height: '21%' },
   { left: '59%', top: '32%', width: '14.8%', height: '21%' },
-  { left: '78%', top: '32%', width: '14.8%', height: '21%' },
-  { left: '22%', top: '64%', width: '14.8%', height: '21%' },
-  { left: '41%', top: '64%', width: '14.8%', height: '21%' },
-  { left: '59%', top: '64%', width: '14.8%', height: '21%' },
-  { left: '78%', top: '64%', width: '14.8%', height: '21%' },
+  { left: '76%', top: '32%', width: '14.8%', height: '21%' },
+  { left: '24%', top: '61.5%', width: '14.8%', height: '21%' },
+  { left: '41%', top: '61.5%', width: '14.8%', height: '21%' },
+  { left: '59%', top: '61.5%', width: '14.8%', height: '21%' },
+  { left: '76%', top: '61.5%', width: '14.8%', height: '21%' },
 ];
 
 export default function RewardsCabinet() {
