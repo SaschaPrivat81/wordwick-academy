@@ -212,7 +212,7 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
   const finalSpellWords = phaseWords('spell', phraseWords, word => word.type === 'vocab' && word.english.trim().split(/\s+/).length >= 2);
   const finalSparkWords = phaseWords('spark', vocabWords, word => word.type === 'vocab');
 
-  for (const word of finalImageWords.slice(0, 3)) {
+  for (const word of finalImageWords.slice(0, 5)) {
     addChallenge('Stern 1 · Bildkarten', word, 'choice', {
       prompt: 'Welcher englische Wortfunke passt zu diesem Bild?',
       helper: 'Schau genau hin. Jeder richtige Bildfunke entzündet den ersten Stern.',
@@ -223,7 +223,7 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
     });
   }
 
-  for (const word of finalSorterWords.slice(0, 4)) {
+  for (const word of finalSorterWords.slice(0, 3)) {
     addChallenge('Stern 2 · Bücher ordnen', word, 'choice', {
       prompt: `Was bedeutet "${word.english}" auf Deutsch?`,
       helper: 'Ordne das englische Wort dem richtigen deutschen Buchblatt zu.',
@@ -233,7 +233,7 @@ function buildConstellationChallenges(words: Word[], allWords: Word[], quest: Ac
     });
   }
 
-  for (const word of finalAudioWords.slice(0, 3)) {
+  for (const word of finalAudioWords.slice(0, 2)) {
     addChallenge('Stern 3 · Hörzauber', word, 'choice', {
       prompt: 'Was bedeutet der gesprochene Wortfunke?',
       helper: 'Hör genau hin und wähle die passende deutsche Bedeutung.',

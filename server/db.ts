@@ -618,6 +618,41 @@ if (!stargazerFinalMigration) {
   db.prepare("INSERT INTO app_settings (key, value) VALUES ('stargazer-final-game-v1', 'applied')").run();
 }
 
+const finaleImageCardsMigration = db.prepare("SELECT value FROM app_settings WHERE key = 'finale-image-cards-v1'").get();
+if (!finaleImageCardsMigration) {
+  const imageCards = [
+    { english: 'spider', german: 'Spinne', path: '/assets/word-images/wordwick-spider.jpg' },
+    { english: 'crown', german: 'Krone', path: '/assets/word-images/wordwick-crown.jpg' },
+    { english: 'cake', german: 'Kuchen', path: '/assets/word-images/wordwick-cake.jpg' },
+    { english: 'umbrella', german: 'Regenschirm', path: '/assets/word-images/wordwick-umbrella.jpg' },
+    { english: 'rabbit', german: 'Kaninchen', path: '/assets/word-images/wordwick-rabbit.jpg' },
+  ];
+  const updateWordImage = db.prepare(`
+    UPDATE words
+    SET imagePath = ?,
+        imageAlt = ?,
+        imageSource = 'Wordwick Academy generated image'
+    WHERE lower(english) = ?
+      AND (imagePath IS NULL OR imagePath = '')
+  `);
+  const findImageCardWord = db.prepare('SELECT id FROM words WHERE lower(english) = ?');
+  const nextQuestWordOrder = db.prepare('SELECT COALESCE(MAX(sortOrder), 0) + 1 as nextOrder FROM quest_words WHERE questId = 5');
+  const insertFinalQuestWord = db.prepare('INSERT OR IGNORE INTO quest_words (questId, wordId, sortOrder) VALUES (5, ?, ?)');
+  const nextFinaleImageOrder = db.prepare("SELECT COALESCE(MAX(sortOrder), 0) + 1 as nextOrder FROM finale_phase_words WHERE questId = 5 AND phase = 'image'");
+  const insertFinaleImageWord = db.prepare("INSERT OR IGNORE INTO finale_phase_words (questId, phase, wordId, sortOrder) VALUES (5, 'image', ?, ?)");
+  for (const card of imageCards) {
+    updateWordImage.run(card.path, `Wordwick Bildkarte: ${card.german}`, card.english);
+    const word = findImageCardWord.get(card.english) as { id: number } | undefined;
+    if (word) {
+      const questOrder = nextQuestWordOrder.get() as { nextOrder: number };
+      insertFinalQuestWord.run(word.id, questOrder.nextOrder);
+      const finaleOrder = nextFinaleImageOrder.get() as { nextOrder: number };
+      insertFinaleImageWord.run(word.id, finaleOrder.nextOrder);
+    }
+  }
+  db.prepare("INSERT INTO app_settings (key, value) VALUES ('finale-image-cards-v1', 'applied')").run();
+}
+
 const rewardDefaults = [
   { title: '20 Min Minecraft', description: 'Ein echtes Eltern-Fach: 20 Minuten Spielzeit nach Absprache.', kind: 'real', unlockType: 'coins', cost: 30, icon: '🎮', sortOrder: 1, requiresApproval: 1, visibility: 'visible' },
   { title: 'Eis essen gehen', description: 'Eine größere echte Belohnung für fleißig gesammelte Wortfunken.', kind: 'real', unlockType: 'coins', cost: 50, icon: '🍦', sortOrder: 2, requiresApproval: 1, visibility: 'visible' },
