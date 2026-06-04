@@ -900,44 +900,44 @@ export default function Quest() {
 
   if (!missionStarted) {
     return (
-      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center px-4 py-6">
-        <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
+      <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center px-4 py-2 lg:h-[calc(100vh-5.85rem)] lg:min-h-0 lg:overflow-hidden">
+        <section className="parchment w-full overflow-hidden rounded-[28px] border border-amber-100/70">
           <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
-            <div className="ink-panel relative flex min-h-[420px] flex-col items-center justify-center overflow-hidden p-8 text-center text-amber-50">
+            <div className="ink-panel relative flex min-h-[300px] flex-col items-center justify-center overflow-hidden p-5 text-center text-amber-50 xl:min-h-[420px] xl:p-8">
               <img
                 src="/assets/pip-guide.webp"
                 alt="Pip zeigt den nächsten Auftrag"
-                className="h-64 w-64 object-contain drop-shadow-2xl sm:h-72 sm:w-72"
+                className="h-44 w-44 object-contain drop-shadow-2xl sm:h-52 sm:w-52 xl:h-72 xl:w-72"
               />
-              <div className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Auftrag</div>
-              <h1 className="mt-2 text-4xl font-black leading-tight">{quest.title}</h1>
+              <div className="mt-3 text-sm font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Auftrag</div>
+              <h1 className="mt-2 text-3xl font-black leading-tight xl:text-4xl">{quest.title}</h1>
             </div>
 
-            <div className="p-7 sm:p-9">
+            <div className="p-4 sm:p-5 xl:p-9">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">{story.arc}</div>
-              <h2 className="mt-2 text-3xl font-black leading-tight text-slate-950">
+              <h2 className="mt-1 text-2xl font-black leading-tight text-slate-950 xl:mt-2 xl:text-3xl">
                 {isConstellationTrial ? 'Das Sternbild wartet.' : 'Die Spur beginnt hier.'}
               </h2>
-              <p className="mt-4 text-base font-bold leading-7 text-stone-700">{story.mapTeaser}</p>
-              <p className="mt-3 text-base font-bold leading-7 text-slate-900">{story.missionIntro}</p>
-              <p className="mt-3 text-sm font-bold leading-6 text-stone-600">
+              <p className="mt-2 text-base font-bold leading-6 text-stone-700 xl:mt-3 xl:leading-7">{story.mapTeaser}</p>
+              <p className="mt-2 text-base font-bold leading-6 text-slate-900 xl:leading-7">{story.missionIntro}</p>
+              <p className="mt-2 line-clamp-2 text-sm font-bold leading-5 text-stone-600 xl:line-clamp-none xl:leading-6">
                 Wenn du diese Mission schaffst, merkt sich die Akademiekarte den Ort wieder ein Stück besser. Pip sammelt jeden richtigen Wortfunken, legt ihn auf die Karte und sucht damit nach dem nächsten hellen Pfad.
               </p>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="min-w-0 rounded-2xl bg-white/60 p-4 text-center">
+              <div className="mt-3 grid gap-2 sm:grid-cols-3 xl:mt-6 xl:gap-3">
+                <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center xl:p-4">
                   <div className={missionStatValueClass} title={`${totalTasks}`}>
                     {totalTasks}
                   </div>
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
                 </div>
-                <div className="min-w-0 rounded-2xl bg-white/60 p-4 text-center">
+                <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center xl:p-4">
                   <div className={missionStatValueClass} lang="de" title={quest.reward}>
                     {quest.reward}
                   </div>
                   <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Belohnung</div>
                 </div>
-                <div className="min-w-0 rounded-2xl bg-white/60 p-4 text-center">
+                <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center xl:p-4">
                   <div className={missionStatValueClass} lang="de" title={quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}>
                 {isConstellationTrial ? 'Finale' : quest.kind === 'verb' ? 'Verb' : quest.kind === 'mixed' ? 'Mix' : 'Wort'}
                   </div>
@@ -945,13 +945,13 @@ export default function Quest() {
                 </div>
               </div>
 
-              <div className="mt-6 rounded-2xl border border-blue-950/10 bg-blue-100/70 p-4 text-sm font-bold leading-6 text-blue-950">
+              <div className="mt-3 rounded-2xl border border-blue-950/10 bg-blue-100/70 p-3 text-sm font-bold leading-5 text-blue-950 xl:mt-6 xl:p-4 xl:leading-6">
                 {isConstellationTrial
                   ? 'Ziel: Entzünde genug Sterne, damit Pip das erste Sternbild der Akademie wieder zusammensetzen kann.'
                   : 'Ziel: Sammle Wortfunken, damit Pip den nächsten Pfad auf der Karte wiederfinden kann.'}
               </div>
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row xl:mt-6">
                 <button onClick={() => navigate('/')} className="gold-button flex-1">
                   <ArrowLeft className="h-4 w-4" />
                   Zur Karte
@@ -1157,28 +1157,28 @@ export default function Quest() {
   }
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-5xl gap-5 px-4 py-5 lg:grid-cols-[330px_1fr]">
-      <aside className="ink-panel rounded-[28px] border border-amber-100/20 p-5 text-amber-50">
+    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl gap-4 px-3 py-3 sm:px-4 lg:h-[calc(100vh-5.85rem)] lg:min-h-0 lg:grid-cols-[280px_1fr] lg:overflow-hidden xl:grid-cols-[310px_1fr]">
+      <aside className="ink-panel rounded-[24px] border border-amber-100/20 p-4 text-amber-50 lg:overflow-hidden">
         <button onClick={() => navigate('/')} className="mb-5 inline-flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-black text-amber-100/80 transition hover:bg-white/10">
           <ArrowLeft className="h-4 w-4" />
           Karte
         </button>
-        <div className="flex h-32 w-32 items-center justify-center rounded-3xl bg-white/10">
+        <div className="flex h-24 w-24 items-center justify-center rounded-3xl bg-white/10 xl:h-28 xl:w-28">
           <img
             src={pipMissionImage}
             alt="Pip"
-            className="h-40 w-40 object-contain drop-shadow-2xl"
+            className="h-32 w-32 object-contain drop-shadow-2xl xl:h-36 xl:w-36"
           />
         </div>
-        <div className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Mission · {quest.chapter}</div>
-        <h1 className="mt-2 text-3xl font-black leading-tight">{quest.title}</h1>
-        <p className="mt-3 text-sm font-semibold leading-6 text-amber-50/75">
+        <div className="mt-4 text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Pips Mission · {quest.chapter}</div>
+        <h1 className="mt-2 text-2xl font-black leading-tight xl:text-3xl">{quest.title}</h1>
+        <p className="mt-2 line-clamp-3 text-sm font-semibold leading-5 text-amber-50/75 xl:leading-6">
           {pipLine}
         </p>
-        <div className="mt-4 rounded-2xl border border-amber-100/15 bg-white/10 p-3 text-xs font-bold leading-5 text-amber-50/70">
+        <div className="mt-3 rounded-2xl border border-amber-100/15 bg-white/10 p-3 text-xs font-bold leading-5 text-amber-50/70">
           {quest.subtitle}
         </div>
-        <div className="mt-7">
+        <div className="mt-4">
           <div className="mb-2 flex justify-between text-xs font-black uppercase tracking-[0.16em] text-amber-200/70">
             <span>{isConstellationTrial ? 'Sternbild' : 'Runde'}</span>
             <span>{isVerbAssembler ? `${verbIndex + 1}/${totalTasks}` : isLibrarySorter ? `${matchedWordIds.length}/${totalTasks}` : `${currentIndex + 1}/${activeChallenges.length}`}</span>
@@ -1188,14 +1188,14 @@ export default function Quest() {
           </div>
         </div>
         {isConstellationTrial && constellationPhases.length > 0 && (
-          <div className="mt-5 grid gap-2">
+          <div className="mt-4 grid gap-2">
             {constellationPhases.map((phase, index) => {
               const active = current?.finalPhase === phase;
               const completed = completedConstellationPhases.has(phase);
               return (
                 <div
                   key={phase}
-                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black ${
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-1.5 text-xs font-black ${
                     active
                       ? 'border-amber-200 bg-amber-200 text-blue-950'
                       : completed
@@ -1213,8 +1213,8 @@ export default function Quest() {
         )}
       </aside>
 
-      <section className="parchment flex min-h-[520px] flex-col justify-between rounded-[32px] border border-amber-100/70 p-6 sm:p-8">
-        <div>
+      <section className="parchment flex min-h-[520px] flex-col justify-between rounded-[28px] border border-amber-100/70 p-4 sm:p-5 lg:min-h-0 lg:overflow-hidden xl:p-6">
+        <div className="min-h-0">
           <div className="flex items-center justify-between gap-3">
             <div className="rounded-full bg-blue-950 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-amber-100">
               {isVerbAssembler ? 'Verbsteine ordnen' : isLibrarySorter ? 'Bücherregal sortieren' : current.eyebrow}
@@ -1225,12 +1225,12 @@ export default function Quest() {
             </div>
           </div>
 
-          <div className="mt-10 rounded-[28px] border border-amber-900/10 bg-white/60 p-6 text-center shadow-inner">
-            <div className="text-sm font-black uppercase tracking-[0.18em] text-blue-950/60">
+          <div className="mt-4 rounded-[24px] border border-amber-900/10 bg-white/60 p-4 text-center shadow-inner xl:p-5">
+            <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60 xl:text-sm">
               {isConstellationTrial ? 'Sternbild-Prüfung' : isSpellOrder ? 'Zauberspruch ordnen' : isWordBuilder ? 'Wort-Bausteine' : isAudioChoice ? 'Hörzauber' : isImageChoice ? 'Bildkarte erkennen' : isSparkCatcher ? 'Wortfunken fangen' : isLibrarySorter ? 'Moonlit Library' : isVerbAssembler ? 'Wordbrew Workshop' : 'Aufgabe'}
             </div>
             {(isImageChoice || isWordBuilder || isFinalWordBuilder || isSpellOrder) && current.imagePath && (
-              <div className={`mx-auto mt-5 aspect-square w-full overflow-hidden rounded-[28px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10 ${isWordBuilder || isFinalWordBuilder ? 'max-w-[11rem]' : 'max-w-[18rem]'}`}>
+              <div className={`mx-auto mt-3 aspect-square w-full overflow-hidden rounded-[24px] border border-blue-950/10 bg-blue-50 shadow-lg shadow-slate-950/10 ${isWordBuilder || isFinalWordBuilder ? 'max-w-[9rem] xl:max-w-[11rem]' : 'max-w-[13rem] xl:max-w-[18rem]'}`}>
                 <img
                   src={current.imagePath}
                   alt={current.imageAlt || current.prompt}
@@ -1239,7 +1239,7 @@ export default function Quest() {
               </div>
             )}
             {isAudioChoice && current.audioPath && (
-              <div className="mx-auto mt-5 grid max-w-xl gap-4 rounded-[28px] border border-blue-950/10 bg-blue-950 px-5 py-5 text-amber-50 shadow-lg shadow-blue-950/20">
+              <div className="mx-auto mt-3 grid max-w-xl gap-3 rounded-[24px] border border-blue-950/10 bg-blue-950 px-4 py-4 text-amber-50 shadow-lg shadow-blue-950/20">
                 <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border border-amber-100/20 bg-white/10">
                   <Volume2 className="h-10 w-10" />
                 </div>
@@ -1251,16 +1251,16 @@ export default function Quest() {
                 </div>
               </div>
             )}
-            <h2 className="mx-auto mt-4 max-w-2xl text-3xl font-black leading-tight text-slate-950 sm:text-5xl">
+            <h2 className="mx-auto mt-3 max-w-2xl text-2xl font-black leading-tight text-slate-950 sm:text-3xl xl:text-5xl">
               {isLibrarySorter ? 'Welche Buchseiten gehören zusammen?' : isVerbAssembler ? `Ordne die Formen von "${currentVerb?.german}"` : current.prompt}
             </h2>
-            <p className="mt-5 text-sm font-bold text-stone-500">
+            <p className="mt-3 text-sm font-bold leading-5 text-stone-500">
               {isLibrarySorter ? 'Wähle erst ein deutsches Wort und dann den passenden englischen Buchrücken.' : isVerbAssembler ? 'Lege Grundform, Past Simple und Past Participle in die drei Kesselplätze.' : current.helper}
             </p>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-7">
+        <form onSubmit={handleSubmit} className="mt-4">
           {isVerbAssembler ? (
             <div className="space-y-5">
               <div className="grid gap-3 sm:grid-cols-3">

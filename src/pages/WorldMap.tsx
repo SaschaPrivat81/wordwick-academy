@@ -211,8 +211,8 @@ export default function WorldMap() {
   }
 
   return (
-    <main className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-[1500px] gap-4 px-3 py-3 sm:px-5 sm:py-4 lg:grid-cols-[minmax(0,1fr)_380px] xl:grid-cols-[minmax(0,1fr)_420px] 2xl:grid-cols-[minmax(0,1fr)_430px]">
-      <section className="relative aspect-[16/9] min-h-[360px] w-full overflow-hidden rounded-[32px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30 sm:min-h-[460px] lg:aspect-[4/3] lg:min-h-0 2xl:aspect-[16/10]">
+    <main className="mx-auto flex min-h-[calc(100vh-7.75rem)] max-w-[1500px] flex-col gap-3 px-3 py-2 sm:px-4 lg:h-[calc(100vh-7.75rem)] lg:min-h-0 lg:overflow-hidden">
+      <section className="relative min-h-[360px] w-full flex-1 overflow-hidden rounded-[28px] border border-blue-100/20 bg-[#0f172a] shadow-2xl shadow-slate-950/30 sm:min-h-[440px] lg:min-h-0">
         <img
           src="/assets/wordwick-map-v1.jpg"
           alt="Illustrated parchment map of Wordwick Academy"
@@ -296,25 +296,25 @@ export default function WorldMap() {
         })}
       </section>
 
-      <aside className="grid content-start gap-4">
-        <section className="ink-panel rounded-[28px] border border-amber-100/20 p-4 text-amber-50 xl:p-5">
-          <div className="flex items-start gap-4">
-            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-amber-100/10 xl:h-32 xl:w-32">
+      <section className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)_minmax(13rem,0.55fr)]">
+        <div className="ink-panel rounded-[24px] border border-amber-100/20 p-3 text-amber-50">
+          <div className="flex items-center gap-3">
+            <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-visible rounded-2xl bg-amber-100/10">
               <img
                 src="/assets/pip-neutral.webp"
                 alt="Pip, der Papierdrache"
-                className="h-36 w-36 object-contain drop-shadow-2xl xl:h-40 xl:w-40"
+                className="h-28 w-28 object-contain drop-shadow-2xl"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-amber-200/70">Begleiter</div>
-              <h2 className="text-xl font-black">Pip, der Papierdrache</h2>
-              <p className="mt-2 text-sm font-semibold leading-6 text-amber-50/75">
+              <h2 className="truncate text-lg font-black">Pip, der Papierdrache</h2>
+              <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-amber-50/75">
                 Willkommen, {user?.name}. Ich rieche Wortfunken! {selectedStory.mapTeaser}
               </p>
             </div>
           </div>
-          <div className="mt-4">
+          <div className="mt-3">
             <div className="mb-2 flex justify-between text-[10px] font-black uppercase tracking-[0.14em] text-amber-200/70">
               <span>{selectedStory.arc}</span>
               <span>{completedChapterQuests}/{chapterQuests.length}</span>
@@ -336,72 +336,80 @@ export default function WorldMap() {
               </span>
             </button>
           )}
-        </section>
+        </div>
 
-        <section className="parchment rounded-[28px] border border-amber-100/70 p-4 xl:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
+        <div className="parchment rounded-[24px] border border-amber-100/70 p-3">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)]">
+            <div className="min-w-0">
               <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Schritt {selectedStep} · {selectedQuest.chapter}</div>
-              <h2 className="mt-1 text-xl font-black leading-tight text-slate-950 xl:text-2xl">{selectedQuest.title}</h2>
-              <p className="mt-2 text-sm font-semibold leading-5 text-stone-600 xl:leading-6">{selectedQuest.subtitle}</p>
+              <h2 className="mt-1 truncate text-xl font-black leading-tight text-slate-950 xl:text-2xl">{selectedQuest.title}</h2>
+              <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-stone-600">{selectedQuest.subtitle}</p>
               {questResults[selectedQuest.id] && (
                 <p className="mt-2 text-xs font-black uppercase tracking-[0.14em] text-blue-950/55">
                   Bestwert: {questResults[selectedQuest.id].bestPercent}%
                 </p>
               )}
             </div>
-            <Star className="mt-1 h-7 w-7 text-amber-500" />
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-blue-950/10 bg-white/55 p-3 xl:mt-5 xl:p-4">
-            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/55">{selectedStory.arc}</div>
-            <p className="mt-2 text-sm font-bold leading-5 text-slate-800 xl:leading-6">
-              {status === 'locked' && !questContentReady(selectedQuest)
-                ? 'Dieser Ort wartet noch auf passende Wortfunken. Sobald er im Elternbereich befüllt ist, kann Pip die Spur öffnen.'
-                : selectedQuest.guide}
-            </p>
-          </div>
-
-          <div className="mt-4 xl:mt-5">
-            <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-[0.16em] text-blue-950/70">
-              <span>Fortschritt</span>
-              <span>{selectedPercent}%</span>
-            </div>
-            <div className="h-3 overflow-hidden rounded-full bg-slate-950/10">
-              <div className="h-full rounded-full bg-blue-800" style={{ width: `${selectedPercent}%` }} />
+            <div className="rounded-2xl border border-blue-950/10 bg-white/55 p-3">
+              <div className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-950/55">{selectedStory.arc}</div>
+              <p className="mt-1 line-clamp-3 text-sm font-bold leading-5 text-slate-800">
+                {status === 'locked' && !questContentReady(selectedQuest)
+                  ? 'Dieser Ort wartet noch auf passende Wortfunken. Sobald er im Elternbereich befüllt ist, kann Pip die Spur öffnen.'
+                  : selectedQuest.guide}
+              </p>
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-3 gap-2 xl:mt-5">
-            <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center">
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
-              <div className={detailValueClass} title={`${selectedTaskCount}`}>
-                {selectedTaskCount}
+          <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.75fr)]">
+            <div>
+              <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-[0.16em] text-blue-950/70">
+                <span>Fortschritt</span>
+                <span>{selectedPercent}%</span>
+              </div>
+              <div className="h-3 overflow-hidden rounded-full bg-slate-950/10">
+                <div className="h-full rounded-full bg-blue-800" style={{ width: `${selectedPercent}%` }} />
               </div>
             </div>
-            <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center">
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Belohnung</div>
-              <div className={detailValueClass} lang="de" title={selectedQuest.reward}>
-                {selectedQuest.reward}
+            <div className="grid grid-cols-3 gap-2">
+              <div className="min-w-0 rounded-2xl bg-white/60 p-2 text-center">
+                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Aufgaben</div>
+                <div className={detailValueClass} title={`${selectedTaskCount}`}>
+                  {selectedTaskCount}
+                </div>
               </div>
-            </div>
-            <div className="min-w-0 rounded-2xl bg-white/60 p-3 text-center">
-              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Magie</div>
-              <div className={detailValueClass} lang="de" title={selectedMagic}>
-                {selectedMagic}
+              <div className="min-w-0 rounded-2xl bg-white/60 p-2 text-center">
+                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Belohnung</div>
+                <div className={detailValueClass} lang="de" title={selectedQuest.reward}>
+                  {selectedQuest.reward}
+                </div>
+              </div>
+              <div className="min-w-0 rounded-2xl bg-white/60 p-2 text-center">
+                <div className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500">Magie</div>
+                <div className={detailValueClass} lang="de" title={selectedMagic}>
+                  {selectedMagic}
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
+        <div className="parchment flex flex-col justify-between rounded-[24px] border border-amber-100/70 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-[0.14em] text-blue-950/55">Aktuelle Quest</div>
+              <div className="mt-1 text-lg font-black leading-tight text-slate-950">{status === 'completed' ? 'Schon geschafft' : status === 'locked' ? 'Noch verschlossen' : 'Bereit'}</div>
+            </div>
+            <Star className="h-7 w-7 shrink-0 text-amber-500" />
+          </div>
           <button
             onClick={() => navigate(`/quest/${selectedQuest.id}`)}
             disabled={status === 'locked'}
-            className="magic-button mt-5 w-full"
+            className="magic-button mt-3 w-full justify-center"
           >
             {status === 'completed' ? 'Nochmal üben' : status === 'locked' ? 'Noch verschlossen' : 'Quest starten'}
           </button>
-        </section>
-      </aside>
+        </div>
+      </section>
     </main>
   );
 }

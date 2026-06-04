@@ -89,6 +89,24 @@ input {
   @apply relative min-h-28 rounded-2xl border border-blue-950/10 bg-white/75 px-5 py-5 text-left shadow-lg shadow-slate-950/10 outline-none ring-blue-800/25 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-xl focus:ring-4 active:scale-[0.98] disabled:cursor-default disabled:hover:translate-y-0;
 }
 
+@media (min-width: 1024px) and (max-height: 820px) {
+  .answer-card {
+    @apply min-h-20 px-4 py-3;
+  }
+
+  .library-card {
+    @apply min-h-16 px-4 py-3;
+  }
+
+  .verb-slot {
+    @apply min-h-20 py-3;
+  }
+
+  .verb-stone {
+    @apply min-h-20 py-3;
+  }
+}
+
 .answer-card-correct {
   @apply border-blue-800 bg-blue-100 ring-4 ring-blue-800/20;
   animation: answer-pop 420ms ease-out;
