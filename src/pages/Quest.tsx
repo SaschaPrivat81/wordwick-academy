@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, CheckCircle2, PlayCircle, RotateCcw, Sparkles, Star, Volume2, XCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Gift, LineChart, Map as MapIcon, PlayCircle, RotateCcw, Sparkles, Star, Trophy, Volume2, XCircle } from 'lucide-react';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, getUnlockedStorySceneAfterQuest, normalizeAnswer } from '../data/academy';
 
 interface Word {
@@ -504,6 +504,7 @@ export default function Quest() {
   const [completionSaved, setCompletionSaved] = useState(false);
   const [retryChallenges, setRetryChallenges] = useState<Challenge[]>([]);
   const [answerLog, setAnswerLog] = useState<AnswerLogItem[]>([]);
+  const [resettingJourney, setResettingJourney] = useState(false);
 
   useEffect(() => {
     setQuest(fallbackQuests.find(item => item.id === questId) ?? null);
@@ -654,6 +655,22 @@ export default function Quest() {
         total: totalTasks,
       }),
     });
+  };
+
+  const resetJourneyFromFinale = async () => {
+    const confirmed = window.confirm('Die Reise wirklich zurücksetzen und Wordwick Academy von vorne beginnen? Fortschritt, Levelabschlüsse, Wortfunken und Belohnungsanfragen werden gelöscht.');
+    if (!confirmed) return;
+    setResettingJourney(true);
+    const response = await fetch('/api/me/reset-journey', {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!response.ok) {
+      setResettingJourney(false);
+      window.alert('Die Reise konnte gerade nicht zurückgesetzt werden.');
+      return;
+    }
+    window.location.assign('/');
   };
 
   const checkAnswer = async (value: string) => {
@@ -955,6 +972,106 @@ export default function Quest() {
     const finalPercent = Math.round((correctCount / totalTasks) * 100);
     const questCompleted = finalPercent >= 80;
     const unlockedStoryScene = questCompleted ? getUnlockedStorySceneAfterQuest(quest.id) : undefined;
+    if (isConstellationTrial && questCompleted) {
+      return (
+        <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-5xl items-center px-4 py-6">
+          <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
+            <div className="ink-panel relative overflow-hidden px-6 py-8 text-center text-amber-50 sm:px-10">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(251,191,36,0.24),transparent_34%),radial-gradient(circle_at_22%_70%,rgba(59,130,246,0.18),transparent_32%)]" />
+              <div className="relative mx-auto flex max-w-3xl flex-col items-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border border-amber-200/50 bg-amber-200 text-blue-950 shadow-xl shadow-slate-950/20">
+                  <Trophy className="h-10 w-10" />
+                </div>
+                <div className="mt-5 text-xs font-black uppercase tracking-[0.22em] text-amber-200/75">Kapitel I abgeschlossen</div>
+                <h1 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
+                  Herzlichen Glückwunsch!
+                </h1>
+                <p className="mt-4 max-w-2xl text-lg font-bold leading-8 text-amber-50/85">
+                  Du hast das erste Kapitel der Wordwick Academy gemeistert. Das erste Sternbild leuchtet wieder über dem Stargazer Tower, und Pip ist sich ziemlich sicher, dass die Karte gerade ein kleines bisschen stolz geglitzert hat.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-0 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="flex flex-col items-center justify-center bg-blue-950/5 p-7 text-center sm:p-9">
+                <img
+                  src="/assets/pip-cheer.webp"
+                  alt="Pip jubelt"
+                  className="h-60 w-60 object-contain drop-shadow-2xl sm:h-72 sm:w-72"
+                />
+                <div className="mt-2 rounded-2xl border border-blue-950/10 bg-white/70 p-4 text-sm font-bold leading-6 text-blue-950">
+                  Pip legt das goldene Lesezeichen ins Abenteuerbuch. "Kapitel eins sitzt. Und ich habe nur drei Seiten falsch herum gehalten. Neuer Rekord."
+                </div>
+              </div>
+
+              <div className="p-7 sm:p-9">
+                <div className="text-xs font-black uppercase tracking-[0.18em] text-blue-950/60">Wordwick Academy</div>
+                <h2 className="mt-2 text-3xl font-black leading-tight text-slate-950">Das erste große Ziel ist geschafft.</h2>
+                <p className="mt-3 text-sm font-bold leading-6 text-stone-600">
+                  Die verlorenen Wortfunken aus Kapitel I sind wieder an ihrem Platz. Ab jetzt kannst du dir die Karte ansehen, deine Belohnungen öffnen oder im Profil nachschauen, wie stark deine Reise geworden ist.
+                </p>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-white/60 p-4 text-center">
+                    <div className="text-3xl font-black text-slate-950">{correctCount}</div>
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Richtig</div>
+                  </div>
+                  <div className="rounded-2xl bg-white/60 p-4 text-center">
+                    <div className="text-3xl font-black text-slate-950">{finalPercent}%</div>
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Ergebnis</div>
+                  </div>
+                  <div className="rounded-2xl bg-white/60 p-4 text-center">
+                    <div className="text-3xl font-black text-slate-950">{coinsEarned}</div>
+                    <div className="text-xs font-black uppercase tracking-[0.14em] text-stone-500">Funken</div>
+                  </div>
+                </div>
+
+                <div className="mt-6 rounded-2xl border border-amber-900/10 bg-amber-100/75 p-4 text-sm font-bold leading-6 text-slate-950">
+                  Freigeschaltet: {quest.reward}. {story.rewardReveal}
+                </div>
+
+                {unlockedStoryScene && (
+                  <button
+                    onClick={() => navigate(`/story/${unlockedStoryScene.id}`)}
+                    className="mt-4 flex w-full items-start gap-3 rounded-2xl border border-blue-950/10 bg-blue-950 p-4 text-left text-amber-50 shadow-lg shadow-slate-950/15 transition hover:bg-blue-900 active:scale-[0.99]"
+                  >
+                    <BookOpen className="mt-1 h-5 w-5 shrink-0 text-amber-200" />
+                    <span>
+                      <span className="block text-[10px] font-black uppercase tracking-[0.16em] text-amber-200/75">{unlockedStoryScene.eyebrow}</span>
+                      <span className="mt-1 block text-base font-black">{unlockedStoryScene.title}</span>
+                      <span className="mt-1 block text-sm font-semibold leading-6 text-amber-50/75">{unlockedStoryScene.subtitle}</span>
+                    </span>
+                  </button>
+                )}
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <button onClick={() => navigate('/')} className="magic-button justify-center">
+                    <MapIcon className="h-4 w-4" />
+                    Zur Karte
+                  </button>
+                  <button onClick={() => navigate('/rewards')} className="gold-button justify-center">
+                    <Gift className="h-4 w-4" />
+                    Belohnungen ansehen
+                  </button>
+                  <button onClick={() => navigate('/profile')} className="gold-button justify-center">
+                    <LineChart className="h-4 w-4" />
+                    Fortschritt
+                  </button>
+                  <button
+                    onClick={resetJourneyFromFinale}
+                    disabled={resettingJourney}
+                    className="magic-button justify-center bg-blue-900 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    {resettingJourney ? 'Wird zurückgesetzt...' : 'Von vorne anfangen'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+      );
+    }
     return (
       <main className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-4xl items-center px-4 py-6">
         <section className="parchment w-full overflow-hidden rounded-[32px] border border-amber-100/70">
