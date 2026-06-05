@@ -85,12 +85,12 @@ input {
     drop-shadow(0 2px 0 rgba(255, 248, 220, 0.85));
 }
 
-.wordwick-splash-logo img {
-  @apply w-[18rem] sm:w-[25rem] lg:w-[30rem];
-}
-
-.wordwick-splash-logo div:last-child {
-  @apply hidden;
+.wordwick-splash-logo {
+  filter:
+    brightness(0)
+    invert(1)
+    drop-shadow(0 2px 0 rgba(255, 248, 220, 0.45))
+    drop-shadow(0 16px 28px rgba(15, 23, 42, 0.35));
 }
 
 .answer-card {

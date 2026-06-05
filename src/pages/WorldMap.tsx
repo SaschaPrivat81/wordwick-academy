@@ -207,8 +207,12 @@ export default function WorldMap() {
           />
           <div className="absolute inset-0 bg-gradient-to-b from-blue-950/78 via-blue-950/58 to-blue-950/88" />
           <div className="relative mx-auto flex max-w-3xl flex-col items-center">
-            <div className="rounded-[28px] border border-amber-100/20 bg-white/10 px-6 py-5 shadow-2xl shadow-slate-950/25 backdrop-blur-sm sm:px-10">
-              <WordwickLogo className="wordwick-splash-logo" />
+            <div className="rounded-[28px] border border-amber-100/20 bg-blue-950/45 px-6 py-5 shadow-2xl shadow-slate-950/25 backdrop-blur-sm sm:px-10">
+              <img
+                src="/assets/wordwick-logo-edit.svg"
+                alt="Wordwick Academy"
+                className="wordwick-splash-logo h-auto w-[18rem] sm:w-[25rem] lg:w-[30rem]"
+              />
             </div>
             <div className="mt-5 rounded-full border border-amber-100/25 bg-blue-950/60 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-amber-100 shadow-lg shadow-slate-950/20">
               ...where words come alive.
