@@ -600,7 +600,7 @@ export default function Admin() {
 
   const clearLocalJourneyMarkers = (userId: number) => {
     const suffix = `-${userId}`;
-    const prefixes = ['wordwick-prologue-seen-', 'wordwick-story-seen-'];
+    const prefixes = ['wordwick-splash-seen-', 'wordwick-prologue-seen-', 'wordwick-story-seen-'];
     for (let index = localStorage.length - 1; index >= 0; index--) {
       const key = localStorage.key(index);
       if (key && key.endsWith(suffix) && prefixes.some(prefix => key.startsWith(prefix))) {

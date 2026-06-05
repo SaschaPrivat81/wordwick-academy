@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, CheckCircle2, Gift, LineChart, Map as MapIcon, PlayCircle, RotateCcw, Sparkles, Star, Trophy, Volume2, XCircle } from 'lucide-react';
+import { useAuth } from '../App';
 import { AcademyQuest, academyQuests as fallbackQuests, getQuestStory, getUnlockedStorySceneAfterQuest, normalizeAnswer } from '../data/academy';
 
 interface Word {
@@ -483,6 +484,7 @@ function buildChallenges(words: Word[], quest: AcademyQuest, allWords: Word[] = 
 
 export default function Quest() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const questId = Number(id);
 
@@ -669,6 +671,14 @@ export default function Quest() {
       setResettingJourney(false);
       window.alert('Die Reise konnte gerade nicht zurückgesetzt werden.');
       return;
+    }
+    if (user) {
+      for (let index = localStorage.length - 1; index >= 0; index--) {
+        const key = localStorage.key(index);
+        if (key && key.endsWith(`-${user.id}`) && key.startsWith('wordwick-splash-seen-')) {
+          localStorage.removeItem(key);
+        }
+      }
     }
     window.location.assign('/');
   };

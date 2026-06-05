@@ -20,6 +20,7 @@ interface QuestResultRow {
 }
 
 const PROLOGUE_VERSION = 'v2';
+const SPLASH_VERSION = 'v1';
 const PROLOGUE_NODE = {
   x: 51,
   y: 45,
@@ -82,11 +83,16 @@ export default function WorldMap() {
   const [quests, setQuests] = useState<AcademyQuest[]>(fallbackQuests);
   const [selectedQuest, setSelectedQuest] = useState<AcademyQuest>(fallbackQuests[0]);
   const [prologueStep, setPrologueStep] = useState(0);
+  const [introChecked, setIntroChecked] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const [showPrologue, setShowPrologue] = useState(false);
   const [seenStoryScenes, setSeenStoryScenes] = useState<Record<string, boolean>>({});
   const storyAudio = useStoryAudio();
 
   useEffect(() => {
+    let cancelled = false;
+    setIntroChecked(user?.role !== 'child');
+
     if (user) {
       setShowPrologue(localStorage.getItem(`wordwick-prologue-seen-${PROLOGUE_VERSION}-${user.id}`) !== 'yes');
       setSeenStoryScenes(Object.fromEntries(
@@ -102,21 +108,40 @@ export default function WorldMap() {
         setSelectedQuest(current => nextQuests.find(quest => quest.id === current.id) ?? nextQuests[0]);
       });
 
-    fetch('/api/progress', { credentials: 'include' })
+    const progressRequest = fetch('/api/progress', { credentials: 'include' })
       .then(response => response.json())
       .then((data: ProgressRow[]) => {
+        if (cancelled) return [];
         const map: Record<number, ProgressRow> = {};
         for (const row of data) map[row.wordId] = row;
         setProgress(map);
+        return data;
       });
 
-    fetch('/api/quest-results', { credentials: 'include' })
+    const questResultsRequest = fetch('/api/quest-results', { credentials: 'include' })
       .then(response => response.ok ? response.json() : [])
       .then((data: QuestResultRow[]) => {
+        if (cancelled) return [];
         const map: Record<number, QuestResultRow> = {};
         for (const row of data) map[row.questId] = row;
         setQuestResults(map);
+        return data;
       });
+
+    Promise.all([progressRequest, questResultsRequest])
+      .then(([progressRows, resultRows]) => {
+        if (cancelled || !user || user.role !== 'child') return;
+        const hasJourneyProgress = progressRows.length > 0 || resultRows.length > 0;
+        const splashSeen = localStorage.getItem(`wordwick-splash-seen-${SPLASH_VERSION}-${user.id}`) === 'yes';
+        setShowSplash(!splashSeen && !hasJourneyProgress);
+      })
+      .finally(() => {
+        if (!cancelled) setIntroChecked(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const questOrder = (quest: AcademyQuest) => quest.sortOrder ?? quest.id;
@@ -158,6 +183,48 @@ export default function WorldMap() {
     if (user) localStorage.setItem(`wordwick-prologue-seen-${PROLOGUE_VERSION}-${user.id}`, 'yes');
     setShowPrologue(false);
   };
+  const finishSplash = () => {
+    if (user) localStorage.setItem(`wordwick-splash-seen-${SPLASH_VERSION}-${user.id}`, 'yes');
+    setShowSplash(false);
+  };
+
+  if (user?.role === 'child' && !introChecked) {
+    return (
+      <main className="mx-auto flex min-h-[calc(100vh-7.75rem)] items-center justify-center px-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-200 border-t-transparent" />
+      </main>
+    );
+  }
+
+  if (showSplash) {
+    return (
+      <main className="mx-auto flex min-h-[calc(100vh-7.75rem)] max-w-6xl items-center justify-center px-4 py-6">
+        <section className="relative w-full overflow-hidden rounded-[32px] border border-amber-100/25 bg-blue-950 px-6 py-12 text-center text-amber-50 shadow-2xl shadow-slate-950/35 sm:px-10 lg:py-16">
+          <img
+            src="/assets/wordwick-login-v1.jpg"
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover opacity-35"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-950/78 via-blue-950/58 to-blue-950/88" />
+          <div className="relative mx-auto flex max-w-3xl flex-col items-center">
+            <div className="rounded-[28px] border border-amber-100/20 bg-white/10 px-6 py-5 shadow-2xl shadow-slate-950/25 backdrop-blur-sm sm:px-10">
+              <WordwickLogo className="wordwick-splash-logo" />
+            </div>
+            <div className="mt-5 rounded-full border border-amber-100/25 bg-blue-950/60 px-4 py-2 text-xs font-black uppercase tracking-[0.2em] text-amber-100 shadow-lg shadow-slate-950/20">
+              ...where words come alive.
+            </div>
+            <p className="mt-7 max-w-2xl text-lg font-black leading-8 text-amber-50 sm:text-xl">
+              Die Akademiekarte erwacht. Pip hat ein Rascheln im Obergeschoss gehört und wartet schon auf den ersten Wortfunken.
+            </p>
+            <button onClick={finishSplash} className="magic-button mt-8 px-8">
+              <Sparkles className="h-4 w-4" />
+              Reise beginnen
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   if (showPrologue) {
     return (
